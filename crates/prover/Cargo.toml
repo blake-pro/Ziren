@@ -40,10 +40,10 @@ num-bigint = "0.4.6"
 thiserror = "1.0.63"
 lru = "0.12.4"
 eyre = "0.6.12"
-#test-artifacts = { workspace = true, optional = true }
+test-artifacts = { workspace = true, optional = true }
 
 [dev-dependencies]
-#test-artifacts = { workspace = true }
+test-artifacts = { workspace = true }
 
 [[bin]]
 name = "build_plonk_bn254"
@@ -84,5 +84,5 @@ required-features = ["export-tests"]
 [features]
 default = ["native-gnark"]
 native-gnark = ["zkm2-recursion-gnark-ffi/native"]
-#export-tests = ["dep:test-artifacts"]
-#debug = ["sp1-core-machine/debug"]
+export-tests = ["dep:test-artifacts"]
+debug = ["zkm2-core-machine/debug"]

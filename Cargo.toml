@@ -109,6 +109,8 @@ zkm2-primitives = { path = "crates/primitives", version = "0.0.1" }
 zkm2-stark = { path = "crates/stark", version = "0.0.1" }
 zkm2-prover = { path = "crates/prover", version = "0.0.1" }
 
+# For testing.
+test-artifacts = { path = "crates/test-artifacts", version = "0.0.1" }
 
 # misc
 hashbrown = "0.14.5"

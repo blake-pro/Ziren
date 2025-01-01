@@ -650,7 +650,7 @@ pub mod tests {
         baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, InnerVal, MachineProver, ShardProof,
         ZKMCoreOpts,
     };
-    //use test_artifacts::FIBONACCI_ELF;
+    use test_artifacts::FIBONACCI_ELF;
 
     use super::*;
     use crate::witness::*;

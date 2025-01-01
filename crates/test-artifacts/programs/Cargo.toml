@@ -3,6 +3,7 @@ members = [
   "revme",
   "sha2-rust",
   "sha2-precompile",
+  "fibonacci",
 ]
 resolver = "2"
 
