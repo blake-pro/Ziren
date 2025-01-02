@@ -664,16 +664,15 @@ pub mod tests {
         RecP: MachineProver<SC, RecursionAir<F, 3>>,
     >(
         config: SC,
-        elf: &[u8],
+        elf: &str,
         opts: ZKMCoreOpts,
         num_shards_in_batch: Option<usize>,
     ) -> (TracedVec<DslIr<C>>, Vec<Block<BabyBear>>) {
         setup_logger();
         let machine = MipsAir::<C::F>::machine(SC::default());
-        let max_mem = 0x80000000;
-        let (_, vk) = machine.setup(&Program::from(elf, max_mem).unwrap());
+        let (_, vk) = machine.setup(&Program::from_elf(elf).unwrap());
         let (proof, _, _) = prove::<_, CoreP>(
-            Program::from(elf, max_mem).unwrap(),
+            Program::from_elf(elf).unwrap(),
             &ZKMStdin::new(),
             SC::default(),
             opts,
@@ -737,7 +736,7 @@ pub mod tests {
         let (operations, stream) =
             build_verify_shard_with_provers::<InnerConfig, CpuProver<_, _>, CpuProver<_, _>>(
                 BabyBearPoseidon2::new(),
-                FIBONACCI_ELF.as_ref(),
+                FIBONACCI_ELF,
                 ZKMCoreOpts::default(),
                 Some(2),
             );
