@@ -379,9 +379,9 @@ impl<F: PrimeField32> MipsAir<F> {
         // costs.insert(MipsAirDiscriminants::ProgramMemory, memory_program.cost());
         // chips.push(memory_program);
 
-        // let byte = Chip::new(MipsAir::ByteLookup(ByteChip::default()));
-        // costs.insert(MipsAirDiscriminants::ByteLookup, byte.cost());
-        // chips.push(byte);
+        let byte = Chip::new(MipsAir::ByteLookup(ByteChip::default()));
+        costs.insert(MipsAirDiscriminants::ByteLookup, byte.cost());
+        chips.push(byte);
 
         (chips, costs)
     }
