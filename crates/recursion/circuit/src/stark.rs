@@ -635,10 +635,9 @@ pub mod tests {
 
     use zkm2_core_executor::Program;
     use zkm2_core_machine::{
-        //    io::SP1Stdin,
+        io::ZKMStdin,
         mips::MipsAir,
-        //    utils::{prove, setup_logger},
-        utils::setup_logger,
+        utils::{prove, setup_logger},
     };
     use zkm2_recursion_compiler::{
         config::{InnerConfig, OuterConfig},
@@ -670,15 +669,12 @@ pub mod tests {
         num_shards_in_batch: Option<usize>,
     ) -> (TracedVec<DslIr<C>>, Vec<Block<BabyBear>>) {
         setup_logger();
-        panic!("build_verify_shard_with_provers")
-
-        /*
-
-        let machine = RiscvAir::<C::F>::machine(SC::default());
-        let (_, vk) = machine.setup(&Program::from(elf).unwrap());
+        let machine = MipsAir::<C::F>::machine(SC::default());
+        let max_mem = 0x80000000;
+        let (_, vk) = machine.setup(&Program::from(elf, max_mem).unwrap());
         let (proof, _, _) = prove::<_, CoreP>(
-            Program::from(elf).unwrap(),
-            &SP1Stdin::new(),
+            Program::from(elf, max_mem).unwrap(),
+            &ZKMStdin::new(),
             SC::default(),
             opts,
             None,
@@ -734,20 +730,17 @@ pub mod tests {
             );
         }
         (builder.into_operations(), witness_stream)
-        */
     }
 
-    /*
     #[test]
     fn test_verify_shard_inner() {
         let (operations, stream) =
             build_verify_shard_with_provers::<InnerConfig, CpuProver<_, _>, CpuProver<_, _>>(
                 BabyBearPoseidon2::new(),
-                FIBONACCI_ELF,
-                SP1CoreOpts::default(),
+                FIBONACCI_ELF.as_ref(),
+                ZKMCoreOpts::default(),
                 Some(2),
             );
         run_test_recursion_with_prover::<CpuProver<_, _>>(operations, stream);
     }
-    */
 }
