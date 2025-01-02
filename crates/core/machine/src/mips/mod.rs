@@ -336,9 +336,9 @@ impl<F: PrimeField32> MipsAir<F> {
         // costs.insert(MipsAirDiscriminants::DivRem, div_rem.cost());
         // chips.push(div_rem);
 
-        // let add_sub = Chip::new(MipsAir::Add(AddSubChip::default()));
-        // costs.insert(MipsAirDiscriminants::Add, add_sub.cost());
-        // chips.push(add_sub);
+        let add_sub = Chip::new(MipsAir::Add(AddSubChip::default()));
+        costs.insert(MipsAirDiscriminants::Add, add_sub.cost());
+        chips.push(add_sub);
 
         // let bitwise = Chip::new(MipsAir::Bitwise(BitwiseChip::default()));
         // costs.insert(MipsAirDiscriminants::Bitwise, bitwise.cost());
