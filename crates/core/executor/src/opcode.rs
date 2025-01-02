@@ -300,67 +300,6 @@ pub enum ByteOpcode {
     U16Range = 8,
 }
 
-// impl Opcode {
-//     /// Get the mnemonic for the opcode.
-//     #[must_use]
-//     pub const fn mnemonic(&self) -> &str {
-//         match self {
-//             Opcode::ADD => "add",
-//             Opcode::SUB => "sub",
-//             /*
-//             Opcode::XOR => "xor",
-//             Opcode::OR => "or",
-//             Opcode::AND => "and",
-//             Opcode::SLL => "sll",
-//             Opcode::SRL => "srl",
-//             Opcode::SRA => "sra",
-//             Opcode::SLT => "slt",
-//             Opcode::SLTU => "sltu",
-//             Opcode::LB => "lb",
-//             Opcode::LH => "lh",
-//             Opcode::LW => "lw",
-//             Opcode::LBU => "lbu",
-//             Opcode::LHU => "lhu",
-//             Opcode::SB => "sb",
-//             Opcode::SH => "sh",
-//             Opcode::SW => "sw",
-//             Opcode::BEQ => "beq",
-//             Opcode::BNE => "bne",
-//             Opcode::BLT => "blt",
-//             Opcode::BGE => "bge",
-//             Opcode::BLTU => "bltu",
-//             Opcode::BGEU => "bgeu",
-//             Opcode::JAL => "jal",
-//             Opcode::JALR => "jalr",
-//             Opcode::AUIPC => "auipc",
-//             Opcode::ECALL => "ecall",
-//             Opcode::EBREAK => "ebreak",
-//             Opcode::MUL => "mul",
-//             Opcode::MULH => "mulh",
-//             Opcode::MULHU => "mulhu",
-//             Opcode::MULHSU => "mulhsu",
-//             Opcode::DIV => "div",
-//             Opcode::DIVU => "divu",
-//             Opcode::REM => "rem",
-//             Opcode::REMU => "remu",
-//             Opcode::UNIMP => "unimp",
-//              */
-//         }
-//     }
-//
-//     /// Convert the opcode to a field element.
-//     #[must_use]
-//     pub fn as_field<F: Field>(self) -> F {
-//         F::from_canonical_u32(self as u32)
-//     }
-// }
-//
-// impl Display for Opcode {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         f.write_str(self.mnemonic())
-//     }
-// }
-
 pub trait EnumAsField: Enum {
     fn as_field<F: Field>(self) -> F {
         F::from_canonical_usize(self.into_usize())
