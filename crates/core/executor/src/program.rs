@@ -13,18 +13,18 @@ use p3_maybe_rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use zkm2_stark::air::{MachineAir, MachineProgram};
 
-use crate::{CoreShape, Operation};
+use crate::{CoreShape, Instruction};
 
 pub const PAGE_SIZE: u32 = 4096;
 
 /// A program that can be executed by the ZKM.
 #[derive(PartialEq, Eq, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Program {
-    pub operations: Vec<Operation>,
+    pub instructions: Vec<Instruction>,
     /// The entrypoint of the program, PC
     pub pc_start: u32,
     pub pc_base: u32,
-    pub next_pc: usize,
+    pub next_pc: u32,
     /// The initial memory image
     pub image: BTreeMap<u32, u32>,
     pub gprs: [usize; 32],
@@ -49,6 +49,17 @@ pub struct Program {
 }
 
 impl Program {
+    #[must_use]
+    pub fn new(instructions: Vec<Instruction>, pc_start: u32, pc_base: u32) -> Self {
+        Self {
+            instructions,
+            pc_start,
+            pc_base,
+            next_pc: pc_start + 4,
+            ..Default::default()
+        }
+    }
+
     /// Initialize a MIPS Program from an appropriate ELF file
     pub fn from(input: &[u8], max_mem: u32) -> Result<Program> {
         let mut image: BTreeMap<u32, u32> = BTreeMap::new();
@@ -247,16 +258,16 @@ impl Program {
             .collect::<Vec<_>>();
 
         // decode each instruction
-        let operations: Vec<_> = instructions
+        let instructions: Vec<_> = instructions
             .par_iter()
-            .map(|inst| Operation::decode_from(*inst).unwrap())
+            .map(|inst| Instruction::decode_from(*inst).unwrap())
             .collect();
 
         Ok(Program {
-            operations,
+            instructions,
             pc_start: entry,
             pc_base: base_address,
-            next_pc: (entry + 4) as usize,
+            next_pc: entry + 4,
             image,
             gprs,
             lo,
@@ -277,40 +288,8 @@ impl Program {
             preprocessed_shape: None,
         })
     }
-}
 
-impl Program {
     /// Create a new [Program].
-    #[must_use]
-    pub fn new(operations: Vec<Operation>, _pc_start: u32, _pc_base: u32) -> Self {
-        Self {
-            operations,
-            ..Default::default()
-        }
-    }
-
-    /// Disassemble a RV32IM ELF to a program that be executed by the VM.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the ELF is not valid.
-    // pub fn from(input: &[u8]) -> eyre::Result<Self> {
-    //     panic!("Unimp")
-    //     // Decode the bytes as an ELF.
-    //     let elf = Elf::decode(input)?;
-    //
-    //     // Transpile the RV32IM instructions.
-    //     let instructions = transpile(&elf.instructions);
-    //
-    //     // Return the program.
-    //     Ok(Program {
-    //         instructions,
-    //         pc_start: elf.pc_start,
-    //         pc_base: elf.pc_base,
-    //         memory_image: elf.memory_image,
-    //         preprocessed_shape: None,
-    //     })
-    //}
 
     /// Disassemble a RV32IM ELF to a program that be executed by the VM from a file path.
     ///
@@ -339,15 +318,14 @@ impl Program {
 
     #[must_use]
     /// Fetch the instruction at the given program counter.
-    pub fn fetch(&self, pc: u32) -> Operation {
+    pub fn fetch(&self, pc: u32) -> Instruction {
         let idx = ((pc - self.pc_base) / 4) as usize;
-        self.operations[idx]
+        self.instructions[idx]
     }
 }
 
 impl<F: Field> MachineProgram<F> for Program {
     fn pc_start(&self) -> F {
-        // todo: correct?
         F::from_canonical_u32(self.pc_start)
     }
 }

@@ -6,15 +6,15 @@ use std::{
 use enum_map::{EnumArray, EnumMap};
 use hashbrown::HashMap;
 
-use crate::{events::generate_execution_report, syscalls::SyscallCode, BinaryOperator};
+use crate::{events::generate_execution_report, syscalls::SyscallCode, Opcode};
 
 /// An execution report.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct ExecutionReport {
     /// The event counts.
-    pub event_counts: Box<EnumMap<BinaryOperator, u64>>,
+    pub event_counts: Box<EnumMap<Opcode, u64>>,
     /// The opcode counts.
-    pub opcode_counts: Box<EnumMap<BinaryOperator, u64>>,
+    pub opcode_counts: Box<EnumMap<Opcode, u64>>,
     /// The syscall counts.
     pub syscall_counts: Box<EnumMap<SyscallCode, u64>>,
     /// The cycle tracker counts.

@@ -1,7 +1,7 @@
 use crate::{
     events::AluEvent,
     utils::{get_msb, get_quotient_and_remainder, is_signed_operation},
-    BinaryOperator, Executor,
+    Executor,
 };
 
 /// Emits the dependencies for division and remainder operations.
