@@ -1,6 +1,6 @@
 use hashbrown::HashMap;
 
-use crate::BinaryOperator;
+use crate::Opcode;
 use nohash_hasher::BuildNoHashHasher;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -22,14 +22,14 @@ pub fn deserialize_hashmap_as_vec<'de, V: Deserialize<'de>, D: Deserializer<'de>
 
 /// Returns `true` if the given `BinaryOperator` is a signed operation.
 #[must_use]
-pub fn is_signed_operation(opcode: BinaryOperator) -> bool {
+pub fn is_signed_operation(opcode: Opcode) -> bool {
     todo!("implement this function.")
     // opcode == BinaryOperator::DIV || opcode == BinaryOperator::REM
 }
 
 /// Calculate the correct `quotient` and `remainder` for the given `b` and `c` per RISC-V spec.
 #[must_use]
-pub fn get_quotient_and_remainder(b: u32, c: u32, opcode: BinaryOperator) -> (u32, u32) {
+pub fn get_quotient_and_remainder(b: u32, c: u32, opcode: Opcode) -> (u32, u32) {
     if c == 0 {
         // When c is 0, the quotient is 2^32 - 1 and the remainder is b regardless of whether we
         // perform signed or unsigned division.

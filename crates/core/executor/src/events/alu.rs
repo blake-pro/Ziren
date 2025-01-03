@@ -1,5 +1,5 @@
 use super::{create_random_lookup_ids, LookupId};
-use crate::BinaryOperator;
+use crate::Opcode;
 use serde::{Deserialize, Serialize};
 
 /// Arithmetic Logic Unit (ALU) Event.
@@ -15,7 +15,7 @@ pub struct AluEvent {
     /// The clock cycle.
     pub clk: u32,
     /// The opcode.
-    pub opcode: BinaryOperator,
+    pub opcode: Opcode,
     /// The first operand.
     pub a: u32,
     /// The second operand.
@@ -30,7 +30,7 @@ pub struct AluEvent {
 impl AluEvent {
     /// Create a new [`AluEvent`].
     #[must_use]
-    pub fn new(shard: u32, clk: u32, opcode: BinaryOperator, a: u32, b: u32, c: u32) -> Self {
+    pub fn new(shard: u32, clk: u32, opcode: Opcode, a: u32, b: u32, c: u32) -> Self {
         Self {
             lookup_id: LookupId::default(),
             shard,

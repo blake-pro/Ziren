@@ -4,7 +4,7 @@ use enum_map::Enum;
 use p3_field::Field;
 use std::fmt::Display;
 // use p3_field::Field;
-use crate::{sign_extend, Operation};
+use crate::sign_extend;
 use serde::{Deserialize, Serialize};
 
 /// An opcode (short for "operation code") specifies the operation to be performed by the processor.
@@ -12,7 +12,8 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, Enum,
 )]
-pub enum BinaryOperator {
+pub enum Opcode {
+    // BinaryOperator
     ADD = 0,
     ADDU = 1,
     ADDI = 2,
@@ -43,230 +44,148 @@ pub enum BinaryOperator {
     OR = 27,
     XOR = 28,
     NOR = 29,
+    // BranchCond
+    BEQ = 30,
+    BNE = 31,
+    BGE = 32,
+    BLE = 33,
+    BGT = 34,
+    BLT = 35,
+    // MovCond
+    MEQ = 36,
+    MNE = 37,
+    // Memory Op
+    LH = 38,
+    LWL = 39,
+    LW = 40,
+    LBU = 41,
+    LHU = 42,
+    LWR = 43,
+    SB = 44,
+    SH = 45,
+    SWL = 46,
+    SW = 47,
+    SWR = 48,
+    LL = 49,
+    SC = 50,
+    LB = 51,
+    SDC1 = 52,
+    // count leading zeros
+    CLZ = 53,
+    // count leading ones
+    CLO = 54,
+    // jump
+    Jump = 55,
+    Jumpi = 56,
+    JumpDirect = 57,
+    PC = 58,
+    GetContext = 59,
+    SetContext = 60,
+    NOP = 61,
+    SYSCALL = 62,
+    // EXT = 63,
+    // INS = 64,
+    // MADDU = 65,
+    ROR = 66,
+    // RDHWR = 67,
+    // SIGNEXT = 68,
+    // SWAP_HALF = 69,
+    // TEQ = 70,
 }
 
-impl BinaryOperator {
-    pub(crate) fn result(&self, input0: u32, input1: u32) -> (u32, u32) {
+impl Opcode {
+    /// Get the mnemonic for the opcode.
+    #[must_use]
+    pub const fn mnemonic(&self) -> &str {
         match self {
-            BinaryOperator::ADD => (input0.overflowing_add(input1).0, 0),
-            BinaryOperator::ADDU => (input0.overflowing_add(input1).0, 0),
-            BinaryOperator::ADDI => {
-                let sein = sign_extend::<16>(input1);
-                (input0.overflowing_add(sein).0, 0)
-            }
-            BinaryOperator::ADDIU => {
-                let sein = sign_extend::<16>(input1);
-                (input0.overflowing_add(sein).0, 0)
-            }
-            BinaryOperator::SUB => (input0.overflowing_sub(input1).0, 0),
-            BinaryOperator::SUBU => (input0.overflowing_sub(input1).0, 0),
-
-            BinaryOperator::SLL => (if input1 > 31 { 0 } else { input0 << input1 }, 0),
-            BinaryOperator::SRL => (if input1 > 31 { 0 } else { input0 >> input1 }, 0),
-            BinaryOperator::SRA => {
-                let sin = input0 as i32;
-                let sout = if input1 > 31 { 0 } else { sin >> input1 };
-                (sout as u32, 0)
-            }
-
-            BinaryOperator::SLLV => (input0 << (input1 & 0x1f), 0),
-            BinaryOperator::SRLV => (input0 >> (input1 & 0x1F), 0),
-            BinaryOperator::SRAV => {
-                // same as SRA
-                let sin = input0 as i32;
-                let sout = sin >> (input1 & 0x1f);
-                (sout as u32, 0)
-            }
-            BinaryOperator::MUL => (input0.overflowing_mul(input1).0, 0),
-            BinaryOperator::SLTU => {
-                if input0 < input1 {
-                    (1, 0)
-                } else {
-                    (0, 0)
-                }
-            }
-            BinaryOperator::SLT => {
-                if (input0 as i32) < (input1 as i32) {
-                    (1, 0)
-                } else {
-                    (0, 0)
-                }
-            }
-            BinaryOperator::SLTIU => {
-                let out = sign_extend::<16>(input1);
-                if input0 < out {
-                    (1, 0)
-                } else {
-                    (0, 0)
-                }
-            }
-            BinaryOperator::SLTI => {
-                let out = sign_extend::<16>(input1);
-                if (input0 as i32) < (out as i32) {
-                    (1, 0)
-                } else {
-                    (0, 0)
-                }
-            }
-            BinaryOperator::LUI => {
-                let out = sign_extend::<16>(input0);
-                (out.overflowing_shl(16).0, 0)
-            }
-
-            BinaryOperator::MULT => {
-                let out = (((input0 as i32) as i64) * ((input1 as i32) as i64)) as u64;
-                (out as u32, (out >> 32) as u32) // lo,hi
-            }
-            BinaryOperator::MULTU => {
-                let out = input0 as u64 * input1 as u64;
-                (out as u32, (out >> 32) as u32) //lo,hi
-            }
-            BinaryOperator::DIV => (
-                ((input0 as i32) / (input1 as i32)) as u32, // lo
-                ((input0 as i32) % (input1 as i32)) as u32, // hi
-            ),
-            BinaryOperator::DIVU => (input0 / input1, input0 % input1), //lo,hi
-            BinaryOperator::MFHI
-            | BinaryOperator::MTHI
-            | BinaryOperator::MFLO
-            | BinaryOperator::MTLO => (input0, 0),
-
-            BinaryOperator::AND => (input0 & input1, 0),
-            BinaryOperator::OR => (input0 | input1, 0),
-            BinaryOperator::XOR => (input0 ^ input1, 0),
-            BinaryOperator::NOR => (!(input0 | input1), 0),
+            Opcode::ADD => "add",
+            Opcode::ADDU => "addu",
+            Opcode::ADDI => "addi",
+            Opcode::ADDIU => "addiu",
+            Opcode::SUB => "sub",
+            Opcode::SUBU => "subu",
+            Opcode::MULT => "mult",
+            Opcode::MULTU => "multu",
+            Opcode::MUL => "mul",
+            Opcode::DIV => "div",
+            Opcode::DIVU => "divu",
+            Opcode::SLLV => "sllv",
+            Opcode::SRLV => "srlv",
+            Opcode::SRAV => "srav",
+            Opcode::SLL => "sll",
+            Opcode::SRL => "srl",
+            Opcode::SRA => "sra",
+            Opcode::SLT => "slt",
+            Opcode::SLTU => "sltu",
+            Opcode::SLTI => "slti",
+            Opcode::SLTIU => "sltiu",
+            Opcode::LUI => "lui",
+            Opcode::MFHI => "mfhi",
+            Opcode::MTHI => "mthi",
+            Opcode::MFLO => "mflo",
+            Opcode::MTLO => "mtlo",
+            Opcode::AND => "and",
+            Opcode::OR => "or",
+            Opcode::XOR => "xor",
+            Opcode::NOR => "nor",
+            Opcode::BEQ => "beq",
+            Opcode::BNE => "bne",
+            Opcode::BGE => "bge",
+            Opcode::BLE => "ble",
+            Opcode::BGT => "bgt",
+            Opcode::BLT => "blt",
+            Opcode::MEQ => "meq",
+            Opcode::MNE => "mne",
+            Opcode::LH => "lh",
+            Opcode::LWL => "lwl",
+            Opcode::LW => "lw",
+            Opcode::LBU => "lbu",
+            Opcode::LHU => "lhu",
+            Opcode::LWR => "lwr",
+            Opcode::SB => "sb",
+            Opcode::SH => "sh",
+            Opcode::SWL => "swl",
+            Opcode::SW => "sw",
+            Opcode::SWR => "swr",
+            Opcode::LL => "ll",
+            Opcode::SC => "sc",
+            Opcode::LB => "lb",
+            Opcode::SDC1 => "sdc1",
+            Opcode::CLZ => "clz",
+            Opcode::CLO => "clo",
+            Opcode::Jump => "jump",
+            Opcode::Jumpi => "jumpi",
+            Opcode::JumpDirect => "jump_direct",
+            Opcode::PC => "pc",
+            Opcode::GetContext => "get_context",
+            Opcode::SetContext => "set_context",
+            Opcode::NOP => "nop",
+            Opcode::SYSCALL => "syscall",
+            Opcode::ROR => "ror",
         }
     }
 
-    pub(crate) fn is_use_lo_hi_reg(&self) -> bool {
+    /// Convert the opcode to a field element.
+    #[must_use]
+    pub fn as_field<F: Field>(self) -> F {
+        F::from_canonical_u32(self as u32)
+    }
+
+    // todo: add other opcodes
+    pub fn is_use_lo_hi_alu(&self) -> bool {
         match self {
-            BinaryOperator::DIV
-            | BinaryOperator::DIVU
-            | BinaryOperator::MULT
-            | BinaryOperator::MULTU => true,
+            Opcode::DIV
+            | Opcode::DIVU
+            | Opcode::MULT
+            | Opcode::MULTU
+            | Opcode::DIV
+            | Opcode::DIVU => true,
             _ => false,
         }
     }
-
-    pub(crate) fn is_logic(&self) -> bool {
-        match self {
-            BinaryOperator::AND
-            | BinaryOperator::OR
-            | BinaryOperator::XOR
-            | BinaryOperator::NOR => true,
-            _ => false,
-        }
-    }
-
-    pub(crate) fn mnemonic(&self) -> &str {
-        match self {
-            BinaryOperator::ADD => "add",
-            BinaryOperator::ADDU => "addu",
-            BinaryOperator::ADDI => "addi",
-            BinaryOperator::ADDIU => "addiu",
-            BinaryOperator::SUB => "sub",
-            BinaryOperator::SUBU => "subu",
-            BinaryOperator::MULT => "mult",
-            BinaryOperator::MULTU => "multu",
-            BinaryOperator::MUL => "mul",
-            BinaryOperator::DIV => "div",
-            BinaryOperator::DIVU => "divu",
-            BinaryOperator::SLLV => "sllv",
-            BinaryOperator::SRLV => "srlv",
-            BinaryOperator::SRAV => "srav",
-            BinaryOperator::SLL => "sll",
-            BinaryOperator::SRL => "srl",
-            BinaryOperator::SRA => "sra",
-            BinaryOperator::SLT => "slt",
-            BinaryOperator::SLTU => "sltu",
-            BinaryOperator::SLTI => "slti",
-            BinaryOperator::SLTIU => "sltiu",
-            BinaryOperator::LUI => "lui",
-            BinaryOperator::MFHI => "mfhi",
-            BinaryOperator::MTHI => "mthi",
-            BinaryOperator::MFLO => "mflo",
-            BinaryOperator::MTLO => "mtlo",
-            BinaryOperator::AND => "and",
-            BinaryOperator::OR => "or",
-            BinaryOperator::XOR => "xor",
-            BinaryOperator::NOR => "nor",
-        }
-    }
 }
 
-impl Display for BinaryOperator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.mnemonic())
-    }
-}
-
-#[allow(non_camel_case_types)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, Enum,
-)]
-pub enum BranchCond {
-    EQ = 0,
-    NE = 1,
-    GE = 2,
-    LE = 3,
-    GT = 4,
-    LT = 5,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, Enum,
-)]
-pub enum MovCond {
-    EQ = 0,
-    NE = 1,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord, Enum,
-)]
-pub enum MemOp {
-    LH = 0,
-    LWL = 1,
-    LW = 2,
-    LBU = 3,
-    LHU = 4,
-    LWR = 5,
-    SB = 6,
-    SH = 7,
-    SWL = 8,
-    SW = 9,
-    SWR = 10,
-    LL = 11,
-    SC = 12,
-    LB = 13,
-    SDC1 = 14,
-}
-
-impl MemOp {
-    pub(crate) fn mnemonic(&self) -> &str {
-        match self {
-            MemOp::LH => "lh",
-            MemOp::LWL => "lwl",
-            MemOp::LW => "lw",
-            MemOp::LBU => "lbu",
-            MemOp::LHU => "lhu",
-            MemOp::LWR => "lwr",
-            MemOp::SB => "sb",
-            MemOp::SH => "sh",
-            MemOp::SWL => "swl",
-            MemOp::SW => "sw",
-            MemOp::SWR => "swr",
-            MemOp::LL => "ll",
-            MemOp::SC => "sc",
-            MemOp::LB => "lb",
-            MemOp::SDC1 => "sdc1",
-        }
-    }
-}
-
-impl Display for MemOp {
+impl Display for Opcode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.mnemonic())
     }
@@ -299,77 +218,3 @@ pub enum ByteOpcode {
     /// Unsigned 16-bit Range Check.
     U16Range = 8,
 }
-
-// impl Opcode {
-//     /// Get the mnemonic for the opcode.
-//     #[must_use]
-//     pub const fn mnemonic(&self) -> &str {
-//         match self {
-//             Opcode::ADD => "add",
-//             Opcode::SUB => "sub",
-//             /*
-//             Opcode::XOR => "xor",
-//             Opcode::OR => "or",
-//             Opcode::AND => "and",
-//             Opcode::SLL => "sll",
-//             Opcode::SRL => "srl",
-//             Opcode::SRA => "sra",
-//             Opcode::SLT => "slt",
-//             Opcode::SLTU => "sltu",
-//             Opcode::LB => "lb",
-//             Opcode::LH => "lh",
-//             Opcode::LW => "lw",
-//             Opcode::LBU => "lbu",
-//             Opcode::LHU => "lhu",
-//             Opcode::SB => "sb",
-//             Opcode::SH => "sh",
-//             Opcode::SW => "sw",
-//             Opcode::BEQ => "beq",
-//             Opcode::BNE => "bne",
-//             Opcode::BLT => "blt",
-//             Opcode::BGE => "bge",
-//             Opcode::BLTU => "bltu",
-//             Opcode::BGEU => "bgeu",
-//             Opcode::JAL => "jal",
-//             Opcode::JALR => "jalr",
-//             Opcode::AUIPC => "auipc",
-//             Opcode::ECALL => "ecall",
-//             Opcode::EBREAK => "ebreak",
-//             Opcode::MUL => "mul",
-//             Opcode::MULH => "mulh",
-//             Opcode::MULHU => "mulhu",
-//             Opcode::MULHSU => "mulhsu",
-//             Opcode::DIV => "div",
-//             Opcode::DIVU => "divu",
-//             Opcode::REM => "rem",
-//             Opcode::REMU => "remu",
-//             Opcode::UNIMP => "unimp",
-//              */
-//         }
-//     }
-//
-//     /// Convert the opcode to a field element.
-//     #[must_use]
-//     pub fn as_field<F: Field>(self) -> F {
-//         F::from_canonical_u32(self as u32)
-//     }
-// }
-//
-// impl Display for Opcode {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         f.write_str(self.mnemonic())
-//     }
-// }
-
-pub trait EnumAsField: Enum {
-    fn as_field<F: Field>(self) -> F {
-        F::from_canonical_usize(self.into_usize())
-    }
-}
-
-impl EnumAsField for BinaryOperator {}
-
-// todo: check if necessary
-impl EnumAsField for BranchCond {}
-impl EnumAsField for MovCond {}
-impl EnumAsField for MemOp {}

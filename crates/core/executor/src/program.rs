@@ -5,26 +5,26 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use anyhow::{anyhow, bail, Context, Result};
 use elf::{endian::BigEndian, file::Class, ElfBytes};
-use std::fs::{self};
 use std::io::Read;
 use zkm2_core_emulator::memory::{INIT_SP, WORD_SIZE};
-use zkm2_core_emulator::state::{Segment, REGISTERS_START};
 
-use hashbrown::HashMap;
 use p3_field::Field;
+use p3_maybe_rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use zkm2_stark::air::{MachineAir, MachineProgram};
 
-use crate::{CoreShape, Operation};
+use crate::{CoreShape, Instruction};
 
 pub const PAGE_SIZE: u32 = 4096;
 
 /// A program that can be executed by the ZKM.
 #[derive(PartialEq, Eq, Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Program {
+    pub instructions: Vec<Instruction>,
     /// The entrypoint of the program, PC
-    pub entry: u32,
-    pub next_pc: usize,
+    pub pc_start: u32,
+    pub pc_base: u32,
+    pub next_pc: u32,
     /// The initial memory image
     pub image: BTreeMap<u32, u32>,
     pub gprs: [usize; 32],
@@ -49,6 +49,17 @@ pub struct Program {
 }
 
 impl Program {
+    #[must_use]
+    pub fn new(instructions: Vec<Instruction>, pc_start: u32, pc_base: u32) -> Self {
+        Self {
+            instructions,
+            pc_start,
+            pc_base,
+            next_pc: pc_start + 4,
+            ..Default::default()
+        }
+    }
+
     /// Initialize a MIPS Program from an appropriate ELF file
     pub fn from(input: &[u8], max_mem: u32) -> Result<Program> {
         let mut image: BTreeMap<u32, u32> = BTreeMap::new();
@@ -76,8 +87,11 @@ impl Program {
             bail!("Too many program headers");
         }
 
+        let mut instructions: Vec<u32> = Vec::new();
+        let mut base_address = u32::MAX;
+
         let mut hiaddr = 0u32;
-        let mut step = 0;
+
         for segment in segments.iter().filter(|x| x.p_type == elf::abi::PT_LOAD) {
             let file_size: u32 = segment
                 .p_filesz
@@ -99,6 +113,9 @@ impl Program {
                 .map_err(|err| anyhow!("vaddr is larger than 32 bits. {err}"))?;
             if vaddr % WORD_SIZE as u32 != 0 {
                 bail!("vaddr {vaddr:08x} is unaligned");
+            }
+            if (segment.p_flags & elf::abi::PF_X) != 0 && base_address > vaddr {
+                base_address = vaddr;
             }
 
             let a = vaddr + mem_size;
@@ -128,7 +145,10 @@ impl Program {
                         word |= (*byte as u32) << (j * 8);
                     }
                     image.insert(addr, word);
-                    step += 1;
+                    // todo: check it
+                    if (segment.p_flags & elf::abi::PF_X) != 0 {
+                        instructions.push(word);
+                    }
                 }
             }
         }
@@ -237,9 +257,17 @@ impl Program {
             .flat_map(|&num| num.to_le_bytes())
             .collect::<Vec<_>>();
 
+        // decode each instruction
+        let instructions: Vec<_> = instructions
+            .par_iter()
+            .map(|inst| Instruction::decode_from(*inst).unwrap())
+            .collect();
+
         Ok(Program {
-            entry,
-            next_pc: (entry + 4) as usize,
+            instructions,
+            pc_start: entry,
+            pc_base: base_address,
+            next_pc: entry + 4,
             image,
             gprs,
             lo,
@@ -248,7 +276,7 @@ impl Program {
             brk: brk as usize,
             local_user: 0,
             end_pc: end_pc as usize,
-            step,
+            step: 0,
             image_id: image_id.try_into().unwrap(),
             pre_image_id: pre_image_id.try_into().unwrap(),
             pre_hash_root,
@@ -260,44 +288,8 @@ impl Program {
             preprocessed_shape: None,
         })
     }
-}
 
-impl Program {
     /// Create a new [Program].
-    #[must_use]
-    pub fn new(operations: Vec<Operation>, pc_start: u32, pc_base: u32) -> Self {
-        todo!("unimplemented")
-        // Self {
-        //     instructions,
-        //     pc_start,
-        //     pc_base,
-        //     memory_image: HashMap::new(),
-        //     preprocessed_shape: None,
-        // }
-    }
-
-    /// Disassemble a RV32IM ELF to a program that be executed by the VM.
-    ///
-    /// # Errors
-    ///
-    /// This function may return an error if the ELF is not valid.
-    // pub fn from(input: &[u8]) -> eyre::Result<Self> {
-    //     panic!("Unimp")
-    //     // Decode the bytes as an ELF.
-    //     let elf = Elf::decode(input)?;
-    //
-    //     // Transpile the RV32IM instructions.
-    //     let instructions = transpile(&elf.instructions);
-    //
-    //     // Return the program.
-    //     Ok(Program {
-    //         instructions,
-    //         pc_start: elf.pc_start,
-    //         pc_base: elf.pc_base,
-    //         memory_image: elf.memory_image,
-    //         preprocessed_shape: None,
-    //     })
-    //}
 
     /// Disassemble a RV32IM ELF to a program that be executed by the VM from a file path.
     ///
@@ -326,19 +318,15 @@ impl Program {
 
     #[must_use]
     /// Fetch the instruction at the given program counter.
-    pub fn fetch(&self, pc: u32) -> Operation {
-        // todo: check
-        let instruction = self.image.get(&pc).unwrap();
-        Operation::decode_from(*instruction).expect("Failed to decode instruction")
-        // let idx = ((pc - self.pc_base) / 4) as usize;
-        // &self.instructions[idx]
+    pub fn fetch(&self, pc: u32) -> Instruction {
+        let idx = ((pc - self.pc_base) / 4) as usize;
+        self.instructions[idx]
     }
 }
 
 impl<F: Field> MachineProgram<F> for Program {
     fn pc_start(&self) -> F {
-        // todo: correct?
-        F::from_canonical_u32(self.entry)
+        F::from_canonical_u32(self.pc_start)
     }
 }
 

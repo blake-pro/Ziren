@@ -21,6 +21,9 @@ pub struct ExecutionState {
     /// The program counter.
     pub pc: u32,
 
+    // because of delayed slot
+    pub next_pc: u32,
+
     /// The shard clock keeps track of how many shards have been executed.
     pub current_shard: u32,
 
@@ -67,13 +70,14 @@ pub struct ExecutionState {
 impl ExecutionState {
     #[must_use]
     /// Create a new [`ExecutionState`].
-    pub fn new(pc_start: u32) -> Self {
+    pub fn new(pc_start: u32, next_pc: u32) -> Self {
         Self {
             global_clk: 0,
             // Start at shard 1 since shard 0 is reserved for memory initialization.
             current_shard: 1,
             clk: 0,
             pc: pc_start,
+            next_pc,
             memory: PagedMemory::new_preallocated(),
             uninitialized_memory: PagedMemory::default(),
             input_stream: Vec::new(),

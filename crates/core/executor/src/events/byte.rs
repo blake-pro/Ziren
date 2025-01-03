@@ -8,7 +8,7 @@ use p3_maybe_rayon::prelude::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{BinaryOperator, ByteOpcode};
+use crate::{ByteOpcode, Opcode};
 
 /// The number of different byte operations.
 pub const NUM_BYTE_OPS: usize = 9;
@@ -221,18 +221,16 @@ pub(crate) fn add_sharded_byte_lookup_events(
     }
 }
 
-// todo: necessary for LogicOP?
-impl From<BinaryOperator> for ByteOpcode {
+impl From<Opcode> for ByteOpcode {
     /// Convert an opcode to a byte opcode.
-    fn from(value: BinaryOperator) -> Self {
-        todo!("unimplemented")
-        // match value {
-        //     Opcode::AND => Self::AND,
-        //     Opcode::OR => Self::OR,
-        //     Opcode::XOR => Self::XOR,
-        //     Opcode::SLL => Self::SLL,
-        //     _ => panic!("Invalid opcode for ByteChip: {value:?}"),
-        // }
+    fn from(value: Opcode) -> Self {
+        match value {
+            Opcode::AND => Self::AND,
+            Opcode::OR => Self::OR,
+            Opcode::XOR => Self::XOR,
+            Opcode::SLL => Self::SLL,
+            _ => panic!("Invalid opcode for ByteChip: {value:?}"),
+        }
     }
 }
 

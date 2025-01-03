@@ -21,7 +21,7 @@ use crate::{
     sign_extend,
     state::{ExecutionState, ForkState},
     subproof::{DefaultSubproofVerifier, SubproofVerifier},
-    BinaryOperator, BranchCond, ExecutionReport, MemOp, Operation, Program, Register,
+    ExecutionReport, Instruction, Opcode, Program, Register,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -144,7 +144,7 @@ pub enum ExecutionError {
 
     /// The execution failed with an invalid memory access.
     #[error("invalid memory access for opcode {0} and address {1}")]
-    InvalidMemoryAccess(MemOp, u32),
+    InvalidMemoryAccess(Opcode, u32),
 
     /// The execution failed with an unimplemented syscall.
     #[error("unimplemented syscall {0}")]
@@ -223,7 +223,7 @@ impl<'a> Executor<'a> {
         Self {
             record,
             records: vec![],
-            state: ExecutionState::new(program.entry),
+            state: ExecutionState::new(program.pc_start, program.next_pc),
             program,
             memory_accesses: MemoryAccessRecord::default(),
             shard_size: (opts.shard_size as u32) * 4,
@@ -287,38 +287,39 @@ impl<'a> Executor<'a> {
     }
 
     /*
-    /// Get the current values of the registers.
-    #[allow(clippy::single_match_else)]
-    #[must_use]
-    pub fn registers(&mut self) -> [u32; 32] {
-        let mut registers = [0; 32];
-        for i in 0..32 {
-            let addr = Register::from_u8(i as u8) as u32;
-            let record = self.state.memory.get(addr);
+        /// Get the current values of the registers.
+        #[allow(clippy::single_match_else)]
+        #[must_use]
+        pub fn registers(&mut self) -> [u32; 32] {
+            let mut registers = [0; 32];
+            for i in 0..32 {
+                let addr = Register::from_u8(i as u8) as u32;
+                let record = self.state.memory.get(addr);
 
-            // Only add the previous memory state to checkpoint map if we're in checkpoint mode,
-            // or if we're in unconstrained mode. In unconstrained mode, the mode is always
-            // Simple.
-            if self.executor_mode == ExecutorMode::Checkpoint || self.unconstrained {
-                match record {
-                    Some(record) => {
-                        self.memory_checkpoint
-                            .entry(addr)
-                            .or_insert_with(|| Some(*record));
-                    }
-                    None => {
-                        self.memory_checkpoint.entry(addr).or_insert(None);
+                // Only add the previous memory state to checkpoint map if we're in checkpoint mode,
+                // or if we're in unconstrained mode. In unconstrained mode, the mode is always
+                // Simple.
+                if self.executor_mode == ExecutorMode::Checkpoint || self.unconstrained {
+                    match record {
+                        Some(record) => {
+                            self.memory_checkpoint
+                                .entry(addr)
+                                .or_insert_with(|| Some(*record));
+                        }
+                        None => {
+                            self.memory_checkpoint.entry(addr).or_insert(None);
+                        }
                     }
                 }
-            }
 
-            registers[i] = match record {
-                Some(record) => record.value,
-                None => 0,
-            };
+                registers[i] = match record {
+                    Some(record) => record.value,
+                    None => 0,
+                };
+            }
+            registers
         }
-        registers
-    }
+    */
 
     /// Get the current value of a register.
     #[must_use]
@@ -344,7 +345,6 @@ impl<'a> Executor<'a> {
             None => 0,
         }
     }
-     */
 
     /// Get the current value of a word.
     #[must_use]
@@ -631,6 +631,7 @@ impl<'a> Executor<'a> {
     }
 
     /// Write to a register.
+    // todo: specify MemoryAccessPosition
     pub fn rw(&mut self, register: Register, value: u32) {
         // The only time we are writing to a register is when it is in operand A.
         // Register 0 should always be 0
@@ -648,13 +649,15 @@ impl<'a> Executor<'a> {
         clk: u32,
         pc: u32,
         next_pc: u32,
+        // this is added for branch instruction
+        next_next_pc: u32,
         a: u32,
         b: u32,
         c: u32,
         record: MemoryAccessRecord,
         exit_code: u32,
         lookup_id: LookupId,
-        syscall_lookup_id: LookupId,
+        _syscall_lookup_id: LookupId,
     ) {
         let memory_add_lookup_id = self.record.create_lookup_id();
         let memory_sub_lookup_id = self.record.create_lookup_id();
@@ -668,6 +671,7 @@ impl<'a> Executor<'a> {
             clk,
             pc,
             next_pc,
+            next_next_pc,
             a,
             a_record: record.a,
             b,
@@ -693,11 +697,12 @@ impl<'a> Executor<'a> {
     }
 
     /// Emit an ALU event.
+    // todo: use hi
     fn emit_alu(
         &mut self,
         clk: u32,
-        opcode: BinaryOperator,
-        hi: Option<u32>,
+        opcode: Opcode,
+        _hi: Option<u32>,
         a: u32,
         b: u32,
         c: u32,
@@ -714,40 +719,28 @@ impl<'a> Executor<'a> {
             sub_lookups: self.record.create_lookup_ids(),
         };
         match opcode {
-            BinaryOperator::ADD
-            | BinaryOperator::ADDI
-            | BinaryOperator::ADDU
-            | BinaryOperator::ADDIU => {
+            Opcode::ADD | Opcode::ADDI | Opcode::ADDU | Opcode::ADDIU => {
                 self.record.add_events.push(event);
             }
-            BinaryOperator::SUB | BinaryOperator::SUBU => {
+            Opcode::SUB | Opcode::SUBU => {
                 self.record.sub_events.push(event);
             }
-            BinaryOperator::XOR
-            | BinaryOperator::OR
-            | BinaryOperator::AND
-            | BinaryOperator::NOR => {
+            Opcode::XOR | Opcode::OR | Opcode::AND | Opcode::NOR => {
                 self.record.bitwise_events.push(event);
             }
-            BinaryOperator::SLL | BinaryOperator::SLLV => {
+            Opcode::SLL | Opcode::SLLV => {
                 self.record.shift_left_events.push(event);
             }
-            BinaryOperator::SRL
-            | BinaryOperator::SRA
-            | BinaryOperator::SRLV
-            | BinaryOperator::SRAV => {
+            Opcode::SRL | Opcode::SRA | Opcode::SRLV | Opcode::SRAV => {
                 self.record.shift_right_events.push(event);
             }
-            BinaryOperator::SLT
-            | BinaryOperator::SLTU
-            | BinaryOperator::SLTI
-            | BinaryOperator::SLTIU => {
+            Opcode::SLT | Opcode::SLTU | Opcode::SLTI | Opcode::SLTIU => {
                 self.record.lt_events.push(event);
             }
-            BinaryOperator::MUL | BinaryOperator::MULT | BinaryOperator::MULTU => {
+            Opcode::MUL | Opcode::MULT | Opcode::MULTU => {
                 self.record.mul_events.push(event);
             }
-            BinaryOperator::DIV | BinaryOperator::DIVU => {
+            Opcode::DIV | Opcode::DIVU => {
                 self.record.divrem_events.push(event);
                 emit_divrem_dependencies(self, event);
             }
@@ -789,23 +782,35 @@ impl<'a> Executor<'a> {
     // }
 
     /// Fetch the destination register and input operand values for an ALU instruction.
-    fn alu_rr(&mut self, rd: u8, rs: u8, rt: u8) -> (Register, u32, u32) {
-        let c = self.rr(rt.into(), MemoryAccessPosition::C);
-        let b = self.rr(rs.into(), MemoryAccessPosition::B);
-        (rd.into(), b, c)
-    }
-
-    /// Fetch the destination register and input operand values for an ALU instruction.
-    fn alu_rr_imm(&mut self, rd: u8, rs: u8, rt: u8) -> (Register, u32, u32) {
-        let c = self.rr(rt.into(), MemoryAccessPosition::C);
-        let b = self.rr(rs.into(), MemoryAccessPosition::B);
-        (rd.into(), b, c)
+    fn alu_rr(&mut self, instruction: &Instruction) -> (Register, u32, u32) {
+        if !instruction.imm_c {
+            let (rd, rs1, rs2) = (
+                instruction.op_a.into(),
+                (instruction.op_b as u8).into(),
+                (instruction.op_c as u8).into(),
+            );
+            let c = self.rr(rs2, MemoryAccessPosition::C);
+            let b = self.rr(rs1, MemoryAccessPosition::B);
+            (rd, b, c)
+        } else if !instruction.imm_b && instruction.imm_c {
+            let (rd, rs1, imm) = (
+                instruction.op_a.into(),
+                (instruction.op_b as u8).into(),
+                instruction.op_c,
+            );
+            let (rd, b, c) = (rd, self.rr(rs1, MemoryAccessPosition::B), imm);
+            (rd, b, c)
+        } else {
+            debug_assert!(instruction.imm_b && instruction.imm_c);
+            let (rd, b, c) = (instruction.op_a.into(), instruction.op_b, instruction.op_c);
+            (rd, b, c)
+        }
     }
 
     /// Set the destination register with the result and emit an ALU event.
     fn alu_rw(
         &mut self,
-        op: BinaryOperator,
+        op: &Instruction,
         rd: Register,
         hi: u32,
         a: u32,
@@ -813,7 +818,7 @@ impl<'a> Executor<'a> {
         c: u32,
         lookup_id: LookupId,
     ) -> (Option<u32>, u32, u32, u32) {
-        let hi = if op.is_use_lo_hi_reg() {
+        let hi = if op.opcode.is_use_lo_hi_alu() {
             self.rw(Register::LO, a);
             self.rw(Register::HI, hi);
             Some(hi)
@@ -823,55 +828,75 @@ impl<'a> Executor<'a> {
         };
 
         if self.executor_mode == ExecutorMode::Trace {
-            self.emit_alu(self.state.clk, op, hi, a, b, c, lookup_id);
+            self.emit_alu(self.state.clk, op.opcode, hi, a, b, c, lookup_id);
         }
 
         (hi, a, b, c)
     }
 
-    // /// Fetch the input operand values for a load instruction.
-    // fn load_rr(&mut self, instruction: &Instruction) -> (Register, u32, u32, u32, u32) {
-    //     let (rd, rs1, imm) = instruction.i_type();
-    //     let (b, c) = (self.rr(rs1, MemoryAccessPosition::B), imm);
-    //     let addr = b.wrapping_add(c);
-    //     let memory_value = self.mr_cpu(align(addr), MemoryAccessPosition::Memory);
-    //     (rd, b, c, addr, memory_value)
-    // }
+    /// Fetch the input operand values for a load instruction.
+    /// rs_reg,rt_reg,imm=a,b,c
+    fn load_rr(&mut self, instruction: &Instruction) -> (Register, u32, u32, u32, u32) {
+        let (rs_reg, rt_reg, offset) = (
+            instruction.op_a.into(),
+            (instruction.op_b as u8).into(),
+            instruction.op_c,
+        );
+        let rs = self.rr(rs_reg, MemoryAccessPosition::A);
+        let rt = self.rr(rt_reg, MemoryAccessPosition::B);
 
-    // /// Fetch the input operand values for a store instruction.
-    // fn store_rr(&mut self, instruction: &Instruction) -> (u32, u32, u32, u32, u32) {
-    //     let (rs1, rs2, imm) = instruction.s_type();
-    //     let c = imm;
-    //     let b = self.rr(rs2, MemoryAccessPosition::B);
-    //     let a = self.rr(rs1, MemoryAccessPosition::A);
-    //     let addr = b.wrapping_add(c);
-    //     let memory_value = self.word(align(addr));
-    //     (a, b, c, addr, memory_value)
-    // }
+        let virt_raw = rs.wrapping_add(sign_extend::<16>(offset));
+        let virt = virt_raw & 0xFFFF_FFFC;
 
-    // /// Fetch the input operand values for a branch instruction.
-    // fn branch_rr(&mut self, instruction: &Instruction) -> (u32, u32, u32) {
-    //     let (rs1, rs2, imm) = instruction.b_type();
-    //     let c = imm;
-    //     let b = self.rr(rs2, MemoryAccessPosition::B);
-    //     let a = self.rr(rs1, MemoryAccessPosition::A);
-    //     (a, b, c)
-    // }
+        let memory_value = self.mr_cpu(virt, MemoryAccessPosition::Memory);
+        (rt_reg, rt, virt_raw, offset, memory_value)
+    }
+
+    /// Fetch the input operand values for a store instruction.
+    fn store_rr(&mut self, instruction: &Instruction) -> (u32, u32, u32, u32, u32, Register) {
+        let (rs_reg, rt_reg, offset) = (
+            instruction.op_a.into(),
+            (instruction.op_b as u8).into(),
+            instruction.op_c,
+        );
+        let rs = self.rr(rs_reg, MemoryAccessPosition::A);
+        let rt = self.rr(rt_reg, MemoryAccessPosition::B);
+
+        let virt_raw = rs.wrapping_add(sign_extend::<16>(offset));
+        let virt = virt_raw & 0xFFFF_FFFC;
+
+        let memory_value = self.word(virt);
+
+        (rs, rt, virt_raw, offset, memory_value, rt_reg)
+    }
+
+    /// Fetch the input operand values for a branch instruction.
+    fn branch_rr(&mut self, instruction: &Instruction) -> (u32, u32, u32) {
+        let (src1, src2, target) = (
+            instruction.op_a.into(),
+            (instruction.op_b as u8).into(),
+            instruction.op_c,
+        );
+        let b = self.rr(src2, MemoryAccessPosition::B);
+        let a = self.rr(src1, MemoryAccessPosition::A);
+        (a, b, target)
+    }
 
     /// Fetch the instruction at the current program counter.
     #[inline]
-    fn fetch(&self) -> Operation {
+    fn fetch(&self) -> Instruction {
         self.program.fetch(self.state.pc)
     }
 
     /// Execute the given instruction over the current state of the runtime.
     #[allow(clippy::too_many_lines)]
-    fn execute_operation(&mut self, operation: Operation) -> Result<(), ExecutionError> {
+    fn execute_operation(&mut self, instruction: &Instruction) -> Result<(), ExecutionError> {
         let mut pc = self.state.pc;
         let mut clk = self.state.clk;
         let mut exit_code = 0u32; // use in halt code
 
-        let mut next_pc = self.state.pc.wrapping_add(4);
+        let mut next_pc = self.state.next_pc;
+        let mut next_next_pc = self.state.next_pc.wrapping_add(4);
 
         //todo: uncomment this when all the operations have been implemented
         // let (a, b, c): (u32, u32, u32);
@@ -894,221 +919,147 @@ impl<'a> Executor<'a> {
             LookupId::default()
         };
 
-        // if !self.unconstrained {
-        //     self.report.opcode_counts[operation.opcode] += 1;
-        //     self.report.event_counts[operation.opcode] += 1;
-        //     match operation.opcode {
-        //         Opcode::LB | Opcode::LH | Opcode::LW | Opcode::LBU | Opcode::LHU => {
-        //             self.report.event_counts[Opcode::ADD] += 2;
-        //         }
-        //         Opcode::JAL | Opcode::JALR | Opcode::AUIPC => {
-        //             self.report.event_counts[Opcode::ADD] += 1;
-        //         }
-        //         Opcode::BEQ
-        //         | Opcode::BNE
-        //         | Opcode::BLT
-        //         | Opcode::BGE
-        //         | Opcode::BLTU
-        //         | Opcode::BGEU => {
-        //             self.report.event_counts[Opcode::ADD] += 1;
-        //             self.report.event_counts[Opcode::SLTU] += 2;
-        //         }
-        //         Opcode::DIVU | Opcode::REMU | Opcode::DIV | Opcode::REM => {
-        //             self.report.event_counts[Opcode::MUL] += 2;
-        //             self.report.event_counts[Opcode::ADD] += 2;
-        //             self.report.event_counts[Opcode::SLTU] += 1;
-        //         }
-        //         _ => {}
-        //     };
-        // }
+        if !self.unconstrained {
+            self.report.opcode_counts[instruction.opcode] += 1;
+            self.report.event_counts[instruction.opcode] += 1;
+            match instruction.opcode {
+                // todo: check all
+                Opcode::LB | Opcode::LH | Opcode::LW | Opcode::LBU | Opcode::LHU => {
+                    self.report.event_counts[Opcode::ADD] += 2;
+                }
+                Opcode::Jump | Opcode::Jumpi | Opcode::JumpDirect => {
+                    self.report.event_counts[Opcode::ADD] += 1;
+                }
+                Opcode::BEQ
+                | Opcode::BNE
+                | Opcode::BLT
+                | Opcode::BGE
+                | Opcode::BLE
+                | Opcode::BGT => {
+                    self.report.event_counts[Opcode::ADD] += 1;
+                    self.report.event_counts[Opcode::SLTU] += 2;
+                }
+                Opcode::DIVU | Opcode::DIV => {
+                    self.report.event_counts[Opcode::MUL] += 2;
+                    self.report.event_counts[Opcode::ADD] += 2;
+                    self.report.event_counts[Opcode::SLTU] += 1;
+                }
+                _ => {}
+            };
+        }
 
-        match operation {
+        match instruction.opcode {
             // syscall
-            Operation::Syscall => {
+            Opcode::SYSCALL => {
                 todo!()
             }
-            Operation::CondMov(_, ..) => {
+            Opcode::MEQ | Opcode::MNE => {
                 todo!()
             }
-            Operation::Count(_, ..) => {
+            Opcode::CLO | Opcode::CLZ => {
                 todo!()
             }
 
             // Arithmetic instructions
-            Operation::BinaryArithmetic(op, rs, rt, rd) => {
-                (hi, a, b, c) = self.execute_alu(op, rs, rt, rd, lookup_id);
-            }
-            Operation::BinaryArithmeticImm(op, rs, rt, imm) => {
-                (hi, a, b, c) = self.execute_alu_imm(op, rs, rt, imm, lookup_id);
+            Opcode::ADD
+            | Opcode::ADDU
+            | Opcode::ADDI
+            | Opcode::ADDIU
+            | Opcode::SUB
+            | Opcode::SUBU
+            | Opcode::MULT
+            | Opcode::MULTU
+            | Opcode::MUL
+            | Opcode::DIV
+            | Opcode::DIVU
+            | Opcode::SLLV
+            | Opcode::SRLV
+            | Opcode::SRAV
+            | Opcode::SLL
+            | Opcode::SRL
+            | Opcode::SRA
+            | Opcode::SLT
+            | Opcode::SLTU
+            | Opcode::SLTI
+            | Opcode::SLTIU
+            | Opcode::LUI
+            | Opcode::MFHI
+            | Opcode::MTHI
+            | Opcode::MFLO
+            | Opcode::MTLO
+            | Opcode::AND
+            | Opcode::OR
+            | Opcode::XOR
+            | Opcode::NOR => {
+                (hi, a, b, c) = self.execute_alu(instruction, lookup_id);
             }
 
             // Load instructions.
-            Operation::MloadGeneral(op, base, rt, offset) => {
-                (a, b, c) = self.execute_load(op, base, rt, offset)?;
+            Opcode::LB
+            | Opcode::LH
+            | Opcode::LW
+            | Opcode::LWL
+            | Opcode::LBU
+            | Opcode::LHU
+            | Opcode::LWR
+            | Opcode::LL => {
+                (a, b, c) = self.execute_load(instruction)?;
             }
 
             // Store instructions.
-            Operation::MstoreGeneral(op, base, rt, offset) => {
-                (a, b, c) = self.execute_store(op, base, rt, offset)?;
+            Opcode::SB
+            | Opcode::SH
+            | Opcode::SW
+            | Opcode::SWL
+            | Opcode::SWL
+            | Opcode::SWR
+            | Opcode::SDC1 => {
+                (a, b, c) = self.execute_store(instruction)?;
             }
 
             // Branch instructions.
-            Operation::Branch(cond, input1, input2, target) => {
-                (a, b, c, next_pc) = self.execute_branch(cond, input1, input2, target, next_pc);
+            Opcode::BEQ | Opcode::BNE | Opcode::BGE | Opcode::BLE | Opcode::BGT | Opcode::BLT => {
+                (a, b, c, next_next_pc) = self.execute_branch(instruction, next_pc, next_next_pc);
             }
 
             // Jump instructions.
-            Operation::Jump(link, target) => {
-                // todo: impl
-                (a, b, c, next_pc) = self.execute_jump(link, target, next_pc);
+            Opcode::Jump => {
+                (a, b, c, next_next_pc) = self.execute_jump(instruction);
             }
-            Operation::Jumpi(link, target) => {
+            Opcode::Jumpi => {
                 // todo: impl
-                (a, b, c, next_pc) = self.execute_jumpi(link, target, next_pc);
+                (a, b, c, next_next_pc) = self.execute_jumpi(instruction);
             }
-            Operation::JumpDirect(link, target) => {
-                // todo: impl
-                (a, b, c, next_pc) = self.execute_jump_direct(link, target, next_pc);
+            Opcode::JumpDirect => {
+                (a, b, c, next_next_pc) = self.execute_jump_direct(instruction);
             }
 
-            Operation::Pc => {
+            Opcode::PC => {
                 todo!()
             }
 
-            Operation::GetContext | Operation::SetContext => {}
+            Opcode::GetContext | Opcode::SetContext => {}
 
-            Operation::Nop => {
+            Opcode::NOP => {
                 todo!()
             }
 
-            Operation::Ext(_, ..) => todo!(),
-            Operation::Ins(_, ..) => todo!(),
-            Operation::Maddu(_, ..) => todo!(),
-            Operation::Ror(_, ..) => todo!(),
-            Operation::Rdhwr(_, ..) => todo!(),
-            Operation::Signext(_, ..) => todo!(),
-            Operation::SwapHalf(_, ..) => todo!(),
-            Operation::Teq(_, ..) => todo!(),
-
+            // Opcode::EXT => todo!(),
+            // Opcode::INS => todo!(),
+            // Opcode::MADDU => todo!(),
+            // Opcode::ROR => todo!(),
+            // Opcode::RDHWR => todo!(),
+            // Opcode::SIGNEXT => todo!(),
+            // Opcode::SWAP_HALF => todo!(),
+            // Opcode::TEQ => todo!(),
             _ => {
-                unreachable!("Unimplemented operation: {:?}", operation);
-            } /*
-              Opcode::JAL => {
-                  let (rd, imm) = operation.j_type();
-                  (b, c) = (imm, 0);
-                  a = self.state.pc + 4;
-                  self.rw(rd, a);
-                  next_pc = self.state.pc.wrapping_add(imm);
-              }
-              Opcode::JALR => {
-                  let (rd, rs1, imm) = operation.i_type();
-                  (b, c) = (self.rr(rs1, MemoryAccessPosition::B), imm);
-                  a = self.state.pc + 4;
-                  self.rw(rd, a);
-                  next_pc = b.wrapping_add(c);
-              }
-
-              // System instructions.
-              Opcode::ECALL => {
-                  // We peek at register x5 to get the syscall id. The reason we don't `self.rr` this
-                  // register is that we write to it later.
-                  let t0 = Register::X5;
-                  let syscall_id = self.register(t0);
-                  c = self.rr(Register::X11, MemoryAccessPosition::C);
-                  b = self.rr(Register::X10, MemoryAccessPosition::B);
-                  let syscall = SyscallCode::from_u32(syscall_id);
-
-                  if self.print_report && !self.unconstrained {
-                      self.report.syscall_counts[syscall] += 1;
-                  }
-
-                  // `hint_slice` is allowed in unconstrained mode since it is used to write the hint.
-                  // Other syscalls are not allowed because they can lead to non-deterministic
-                  // behavior, especially since many syscalls modify memory in place,
-                  // which is not permitted in unconstrained mode. This will result in
-                  // non-zero memory interactions when generating a proof.
-
-                  if self.unconstrained
-                      && (syscall != SyscallCode::EXIT_UNCONSTRAINED && syscall != SyscallCode::WRITE)
-                  {
-                      return Err(ExecutionError::InvalidSyscallUsage(syscall_id as u64));
-                  }
-
-                  // Update the syscall counts.
-                  let syscall_for_count = syscall.count_map();
-                  let syscall_count = self
-                      .state
-                      .syscall_counts
-                      .entry(syscall_for_count)
-                      .or_insert(0);
-                  let (threshold, multiplier) = match syscall_for_count {
-                      SyscallCode::KECCAK_PERMUTE => (self.opts.split_opts.keccak, 24),
-                      SyscallCode::SHA_EXTEND => (self.opts.split_opts.sha_extend, 48),
-                      SyscallCode::SHA_COMPRESS => (self.opts.split_opts.sha_compress, 80),
-                      _ => (self.opts.split_opts.deferred, 1),
-                  };
-                  let nonce = (((*syscall_count as usize) % threshold) * multiplier) as u32;
-                  self.record.nonce_lookup[syscall_lookup_id.0 as usize] = nonce;
-                  *syscall_count += 1;
-
-                  let syscall_impl = self.get_syscall(syscall).cloned();
-                  if syscall.should_send() != 0 && self.executor_mode == ExecutorMode::Trace {
-                      self.emit_syscall(clk, syscall.syscall_id(), b, c, syscall_lookup_id);
-                  }
-                  let mut precompile_rt = SyscallContext::new(self);
-                  precompile_rt.syscall_lookup_id = syscall_lookup_id;
-                  let (precompile_next_pc, precompile_cycles, returned_exit_code) =
-                      if let Some(syscall_impl) = syscall_impl {
-                          // Executing a syscall optionally returns a value to write to the t0
-                          // register. If it returns None, we just keep the
-                          // syscall_id in t0.
-                          let res = syscall_impl.execute(&mut precompile_rt, syscall, b, c);
-                          if let Some(val) = res {
-                              a = val;
-                          } else {
-                              a = syscall_id;
-                          }
-
-                          // If the syscall is `HALT` and the exit code is non-zero, return an error.
-                          if syscall == SyscallCode::HALT && precompile_rt.exit_code != 0 {
-                              return Err(ExecutionError::HaltWithNonZeroExitCode(
-                                  precompile_rt.exit_code,
-                              ));
-                          }
-
-                          (
-                              precompile_rt.next_pc,
-                              syscall_impl.num_extra_cycles(),
-                              precompile_rt.exit_code,
-                          )
-                      } else {
-                          return Err(ExecutionError::UnsupportedSyscall(syscall_id));
-                      };
-
-                  // Allow the syscall impl to modify state.clk/pc (exit unconstrained does this)
-                  clk = self.state.clk;
-                  pc = self.state.pc;
-
-                  self.rw(t0, a);
-                  next_pc = precompile_next_pc;
-                  self.state.clk += precompile_cycles;
-                  exit_code = returned_exit_code;
-              }
-               */
+                unreachable!("Unimplemented operation: {:?}", instruction);
+            }
         }
 
         // Update the program counter.
-        match operation {
-            Operation::Jump(_, _)
-            | Operation::Jumpi(_, _)
-            | Operation::JumpDirect(_, _)
-            | Operation::Branch(_, _, _, _) => {
-                // Do nothing
-            }
-            _ => {
-                self.state.pc = next_pc;
-            }
-        };
+        self.state.pc = next_pc;
+        self.state.next_pc = next_next_pc;
 
         // Update the clk to the next cycle.
         self.state.clk += 4;
@@ -1119,6 +1070,7 @@ impl<'a> Executor<'a> {
                 clk,
                 pc,
                 next_pc,
+                next_next_pc,
                 a,
                 b,
                 c,
@@ -1133,186 +1085,275 @@ impl<'a> Executor<'a> {
 
     fn execute_alu(
         &mut self,
-        op: BinaryOperator,
-        rs: u8,
-        rt: u8,
-        rd: u8,
+        instruction: &Instruction,
         lookup_id: LookupId,
     ) -> (Option<u32>, u32, u32, u32) {
-        let c = self.rr(rt.into(), MemoryAccessPosition::C);
-        let b = self.rr(rs.into(), MemoryAccessPosition::B);
+        let (rd, b, c) = self.alu_rr(instruction);
+        let (a, hi) = match instruction.opcode {
+            Opcode::ADD => (b.overflowing_add(c).0, 0),
+            Opcode::ADDU => (b.overflowing_add(c).0, 0),
+            Opcode::ADDI => {
+                let sein = sign_extend::<16>(c);
+                (b.overflowing_add(sein).0, 0)
+            }
+            Opcode::ADDIU => {
+                let sein = sign_extend::<16>(c);
+                (b.overflowing_add(sein).0, 0)
+            }
+            Opcode::SUB => (b.overflowing_sub(c).0, 0),
+            Opcode::SUBU => (b.overflowing_sub(c).0, 0),
 
-        let (a, hi) = op.result(b, c);
+            Opcode::SLL => (if c > 31 { 0 } else { b << c }, 0),
+            Opcode::SRL => (if c > 31 { 0 } else { b >> c }, 0),
+            Opcode::SRA => {
+                let sin = b as i32;
+                let sout = if c > 31 { 0 } else { sin >> c };
+                (sout as u32, 0)
+            }
 
-        self.alu_rw(op, rd.into(), hi, a, b, c, lookup_id)
-    }
+            Opcode::SLLV => (b << (c & 0x1f), 0),
+            Opcode::SRLV => (b >> (c & 0x1F), 0),
+            Opcode::SRAV => {
+                // same as SRA
+                let sin = b as i32;
+                let sout = sin >> (c & 0x1f);
+                (sout as u32, 0)
+            }
+            Opcode::MUL => (b.overflowing_mul(c).0, 0),
+            Opcode::SLTU => {
+                if b < c {
+                    (1, 0)
+                } else {
+                    (0, 0)
+                }
+            }
+            Opcode::SLT => {
+                if (b as i32) < (c as i32) {
+                    (1, 0)
+                } else {
+                    (0, 0)
+                }
+            }
+            Opcode::SLTIU => {
+                let out = sign_extend::<16>(c);
+                if b < out {
+                    (1, 0)
+                } else {
+                    (0, 0)
+                }
+            }
+            Opcode::SLTI => {
+                let out = sign_extend::<16>(c);
+                if (b as i32) < (out as i32) {
+                    (1, 0)
+                } else {
+                    (0, 0)
+                }
+            }
+            Opcode::LUI => {
+                let out = sign_extend::<16>(b);
+                (out.overflowing_shl(16).0, 0)
+            }
 
-    fn execute_alu_imm(
-        &mut self,
-        op: BinaryOperator,
-        rs: u8,
-        rt: u8,
-        imm: u32,
-        lookup_id: LookupId,
-    ) -> (Option<u32>, u32, u32, u32) {
-        // let c = self.rr(rt.into(), MemoryAccessPosition::C);
-        let b = self.rr(rs.into(), MemoryAccessPosition::B);
-        let c = if op.is_logic() {
-            imm
-        } else {
-            sign_extend::<16>(imm)
+            Opcode::MULT => {
+                let out = (((b as i32) as i64) * ((c as i32) as i64)) as u64;
+                (out as u32, (out >> 32) as u32) // lo,hi
+            }
+            Opcode::MULTU => {
+                let out = b as u64 * c as u64;
+                (out as u32, (out >> 32) as u32) //lo,hi
+            }
+            Opcode::DIV => (
+                ((b as i32) / (c as i32)) as u32, // lo
+                ((b as i32) % (c as i32)) as u32, // hi
+            ),
+            Opcode::DIVU => (b / c, b % c), //lo,hi
+            Opcode::MFHI | Opcode::MTHI | Opcode::MFLO | Opcode::MTLO => (b, 0),
+            Opcode::AND => (b & c, 0),
+            Opcode::OR => (b | c, 0),
+            Opcode::XOR => (b ^ c, 0),
+            Opcode::NOR => (!(b | c), 0),
+            _ => {
+                unreachable!()
+            }
         };
-        self.rw(rt.into(), c);
 
-        let (a, hi) = op.result(b, c);
-
-        self.alu_rw(op, rt.into(), hi, a, b, c, lookup_id)
+        self.alu_rw(&instruction, rd, hi, a, b, c, lookup_id)
     }
 
     fn execute_load(
         &mut self,
-        op: MemOp,
-        base: u8,
-        rt_reg: u8,
-        offset: u32,
+        instruction: &Instruction,
     ) -> Result<(u32, u32, u32), ExecutionError> {
-        todo!()
-        // let (rd, b, c, addr, memory_read_value) = self.load_rr(instruction);
-        // let a = match instruction.opcode {
-        //     Opcode::LB => ((memory_read_value >> ((addr % 4) * 8)) & 0xFF) as i8 as i32 as u32,
-        //     Opcode::LH => {
-        //         if addr % 2 != 0 {
-        //             return Err(ExecutionError::InvalidMemoryAccess(Opcode::LH, addr));
-        //         }
-        //         ((memory_read_value >> (((addr / 2) % 2) * 16)) & 0xFFFF) as i16 as i32 as u32
-        //     }
-        //     Opcode::LW => {
-        //         if addr % 4 != 0 {
-        //             return Err(ExecutionError::InvalidMemoryAccess(Opcode::LW, addr));
-        //         }
-        //         memory_read_value
-        //     }
-        //     Opcode::LBU => (memory_read_value >> ((addr % 4) * 8)) & 0xFF,
-        //     Opcode::LHU => {
-        //         if addr % 2 != 0 {
-        //             return Err(ExecutionError::InvalidMemoryAccess(Opcode::LHU, addr));
-        //         }
-        //         (memory_read_value >> (((addr / 2) % 2) * 16)) & 0xFFFF
-        //     }
-        //     _ => unreachable!(),
-        // };
-        // self.rw(rd, a);
-        // Ok((a, b, c))
+        let (rt_reg, rt, rs, offset, mem) = self.load_rr(instruction);
+        let val = match instruction.opcode {
+            Opcode::LH => {
+                let mem_fc = |i: u32| -> u32 { sign_extend::<16>((mem >> (16 - i * 8)) & 0xffff) };
+                mem_fc(rs & 2)
+            }
+            Opcode::LWL => {
+                let out = |i: u32| -> u32 {
+                    let val = mem << (i * 8);
+                    let mask: u32 = 0xffFFffFFu32 << (i * 8);
+                    (rt & (!mask)) | val
+                };
+                out(rs & 3)
+            }
+            Opcode::LW => mem,
+            Opcode::LBU => {
+                let out = |i: u32| -> u32 { (mem >> (24 - i * 8)) & 0xff };
+                out(rs & 3)
+            }
+            Opcode::LHU => {
+                let mem_fc = |i: u32| -> u32 { (mem >> (16 - i * 8)) & 0xffff };
+                mem_fc(rs & 2)
+            }
+            Opcode::LWR => {
+                let out = |i: u32| -> u32 {
+                    let val = mem >> (24 - i * 8);
+                    let mask = 0xffFFffFFu32 >> (24 - i * 8);
+                    (rt & (!mask)) | val
+                };
+                out(rs & 3)
+            }
+            Opcode::LL => mem,
+            Opcode::LB => {
+                let out = |i: u32| -> u32 { sign_extend::<8>((mem >> (24 - i * 8)) & 0xff) };
+                out(rs & 3)
+            }
+            _ => unreachable!(),
+        };
+        self.rw(rt_reg, val);
+        Ok((rs, val, offset))
     }
 
     fn execute_store(
         &mut self,
-        op: MemOp,
-        base: u8,
-        rt_reg: u8,
-        offset: u32,
+        instruction: &Instruction,
     ) -> Result<(u32, u32, u32), ExecutionError> {
-        todo!()
-        // let (a, b, c, addr, memory_read_value) = self.store_rr(instruction);
-        // let memory_store_value = match instruction.opcode {
-        //     Opcode::SB => {
-        //         let shift = (addr % 4) * 8;
-        //         ((a & 0xFF) << shift) | (memory_read_value & !(0xFF << shift))
-        //     }
-        //     Opcode::SH => {
-        //         if addr % 2 != 0 {
-        //             return Err(ExecutionError::InvalidMemoryAccess(Opcode::SH, addr));
-        //         }
-        //         let shift = ((addr / 2) % 2) * 16;
-        //         ((a & 0xFFFF) << shift) | (memory_read_value & !(0xFFFF << shift))
-        //     }
-        //     Opcode::SW => {
-        //         if addr % 4 != 0 {
-        //             return Err(ExecutionError::InvalidMemoryAccess(Opcode::SW, addr));
-        //         }
-        //         a
-        //     }
-        //     _ => unreachable!(),
-        // };
-        // self.mw_cpu(
-        //     align(addr),
-        //     memory_store_value,
-        //     MemoryAccessPosition::Memory,
-        // );
-        // Ok((a, b, c))
+        let (rs, rt, virt_raw, offset, mem, rt_reg) = self.store_rr(instruction);
+        let val = match instruction.opcode {
+            Opcode::SB => {
+                let out = |i: u32| -> u32 {
+                    let val = (rt & 0xff) << (24 - i * 8);
+                    let mask = 0xffFFffFFu32 ^ (0xff << (24 - i * 8));
+                    (mem & mask) | val
+                };
+                out(virt_raw & 3)
+            }
+            Opcode::SH => {
+                let mem_fc = |i: u32| -> u32 {
+                    let val = (rt & 0xffff) << (16 - i * 8);
+                    let mask = 0xffFFffFFu32 ^ (0xffff << (16 - i * 8));
+                    (mem & mask) | val
+                };
+                mem_fc(virt_raw & 2)
+            }
+            Opcode::SWL => {
+                let out = |i: u32| -> u32 {
+                    let val = rt >> (i * 8);
+                    let mask = 0xffFFffFFu32 >> (i * 8);
+                    (mem & (!mask)) | val
+                };
+                out(virt_raw & 3)
+            }
+            Opcode::SW => rt,
+            Opcode::SWR => {
+                let out = |i: u32| -> u32 {
+                    let val = rt << (24 - (virt_raw & i) * 8);
+                    let mask = 0xffFFffFFu32 << (24 - i * 8);
+                    (mem & (!mask)) | val
+                };
+                out(virt_raw & 3)
+            }
+            Opcode::SC => rt,
+            Opcode::SDC1 => 0,
+            _ => todo!(),
+        };
+        self.mw_cpu(
+            virt_raw & 0xFFFF_FFFC, // align addr
+            val,
+            MemoryAccessPosition::Memory,
+        );
+        if instruction.opcode == Opcode::SC {
+            self.rw(rt_reg, val);
+        }
+        Ok((rs, rt, offset))
     }
 
     fn execute_branch(
         &mut self,
-        cond: BranchCond,
-        src1: u8,
-        src2: u8,
-        target: u32,
-        mut next_pc: u32,
+        instruction: &Instruction,
+        next_pc: u32,
+        mut next_next_pc: u32,
     ) -> (u32, u32, u32, u32) {
-        todo!()
-        // let (a, b, c) = self.branch_rr(instruction);
-        // let branch = match instruction.opcode {
-        //     Opcode::BEQ => a == b,
-        //     Opcode::BNE => a != b,
-        //     Opcode::BLT => (a as i32) < (b as i32),
-        //     Opcode::BGE => (a as i32) >= (b as i32),
-        //     Opcode::BLTU => a < b,
-        //     Opcode::BGEU => a >= b,
-        //     _ => {
-        //         unreachable!()
-        //     }
-        // };
-        // if branch {
-        //     next_pc = self.state.pc.wrapping_add(c);
-        // }
-        // (a, b, c, next_pc)
+        let (src1, src2, target) = self.branch_rr(instruction);
+        let should_jump = match instruction.opcode {
+            Opcode::BEQ => src1 == src2,
+            Opcode::BNE => src1 != src2,
+            Opcode::BGE => (src1 as i32) >= (src2 as i32),
+            Opcode::BLE => (src1 as i32) <= (src2 as i32),
+            Opcode::BGT => (src1 as i32) > (src2 as i32),
+            Opcode::BLT => (src1 as i32) < (src2 as i32),
+            _ => {
+                unreachable!()
+            }
+        };
+
+        let target = sign_extend::<16>(target);
+        let (mut target_pc, _) = target.overflowing_shl(2);
+
+        if should_jump {
+            next_next_pc = target_pc.wrapping_add(next_pc);
+        }
+        (src1, src2, target, next_next_pc)
     }
 
-    fn execute_jump(&mut self, link: u8, target: u8, mut next_pc: u32) -> (u32, u32, u32, u32) {
-        todo!()
-        // let (a, b, c) = self.branch_rr(instruction);
-        // let branch = match instruction.opcode {
-        //     Opcode::BEQ => a == b,
-        //     Opcode::BNE => a != b,
-        //     Opcode::BLT => (a as i32) < (b as i32),
-        //     Opcode::BGE => (a as i32) >= (b as i32),
-        //     Opcode::BLTU => a < b,
-        //     Opcode::BGEU => a >= b,
-        //     _ => {
-        //         unreachable!()
-        //     }
-        // };
-        // if branch {
-        //     next_pc = self.state.pc.wrapping_add(c);
-        // }
-        // (a, b, c, next_pc)
+    fn execute_jump(&mut self, instruction: &Instruction) -> (u32, u32, u32, u32) {
+        let (link, target, c) = (
+            instruction.op_a.into(),
+            (instruction.op_b as u8).into(),
+            instruction.op_c,
+        );
+        let target_pc = self.rr(target, MemoryAccessPosition::B);
+        // maybe rename it
+        let next_pc = self.state.pc.wrapping_add(8);
+        self.rw(link, next_pc);
+
+        (next_pc, target_pc, c, target_pc)
     }
-    fn execute_jumpi(&mut self, link: u8, target: u32, mut next_pc: u32) -> (u32, u32, u32, u32) {
+    fn execute_jumpi(&mut self, instruction: &Instruction) -> (u32, u32, u32, u32) {
         todo!()
     }
-    fn execute_jump_direct(
-        &mut self,
-        link: u8,
-        target: u32,
-        mut next_pc: u32,
-    ) -> (u32, u32, u32, u32) {
-        todo!()
+    fn execute_jump_direct(&mut self, instruction: &Instruction) -> (u32, u32, u32, u32) {
+        let (link, imm, c) = (instruction.op_a.into(), instruction.op_b, instruction.op_c);
+
+        let target = sign_extend::<16>(imm);
+        let (target_pc, _) = target.overflowing_shl(2);
+        //todo: check if necessary
+        self.rw(Register::ZERO, target_pc);
+        let pc = self.state.pc;
+        let target_pc = target_pc.wrapping_add(pc + 4);
+        // maybe rename it
+        let next_pc = pc.wrapping_add(8);
+        self.rw(link, next_pc);
+
+        (next_pc, imm, c, target_pc)
     }
 
     /// Executes one cycle of the program, returning whether the program has finished.
     #[inline]
     #[allow(clippy::too_many_lines)]
-    fn execute_cycle(&mut self, step: usize) -> Result<bool, ExecutionError> {
+    fn execute_cycle(&mut self) -> Result<bool, ExecutionError> {
         // Fetch the instruction at the current program counter.
-        let operation = self.fetch();
+        let instruction = self.fetch();
 
         // Log the current state of the runtime.
         #[cfg(debug_assertions)]
-        self.log(&operation);
+        self.log(&instruction);
 
         // Execute the instruction.
-        self.execute_operation(operation)?;
+        self.execute_operation(&instruction)?;
 
         // Increment the clock.
         self.state.global_clk += 1;
@@ -1327,37 +1368,37 @@ impl<'a> Executor<'a> {
             let mut shape_match_found = true;
             if self.state.global_clk % 16 == 0 {
                 // todo: MFHI/MTHI/MFLO/MTLO/LUI or others?
-                let addsub_count = (self.report.event_counts[BinaryOperator::ADD]
-                    + self.report.event_counts[BinaryOperator::ADDI]
-                    + self.report.event_counts[BinaryOperator::ADDU]
-                    + self.report.event_counts[BinaryOperator::ADDIU]
-                    + self.report.event_counts[BinaryOperator::SUB]
-                    + self.report.event_counts[BinaryOperator::SUBU])
+                let addsub_count = (self.report.event_counts[Opcode::ADD]
+                    + self.report.event_counts[Opcode::ADDI]
+                    + self.report.event_counts[Opcode::ADDU]
+                    + self.report.event_counts[Opcode::ADDIU]
+                    + self.report.event_counts[Opcode::SUB]
+                    + self.report.event_counts[Opcode::SUBU])
                     as usize;
-                let mul_count = (self.report.event_counts[BinaryOperator::MUL]
-                    + self.report.event_counts[BinaryOperator::MULT]
-                    + self.report.event_counts[BinaryOperator::MULTU])
+                let mul_count = (self.report.event_counts[Opcode::MUL]
+                    + self.report.event_counts[Opcode::MULT]
+                    + self.report.event_counts[Opcode::MULTU])
                     as usize;
-                let bitwise_count = (self.report.event_counts[BinaryOperator::XOR]
-                    + self.report.event_counts[BinaryOperator::OR]
-                    + self.report.event_counts[BinaryOperator::NOR]
-                    + self.report.event_counts[BinaryOperator::AND])
+                let bitwise_count = (self.report.event_counts[Opcode::XOR]
+                    + self.report.event_counts[Opcode::OR]
+                    + self.report.event_counts[Opcode::NOR]
+                    + self.report.event_counts[Opcode::AND])
                     as usize;
-                let shift_left_count = (self.report.event_counts[BinaryOperator::SLL]
-                    + self.report.event_counts[BinaryOperator::SLLV])
+                let shift_left_count = (self.report.event_counts[Opcode::SLL]
+                    + self.report.event_counts[Opcode::SLLV])
                     as usize;
-                let shift_right_count = (self.report.event_counts[BinaryOperator::SRL]
-                    + self.report.event_counts[BinaryOperator::SRA]
-                    + self.report.event_counts[BinaryOperator::SRLV]
-                    + self.report.event_counts[BinaryOperator::SRAV])
+                let shift_right_count = (self.report.event_counts[Opcode::SRL]
+                    + self.report.event_counts[Opcode::SRA]
+                    + self.report.event_counts[Opcode::SRLV]
+                    + self.report.event_counts[Opcode::SRAV])
                     as usize;
-                let divrem_count = (self.report.event_counts[BinaryOperator::DIV]
-                    + self.report.event_counts[BinaryOperator::DIVU])
+                let divrem_count = (self.report.event_counts[Opcode::DIV]
+                    + self.report.event_counts[Opcode::DIVU])
                     as usize;
-                let lt_count = (self.report.event_counts[BinaryOperator::SLT]
-                    + self.report.event_counts[BinaryOperator::SLTU]
-                    + self.report.event_counts[BinaryOperator::SLTIU]
-                    + self.report.event_counts[BinaryOperator::SLTI])
+                let lt_count = (self.report.event_counts[Opcode::SLT]
+                    + self.report.event_counts[Opcode::SLTU]
+                    + self.report.event_counts[Opcode::SLTIU]
+                    + self.report.event_counts[Opcode::SLTI])
                     as usize;
 
                 if let Some(maximal_shapes) = &self.maximal_shapes {
@@ -1464,7 +1505,10 @@ impl<'a> Executor<'a> {
             }
         }
 
-        let done = self.state.pc == 0 || step + 1 == self.program.step;
+        // todo: check done
+        let done = self.state.pc == 0
+            || self.state.pc.wrapping_sub(self.program.pc_base)
+                >= (self.program.instructions.len() * 4) as u32;
         if done && self.unconstrained {
             log::error!(
                 "program ended in unconstrained mode at clk {}",
@@ -1641,13 +1685,11 @@ impl<'a> Executor<'a> {
         let mut done = false;
         let mut current_shard = self.state.current_shard;
         let mut num_shards_executed = 0;
-        let mut step = 0;
         loop {
-            if self.execute_cycle(step)? {
+            if self.execute_cycle()? {
                 done = true;
                 break;
             }
-            step += 1;
 
             if self.shard_batch_size > 0 && current_shard != self.state.current_shard {
                 num_shards_executed += 1;
@@ -1794,7 +1836,7 @@ impl<'a> Executor<'a> {
 
     #[inline]
     #[cfg(debug_assertions)]
-    fn log(&mut self, _: &Operation) {
+    fn log(&mut self, _: &Instruction) {
         // Write the current program counter to the trace buffer for the cycle tracer.
         if let Some(ref mut buf) = self.trace_buf {
             if !self.unconstrained {
@@ -1829,20 +1871,18 @@ fn log2_ceil_usize(n: usize) -> usize {
     (usize::BITS - n.saturating_sub(1).leading_zeros()) as usize
 }
 
-/*
 #[cfg(test)]
 mod tests {
+    use zkm2_stark::ZKMCoreOpts;
 
-    use sp1_stark::ZKMCoreOpts;
+    // use crate::programs::tests::{
+    //     fibonacci_program, panic_program, secp256r1_add_program, secp256r1_double_program,
+    //     simple_memory_program, simple_program, ssz_withdrawals_program, u256xu2048_mul_program,
+    // };
 
-    use crate::programs::tests::{
-        fibonacci_program, panic_program, secp256r1_add_program, secp256r1_double_program,
-        simple_memory_program, simple_program, ssz_withdrawals_program, u256xu2048_mul_program,
-    };
+    use crate::{Instruction, Opcode, Register};
 
-    use crate::Register;
-
-    use super::{Executor, Instruction, Opcode, Program};
+    use super::{Executor, Program};
 
     fn _assert_send<T: Send>() {}
 
@@ -1851,63 +1891,63 @@ mod tests {
         _assert_send::<Executor>();
     }
 
-    #[test]
-    fn test_simple_program_run() {
-        let program = simple_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 42);
-    }
-
-    #[test]
-    fn test_fibonacci_program_run() {
-        let program = fibonacci_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
-    #[test]
-    fn test_secp256r1_add_program_run() {
-        let program = secp256r1_add_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
-    #[test]
-    fn test_secp256r1_double_program_run() {
-        let program = secp256r1_double_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
-    #[test]
-    fn test_u256xu2048_mul() {
-        let program = u256xu2048_mul_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
-    #[test]
-    fn test_ssz_withdrawals_program_run() {
-        let program = ssz_withdrawals_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_panic() {
-        let program = panic_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-    }
-
+    // #[test]
+    // fn test_simple_program_run() {
+    //     let program = simple_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    //     assert_eq!(runtime.register(Register::RA), 42);
+    // }
+    //
+    // #[test]
+    // fn test_fibonacci_program_run() {
+    //     let program = fibonacci_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
+    // #[test]
+    // fn test_secp256r1_add_program_run() {
+    //     let program = secp256r1_add_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
+    // #[test]
+    // fn test_secp256r1_double_program_run() {
+    //     let program = secp256r1_double_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
+    // #[test]
+    // fn test_u256xu2048_mul() {
+    //     let program = u256xu2048_mul_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
+    // #[test]
+    // fn test_ssz_withdrawals_program_run() {
+    //     let program = ssz_withdrawals_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
+    // #[test]
+    // #[should_panic]
+    // fn test_panic() {
+    //     let program = panic_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    // }
+    //
     #[test]
     fn test_add() {
         // main:
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     add x31, x30, x29
+        //     add RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -1916,14 +1956,14 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 42);
+        assert_eq!(runtime.register(Register::RA), 42);
     }
 
     #[test]
     fn test_sub() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     sub x31, x30, x29
+        //     sub RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -1933,14 +1973,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 32);
+        assert_eq!(runtime.register(Register::RA), 32);
     }
 
     #[test]
     fn test_xor() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     xor x31, x30, x29
+        //     xor RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -1950,14 +1990,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 32);
+        assert_eq!(runtime.register(Register::RA), 32);
     }
 
     #[test]
     fn test_or() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     or x31, x30, x29
+        //     or RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -1968,14 +2008,14 @@ mod tests {
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
 
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 37);
+        assert_eq!(runtime.register(Register::RA), 37);
     }
 
     #[test]
     fn test_and() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     and x31, x30, x29
+        //     and RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -1985,14 +2025,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 5);
+        assert_eq!(runtime.register(Register::RA), 5);
     }
 
     #[test]
     fn test_sll() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     sll x31, x30, x29
+        //     sll RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -2002,14 +2042,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 1184);
+        assert_eq!(runtime.register(Register::RA), 1184);
     }
 
     #[test]
     fn test_srl() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     srl x31, x30, x29
+        //     srl RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -2019,14 +2059,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 1);
+        assert_eq!(runtime.register(Register::RA), 1);
     }
 
     #[test]
     fn test_sra() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     sra x31, x30, x29
+        //     sra RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -2036,14 +2076,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 1);
+        assert_eq!(runtime.register(Register::RA), 1);
     }
 
     #[test]
     fn test_slt() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     slt x31, x30, x29
+        //     slt RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -2053,14 +2093,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 0);
+        assert_eq!(runtime.register(Register::RA), 0);
     }
 
     #[test]
     fn test_sltu() {
         //     addi x29, x0, 5
         //     addi x30, x0, 37
-        //     sltu x31, x30, x29
+        //     sltu RA, x30, x29
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 37, false, true),
@@ -2070,14 +2110,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 0);
+        assert_eq!(runtime.register(Register::RA), 0);
     }
 
     #[test]
     fn test_addi() {
         //     addi x29, x0, 5
         //     addi x30, x29, 37
-        //     addi x31, x30, 42
+        //     addi RA, x30, 42
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 29, 37, false, true),
@@ -2087,14 +2127,14 @@ mod tests {
 
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 84);
+        assert_eq!(runtime.register(Register::RA), 84);
     }
 
     #[test]
     fn test_addi_negative() {
         //     addi x29, x0, 5
         //     addi x30, x29, -1
-        //     addi x31, x30, 4
+        //     addi RA, x30, 4
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::ADD, 30, 29, 0xFFFF_FFFF, false, true),
@@ -2103,14 +2143,14 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 5 - 1 + 4);
+        assert_eq!(runtime.register(Register::RA), 5 - 1 + 4);
     }
 
     #[test]
     fn test_xori() {
         //     addi x29, x0, 5
         //     xori x30, x29, 37
-        //     xori x31, x30, 42
+        //     xori RA, x30, 42
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::XOR, 30, 29, 37, false, true),
@@ -2119,14 +2159,14 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 10);
+        assert_eq!(runtime.register(Register::RA), 10);
     }
 
     #[test]
     fn test_ori() {
         //     addi x29, x0, 5
         //     ori x30, x29, 37
-        //     ori x31, x30, 42
+        //     ori RA, x30, 42
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::OR, 30, 29, 37, false, true),
@@ -2135,14 +2175,14 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 47);
+        assert_eq!(runtime.register(Register::RA), 47);
     }
 
     #[test]
     fn test_andi() {
         //     addi x29, x0, 5
         //     andi x30, x29, 37
-        //     andi x31, x30, 42
+        //     andi RA, x30, 42
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::AND, 30, 29, 37, false, true),
@@ -2151,13 +2191,13 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 0);
+        assert_eq!(runtime.register(Register::RA), 0);
     }
 
     #[test]
     fn test_slli() {
         //     addi x29, x0, 5
-        //     slli x31, x29, 37
+        //     slli RA, x29, 37
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 5, false, true),
             Instruction::new(Opcode::SLL, 31, 29, 4, false, true),
@@ -2165,13 +2205,13 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 80);
+        assert_eq!(runtime.register(Register::RA), 80);
     }
 
     #[test]
     fn test_srli() {
         //    addi x29, x0, 5
-        //    srli x31, x29, 37
+        //    srli RA, x29, 37
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 42, false, true),
             Instruction::new(Opcode::SRL, 31, 29, 4, false, true),
@@ -2179,13 +2219,13 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 2);
+        assert_eq!(runtime.register(Register::RA), 2);
     }
 
     #[test]
     fn test_srai() {
         //   addi x29, x0, 5
-        //   srai x31, x29, 37
+        //   srai RA, x29, 37
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 42, false, true),
             Instruction::new(Opcode::SRA, 31, 29, 4, false, true),
@@ -2193,13 +2233,13 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 2);
+        assert_eq!(runtime.register(Register::RA), 2);
     }
 
     #[test]
     fn test_slti() {
         //   addi x29, x0, 5
-        //   slti x31, x29, 37
+        //   slti RA, x29, 37
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 42, false, true),
             Instruction::new(Opcode::SLT, 31, 29, 37, false, true),
@@ -2207,13 +2247,13 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 0);
+        assert_eq!(runtime.register(Register::RA), 0);
     }
 
     #[test]
     fn test_sltiu() {
         //   addi x29, x0, 5
-        //   sltiu x31, x29, 37
+        //   sltiu RA, x29, 37
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 42, false, true),
             Instruction::new(Opcode::SLTU, 31, 29, 37, false, true),
@@ -2221,248 +2261,247 @@ mod tests {
         let program = Program::new(instructions, 0, 0);
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
         runtime.run().unwrap();
-        assert_eq!(runtime.register(Register::X31), 0);
+        assert_eq!(runtime.register(Register::RA), 0);
     }
 
-    #[test]
-    fn test_jalr() {
-        //   addi x11, x11, 100
-        //   jalr x5, x11, 8
-        //
-        // `JALR rd offset(rs)` reads the value at rs, adds offset to it and uses it as the
-        // destination address. It then stores the address of the next instruction in rd in case
-        // we'd want to come back here.
-
-        let instructions = vec![
-            Instruction::new(Opcode::ADD, 11, 11, 100, false, true),
-            Instruction::new(Opcode::JALR, 5, 11, 8, false, true),
-        ];
-        let program = Program::new(instructions, 0, 0);
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-        assert_eq!(runtime.registers()[Register::X5 as usize], 8);
-        assert_eq!(runtime.registers()[Register::X11 as usize], 100);
-        assert_eq!(runtime.state.pc, 108);
-    }
-
-    fn simple_op_code_test(opcode: Opcode, expected: u32, a: u32, b: u32) {
-        let instructions = vec![
-            Instruction::new(Opcode::ADD, 10, 0, a, false, true),
-            Instruction::new(Opcode::ADD, 11, 0, b, false, true),
-            Instruction::new(opcode, 12, 10, 11, false, false),
-        ];
-        let program = Program::new(instructions, 0, 0);
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-        assert_eq!(runtime.registers()[Register::X12 as usize], expected);
-    }
-
-    #[test]
-    #[allow(clippy::unreadable_literal)]
-    fn multiplication_tests() {
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000000, 0x00000000);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000001, 0x00000001);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000003, 0x00000007);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000000, 0xffff8000);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x80000000, 0x00000000);
-        simple_op_code_test(Opcode::MULHU, 0x7fffc000, 0x80000000, 0xffff8000);
-        simple_op_code_test(Opcode::MULHU, 0x0001fefe, 0xaaaaaaab, 0x0002fe7d);
-        simple_op_code_test(Opcode::MULHU, 0x0001fefe, 0x0002fe7d, 0xaaaaaaab);
-        simple_op_code_test(Opcode::MULHU, 0xfe010000, 0xff000000, 0xff000000);
-        simple_op_code_test(Opcode::MULHU, 0xfffffffe, 0xffffffff, 0xffffffff);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0xffffffff, 0x00000001);
-        simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000001, 0xffffffff);
-
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000000, 0x00000000);
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000001, 0x00000001);
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000003, 0x00000007);
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000000, 0xffff8000);
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x80000000, 0x00000000);
-        simple_op_code_test(Opcode::MULHSU, 0x80004000, 0x80000000, 0xffff8000);
-        simple_op_code_test(Opcode::MULHSU, 0xffff0081, 0xaaaaaaab, 0x0002fe7d);
-        simple_op_code_test(Opcode::MULHSU, 0x0001fefe, 0x0002fe7d, 0xaaaaaaab);
-        simple_op_code_test(Opcode::MULHSU, 0xff010000, 0xff000000, 0xff000000);
-        simple_op_code_test(Opcode::MULHSU, 0xffffffff, 0xffffffff, 0xffffffff);
-        simple_op_code_test(Opcode::MULHSU, 0xffffffff, 0xffffffff, 0x00000001);
-        simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000001, 0xffffffff);
-
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000000, 0x00000000);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000001, 0x00000001);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000003, 0x00000007);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000000, 0xffff8000);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x80000000, 0x00000000);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0x80000000, 0x00000000);
-        simple_op_code_test(Opcode::MULH, 0xffff0081, 0xaaaaaaab, 0x0002fe7d);
-        simple_op_code_test(Opcode::MULH, 0xffff0081, 0x0002fe7d, 0xaaaaaaab);
-        simple_op_code_test(Opcode::MULH, 0x00010000, 0xff000000, 0xff000000);
-        simple_op_code_test(Opcode::MULH, 0x00000000, 0xffffffff, 0xffffffff);
-        simple_op_code_test(Opcode::MULH, 0xffffffff, 0xffffffff, 0x00000001);
-        simple_op_code_test(Opcode::MULH, 0xffffffff, 0x00000001, 0xffffffff);
-
-        simple_op_code_test(Opcode::MUL, 0x00001200, 0x00007e00, 0xb6db6db7);
-        simple_op_code_test(Opcode::MUL, 0x00001240, 0x00007fc0, 0xb6db6db7);
-        simple_op_code_test(Opcode::MUL, 0x00000000, 0x00000000, 0x00000000);
-        simple_op_code_test(Opcode::MUL, 0x00000001, 0x00000001, 0x00000001);
-        simple_op_code_test(Opcode::MUL, 0x00000015, 0x00000003, 0x00000007);
-        simple_op_code_test(Opcode::MUL, 0x00000000, 0x00000000, 0xffff8000);
-        simple_op_code_test(Opcode::MUL, 0x00000000, 0x80000000, 0x00000000);
-        simple_op_code_test(Opcode::MUL, 0x00000000, 0x80000000, 0xffff8000);
-        simple_op_code_test(Opcode::MUL, 0x0000ff7f, 0xaaaaaaab, 0x0002fe7d);
-        simple_op_code_test(Opcode::MUL, 0x0000ff7f, 0x0002fe7d, 0xaaaaaaab);
-        simple_op_code_test(Opcode::MUL, 0x00000000, 0xff000000, 0xff000000);
-        simple_op_code_test(Opcode::MUL, 0x00000001, 0xffffffff, 0xffffffff);
-        simple_op_code_test(Opcode::MUL, 0xffffffff, 0xffffffff, 0x00000001);
-        simple_op_code_test(Opcode::MUL, 0xffffffff, 0x00000001, 0xffffffff);
-    }
-
-    fn neg(a: u32) -> u32 {
-        u32::MAX - a + 1
-    }
-
-    #[test]
-    fn division_tests() {
-        simple_op_code_test(Opcode::DIVU, 3, 20, 6);
-        simple_op_code_test(Opcode::DIVU, 715_827_879, u32::MAX - 20 + 1, 6);
-        simple_op_code_test(Opcode::DIVU, 0, 20, u32::MAX - 6 + 1);
-        simple_op_code_test(Opcode::DIVU, 0, u32::MAX - 20 + 1, u32::MAX - 6 + 1);
-
-        simple_op_code_test(Opcode::DIVU, 1 << 31, 1 << 31, 1);
-        simple_op_code_test(Opcode::DIVU, 0, 1 << 31, u32::MAX - 1 + 1);
-
-        simple_op_code_test(Opcode::DIVU, u32::MAX, 1 << 31, 0);
-        simple_op_code_test(Opcode::DIVU, u32::MAX, 1, 0);
-        simple_op_code_test(Opcode::DIVU, u32::MAX, 0, 0);
-
-        simple_op_code_test(Opcode::DIV, 3, 18, 6);
-        simple_op_code_test(Opcode::DIV, neg(6), neg(24), 4);
-        simple_op_code_test(Opcode::DIV, neg(2), 16, neg(8));
-        simple_op_code_test(Opcode::DIV, neg(1), 0, 0);
-
-        // Overflow cases
-        simple_op_code_test(Opcode::DIV, 1 << 31, 1 << 31, neg(1));
-        simple_op_code_test(Opcode::REM, 0, 1 << 31, neg(1));
-    }
-
-    #[test]
-    fn remainder_tests() {
-        simple_op_code_test(Opcode::REM, 7, 16, 9);
-        simple_op_code_test(Opcode::REM, neg(4), neg(22), 6);
-        simple_op_code_test(Opcode::REM, 1, 25, neg(3));
-        simple_op_code_test(Opcode::REM, neg(2), neg(22), neg(4));
-        simple_op_code_test(Opcode::REM, 0, 873, 1);
-        simple_op_code_test(Opcode::REM, 0, 873, neg(1));
-        simple_op_code_test(Opcode::REM, 5, 5, 0);
-        simple_op_code_test(Opcode::REM, neg(5), neg(5), 0);
-        simple_op_code_test(Opcode::REM, 0, 0, 0);
-
-        simple_op_code_test(Opcode::REMU, 4, 18, 7);
-        simple_op_code_test(Opcode::REMU, 6, neg(20), 11);
-        simple_op_code_test(Opcode::REMU, 23, 23, neg(6));
-        simple_op_code_test(Opcode::REMU, neg(21), neg(21), neg(11));
-        simple_op_code_test(Opcode::REMU, 5, 5, 0);
-        simple_op_code_test(Opcode::REMU, neg(1), neg(1), 0);
-        simple_op_code_test(Opcode::REMU, 0, 0, 0);
-    }
-
-    #[test]
-    #[allow(clippy::unreadable_literal)]
-    fn shift_tests() {
-        simple_op_code_test(Opcode::SLL, 0x00000001, 0x00000001, 0);
-        simple_op_code_test(Opcode::SLL, 0x00000002, 0x00000001, 1);
-        simple_op_code_test(Opcode::SLL, 0x00000080, 0x00000001, 7);
-        simple_op_code_test(Opcode::SLL, 0x00004000, 0x00000001, 14);
-        simple_op_code_test(Opcode::SLL, 0x80000000, 0x00000001, 31);
-        simple_op_code_test(Opcode::SLL, 0xffffffff, 0xffffffff, 0);
-        simple_op_code_test(Opcode::SLL, 0xfffffffe, 0xffffffff, 1);
-        simple_op_code_test(Opcode::SLL, 0xffffff80, 0xffffffff, 7);
-        simple_op_code_test(Opcode::SLL, 0xffffc000, 0xffffffff, 14);
-        simple_op_code_test(Opcode::SLL, 0x80000000, 0xffffffff, 31);
-        simple_op_code_test(Opcode::SLL, 0x21212121, 0x21212121, 0);
-        simple_op_code_test(Opcode::SLL, 0x42424242, 0x21212121, 1);
-        simple_op_code_test(Opcode::SLL, 0x90909080, 0x21212121, 7);
-        simple_op_code_test(Opcode::SLL, 0x48484000, 0x21212121, 14);
-        simple_op_code_test(Opcode::SLL, 0x80000000, 0x21212121, 31);
-        simple_op_code_test(Opcode::SLL, 0x21212121, 0x21212121, 0xffffffe0);
-        simple_op_code_test(Opcode::SLL, 0x42424242, 0x21212121, 0xffffffe1);
-        simple_op_code_test(Opcode::SLL, 0x90909080, 0x21212121, 0xffffffe7);
-        simple_op_code_test(Opcode::SLL, 0x48484000, 0x21212121, 0xffffffee);
-        simple_op_code_test(Opcode::SLL, 0x00000000, 0x21212120, 0xffffffff);
-
-        simple_op_code_test(Opcode::SRL, 0xffff8000, 0xffff8000, 0);
-        simple_op_code_test(Opcode::SRL, 0x7fffc000, 0xffff8000, 1);
-        simple_op_code_test(Opcode::SRL, 0x01ffff00, 0xffff8000, 7);
-        simple_op_code_test(Opcode::SRL, 0x0003fffe, 0xffff8000, 14);
-        simple_op_code_test(Opcode::SRL, 0x0001ffff, 0xffff8001, 15);
-        simple_op_code_test(Opcode::SRL, 0xffffffff, 0xffffffff, 0);
-        simple_op_code_test(Opcode::SRL, 0x7fffffff, 0xffffffff, 1);
-        simple_op_code_test(Opcode::SRL, 0x01ffffff, 0xffffffff, 7);
-        simple_op_code_test(Opcode::SRL, 0x0003ffff, 0xffffffff, 14);
-        simple_op_code_test(Opcode::SRL, 0x00000001, 0xffffffff, 31);
-        simple_op_code_test(Opcode::SRL, 0x21212121, 0x21212121, 0);
-        simple_op_code_test(Opcode::SRL, 0x10909090, 0x21212121, 1);
-        simple_op_code_test(Opcode::SRL, 0x00424242, 0x21212121, 7);
-        simple_op_code_test(Opcode::SRL, 0x00008484, 0x21212121, 14);
-        simple_op_code_test(Opcode::SRL, 0x00000000, 0x21212121, 31);
-        simple_op_code_test(Opcode::SRL, 0x21212121, 0x21212121, 0xffffffe0);
-        simple_op_code_test(Opcode::SRL, 0x10909090, 0x21212121, 0xffffffe1);
-        simple_op_code_test(Opcode::SRL, 0x00424242, 0x21212121, 0xffffffe7);
-        simple_op_code_test(Opcode::SRL, 0x00008484, 0x21212121, 0xffffffee);
-        simple_op_code_test(Opcode::SRL, 0x00000000, 0x21212121, 0xffffffff);
-
-        simple_op_code_test(Opcode::SRA, 0x00000000, 0x00000000, 0);
-        simple_op_code_test(Opcode::SRA, 0xc0000000, 0x80000000, 1);
-        simple_op_code_test(Opcode::SRA, 0xff000000, 0x80000000, 7);
-        simple_op_code_test(Opcode::SRA, 0xfffe0000, 0x80000000, 14);
-        simple_op_code_test(Opcode::SRA, 0xffffffff, 0x80000001, 31);
-        simple_op_code_test(Opcode::SRA, 0x7fffffff, 0x7fffffff, 0);
-        simple_op_code_test(Opcode::SRA, 0x3fffffff, 0x7fffffff, 1);
-        simple_op_code_test(Opcode::SRA, 0x00ffffff, 0x7fffffff, 7);
-        simple_op_code_test(Opcode::SRA, 0x0001ffff, 0x7fffffff, 14);
-        simple_op_code_test(Opcode::SRA, 0x00000000, 0x7fffffff, 31);
-        simple_op_code_test(Opcode::SRA, 0x81818181, 0x81818181, 0);
-        simple_op_code_test(Opcode::SRA, 0xc0c0c0c0, 0x81818181, 1);
-        simple_op_code_test(Opcode::SRA, 0xff030303, 0x81818181, 7);
-        simple_op_code_test(Opcode::SRA, 0xfffe0606, 0x81818181, 14);
-        simple_op_code_test(Opcode::SRA, 0xffffffff, 0x81818181, 31);
-    }
-
-    #[test]
-    #[allow(clippy::unreadable_literal)]
-    fn test_simple_memory_program_run() {
-        let program = simple_memory_program();
-        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
-
-        // Assert SW & LW case
-        assert_eq!(runtime.register(Register::X28), 0x12348765);
-
-        // Assert LBU cases
-        assert_eq!(runtime.register(Register::X27), 0x65);
-        assert_eq!(runtime.register(Register::X26), 0x87);
-        assert_eq!(runtime.register(Register::X25), 0x34);
-        assert_eq!(runtime.register(Register::X24), 0x12);
-
-        // Assert LB cases
-        assert_eq!(runtime.register(Register::X23), 0x65);
-        assert_eq!(runtime.register(Register::X22), 0xffffff87);
-
-        // Assert LHU cases
-        assert_eq!(runtime.register(Register::X21), 0x8765);
-        assert_eq!(runtime.register(Register::X20), 0x1234);
-
-        // Assert LH cases
-        assert_eq!(runtime.register(Register::X19), 0xffff8765);
-        assert_eq!(runtime.register(Register::X18), 0x1234);
-
-        // Assert SB cases
-        assert_eq!(runtime.register(Register::X16), 0x12348725);
-        assert_eq!(runtime.register(Register::X15), 0x12342525);
-        assert_eq!(runtime.register(Register::X14), 0x12252525);
-        assert_eq!(runtime.register(Register::X13), 0x25252525);
-
-        // Assert SH cases
-        assert_eq!(runtime.register(Register::X12), 0x12346525);
-        assert_eq!(runtime.register(Register::X11), 0x65256525);
-    }
+    // #[test]
+    // fn test_jalr() {
+    //     //   addi x11, x11, 100
+    //     //   jalr x5, x11, 8
+    //     //
+    //     // `JALR rd offset(rs)` reads the value at rs, adds offset to it and uses it as the
+    //     // destination address. It then stores the address of the next instruction in rd in case
+    //     // we'd want to come back here.
+    //
+    //     let instructions = vec![
+    //         Instruction::new(Opcode::ADD, 11, 11, 100, false, true),
+    //         Instruction::new(Opcode::JALR, 5, 11, 8, false, true),
+    //     ];
+    //     let program = Program::new(instructions, 0, 0);
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    //     assert_eq!(runtime.registers()[Register::X5 as usize], 8);
+    //     assert_eq!(runtime.registers()[Register::X11 as usize], 100);
+    //     assert_eq!(runtime.state.pc, 108);
+    // }
+    //
+    // fn simple_op_code_test(opcode: Opcode, expected: u32, a: u32, b: u32) {
+    //     let instructions = vec![
+    //         Instruction::new(Opcode::ADD, 10, 0, a, false, true),
+    //         Instruction::new(Opcode::ADD, 11, 0, b, false, true),
+    //         Instruction::new(opcode, 12, 10, 11, false, false),
+    //     ];
+    //     let program = Program::new(instructions, 0, 0);
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    //     assert_eq!(runtime.registers()[Register::X12 as usize], expected);
+    // }
+    //
+    // #[test]
+    // #[allow(clippy::unreadable_literal)]
+    // fn multiplication_tests() {
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000001, 0x00000001);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000003, 0x00000007);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x80000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULHU, 0x7fffc000, 0x80000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MULHU, 0x0001fefe, 0xaaaaaaab, 0x0002fe7d);
+    //     simple_op_code_test(Opcode::MULHU, 0x0001fefe, 0x0002fe7d, 0xaaaaaaab);
+    //     simple_op_code_test(Opcode::MULHU, 0xfe010000, 0xff000000, 0xff000000);
+    //     simple_op_code_test(Opcode::MULHU, 0xfffffffe, 0xffffffff, 0xffffffff);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0xffffffff, 0x00000001);
+    //     simple_op_code_test(Opcode::MULHU, 0x00000000, 0x00000001, 0xffffffff);
+    //
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000001, 0x00000001);
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000003, 0x00000007);
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x80000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULHSU, 0x80004000, 0x80000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MULHSU, 0xffff0081, 0xaaaaaaab, 0x0002fe7d);
+    //     simple_op_code_test(Opcode::MULHSU, 0x0001fefe, 0x0002fe7d, 0xaaaaaaab);
+    //     simple_op_code_test(Opcode::MULHSU, 0xff010000, 0xff000000, 0xff000000);
+    //     simple_op_code_test(Opcode::MULHSU, 0xffffffff, 0xffffffff, 0xffffffff);
+    //     simple_op_code_test(Opcode::MULHSU, 0xffffffff, 0xffffffff, 0x00000001);
+    //     simple_op_code_test(Opcode::MULHSU, 0x00000000, 0x00000001, 0xffffffff);
+    //
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000001, 0x00000001);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000003, 0x00000007);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x00000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x80000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0x80000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MULH, 0xffff0081, 0xaaaaaaab, 0x0002fe7d);
+    //     simple_op_code_test(Opcode::MULH, 0xffff0081, 0x0002fe7d, 0xaaaaaaab);
+    //     simple_op_code_test(Opcode::MULH, 0x00010000, 0xff000000, 0xff000000);
+    //     simple_op_code_test(Opcode::MULH, 0x00000000, 0xffffffff, 0xffffffff);
+    //     simple_op_code_test(Opcode::MULH, 0xffffffff, 0xffffffff, 0x00000001);
+    //     simple_op_code_test(Opcode::MULH, 0xffffffff, 0x00000001, 0xffffffff);
+    //
+    //     simple_op_code_test(Opcode::MUL, 0x00001200, 0x00007e00, 0xb6db6db7);
+    //     simple_op_code_test(Opcode::MUL, 0x00001240, 0x00007fc0, 0xb6db6db7);
+    //     simple_op_code_test(Opcode::MUL, 0x00000000, 0x00000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MUL, 0x00000001, 0x00000001, 0x00000001);
+    //     simple_op_code_test(Opcode::MUL, 0x00000015, 0x00000003, 0x00000007);
+    //     simple_op_code_test(Opcode::MUL, 0x00000000, 0x00000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MUL, 0x00000000, 0x80000000, 0x00000000);
+    //     simple_op_code_test(Opcode::MUL, 0x00000000, 0x80000000, 0xffff8000);
+    //     simple_op_code_test(Opcode::MUL, 0x0000ff7f, 0xaaaaaaab, 0x0002fe7d);
+    //     simple_op_code_test(Opcode::MUL, 0x0000ff7f, 0x0002fe7d, 0xaaaaaaab);
+    //     simple_op_code_test(Opcode::MUL, 0x00000000, 0xff000000, 0xff000000);
+    //     simple_op_code_test(Opcode::MUL, 0x00000001, 0xffffffff, 0xffffffff);
+    //     simple_op_code_test(Opcode::MUL, 0xffffffff, 0xffffffff, 0x00000001);
+    //     simple_op_code_test(Opcode::MUL, 0xffffffff, 0x00000001, 0xffffffff);
+    // }
+    //
+    // fn neg(a: u32) -> u32 {
+    //     u32::MAX - a + 1
+    // }
+    //
+    // #[test]
+    // fn division_tests() {
+    //     simple_op_code_test(Opcode::DIVU, 3, 20, 6);
+    //     simple_op_code_test(Opcode::DIVU, 715_827_879, u32::MAX - 20 + 1, 6);
+    //     simple_op_code_test(Opcode::DIVU, 0, 20, u32::MAX - 6 + 1);
+    //     simple_op_code_test(Opcode::DIVU, 0, u32::MAX - 20 + 1, u32::MAX - 6 + 1);
+    //
+    //     simple_op_code_test(Opcode::DIVU, 1 << 31, 1 << 31, 1);
+    //     simple_op_code_test(Opcode::DIVU, 0, 1 << 31, u32::MAX - 1 + 1);
+    //
+    //     simple_op_code_test(Opcode::DIVU, u32::MAX, 1 << 31, 0);
+    //     simple_op_code_test(Opcode::DIVU, u32::MAX, 1, 0);
+    //     simple_op_code_test(Opcode::DIVU, u32::MAX, 0, 0);
+    //
+    //     simple_op_code_test(Opcode::DIV, 3, 18, 6);
+    //     simple_op_code_test(Opcode::DIV, neg(6), neg(24), 4);
+    //     simple_op_code_test(Opcode::DIV, neg(2), 16, neg(8));
+    //     simple_op_code_test(Opcode::DIV, neg(1), 0, 0);
+    //
+    //     // Overflow cases
+    //     simple_op_code_test(Opcode::DIV, 1 << 31, 1 << 31, neg(1));
+    //     simple_op_code_test(Opcode::REM, 0, 1 << 31, neg(1));
+    // }
+    //
+    // #[test]
+    // fn remainder_tests() {
+    //     simple_op_code_test(Opcode::REM, 7, 16, 9);
+    //     simple_op_code_test(Opcode::REM, neg(4), neg(22), 6);
+    //     simple_op_code_test(Opcode::REM, 1, 25, neg(3));
+    //     simple_op_code_test(Opcode::REM, neg(2), neg(22), neg(4));
+    //     simple_op_code_test(Opcode::REM, 0, 873, 1);
+    //     simple_op_code_test(Opcode::REM, 0, 873, neg(1));
+    //     simple_op_code_test(Opcode::REM, 5, 5, 0);
+    //     simple_op_code_test(Opcode::REM, neg(5), neg(5), 0);
+    //     simple_op_code_test(Opcode::REM, 0, 0, 0);
+    //
+    //     simple_op_code_test(Opcode::REMU, 4, 18, 7);
+    //     simple_op_code_test(Opcode::REMU, 6, neg(20), 11);
+    //     simple_op_code_test(Opcode::REMU, 23, 23, neg(6));
+    //     simple_op_code_test(Opcode::REMU, neg(21), neg(21), neg(11));
+    //     simple_op_code_test(Opcode::REMU, 5, 5, 0);
+    //     simple_op_code_test(Opcode::REMU, neg(1), neg(1), 0);
+    //     simple_op_code_test(Opcode::REMU, 0, 0, 0);
+    // }
+    //
+    // #[test]
+    // #[allow(clippy::unreadable_literal)]
+    // fn shift_tests() {
+    //     simple_op_code_test(Opcode::SLL, 0x00000001, 0x00000001, 0);
+    //     simple_op_code_test(Opcode::SLL, 0x00000002, 0x00000001, 1);
+    //     simple_op_code_test(Opcode::SLL, 0x00000080, 0x00000001, 7);
+    //     simple_op_code_test(Opcode::SLL, 0x00004000, 0x00000001, 14);
+    //     simple_op_code_test(Opcode::SLL, 0x80000000, 0x00000001, 31);
+    //     simple_op_code_test(Opcode::SLL, 0xffffffff, 0xffffffff, 0);
+    //     simple_op_code_test(Opcode::SLL, 0xfffffffe, 0xffffffff, 1);
+    //     simple_op_code_test(Opcode::SLL, 0xffffff80, 0xffffffff, 7);
+    //     simple_op_code_test(Opcode::SLL, 0xffffc000, 0xffffffff, 14);
+    //     simple_op_code_test(Opcode::SLL, 0x80000000, 0xffffffff, 31);
+    //     simple_op_code_test(Opcode::SLL, 0x21212121, 0x21212121, 0);
+    //     simple_op_code_test(Opcode::SLL, 0x42424242, 0x21212121, 1);
+    //     simple_op_code_test(Opcode::SLL, 0x90909080, 0x21212121, 7);
+    //     simple_op_code_test(Opcode::SLL, 0x48484000, 0x21212121, 14);
+    //     simple_op_code_test(Opcode::SLL, 0x80000000, 0x21212121, 31);
+    //     simple_op_code_test(Opcode::SLL, 0x21212121, 0x21212121, 0xffffffe0);
+    //     simple_op_code_test(Opcode::SLL, 0x42424242, 0x21212121, 0xffffffe1);
+    //     simple_op_code_test(Opcode::SLL, 0x90909080, 0x21212121, 0xffffffe7);
+    //     simple_op_code_test(Opcode::SLL, 0x48484000, 0x21212121, 0xffffffee);
+    //     simple_op_code_test(Opcode::SLL, 0x00000000, 0x21212120, 0xffffffff);
+    //
+    //     simple_op_code_test(Opcode::SRL, 0xffff8000, 0xffff8000, 0);
+    //     simple_op_code_test(Opcode::SRL, 0x7fffc000, 0xffff8000, 1);
+    //     simple_op_code_test(Opcode::SRL, 0x01ffff00, 0xffff8000, 7);
+    //     simple_op_code_test(Opcode::SRL, 0x0003fffe, 0xffff8000, 14);
+    //     simple_op_code_test(Opcode::SRL, 0x0001ffff, 0xffff8001, 15);
+    //     simple_op_code_test(Opcode::SRL, 0xffffffff, 0xffffffff, 0);
+    //     simple_op_code_test(Opcode::SRL, 0x7fffffff, 0xffffffff, 1);
+    //     simple_op_code_test(Opcode::SRL, 0x01ffffff, 0xffffffff, 7);
+    //     simple_op_code_test(Opcode::SRL, 0x0003ffff, 0xffffffff, 14);
+    //     simple_op_code_test(Opcode::SRL, 0x00000001, 0xffffffff, 31);
+    //     simple_op_code_test(Opcode::SRL, 0x21212121, 0x21212121, 0);
+    //     simple_op_code_test(Opcode::SRL, 0x10909090, 0x21212121, 1);
+    //     simple_op_code_test(Opcode::SRL, 0x00424242, 0x21212121, 7);
+    //     simple_op_code_test(Opcode::SRL, 0x00008484, 0x21212121, 14);
+    //     simple_op_code_test(Opcode::SRL, 0x00000000, 0x21212121, 31);
+    //     simple_op_code_test(Opcode::SRL, 0x21212121, 0x21212121, 0xffffffe0);
+    //     simple_op_code_test(Opcode::SRL, 0x10909090, 0x21212121, 0xffffffe1);
+    //     simple_op_code_test(Opcode::SRL, 0x00424242, 0x21212121, 0xffffffe7);
+    //     simple_op_code_test(Opcode::SRL, 0x00008484, 0x21212121, 0xffffffee);
+    //     simple_op_code_test(Opcode::SRL, 0x00000000, 0x21212121, 0xffffffff);
+    //
+    //     simple_op_code_test(Opcode::SRA, 0x00000000, 0x00000000, 0);
+    //     simple_op_code_test(Opcode::SRA, 0xc0000000, 0x80000000, 1);
+    //     simple_op_code_test(Opcode::SRA, 0xff000000, 0x80000000, 7);
+    //     simple_op_code_test(Opcode::SRA, 0xfffe0000, 0x80000000, 14);
+    //     simple_op_code_test(Opcode::SRA, 0xffffffff, 0x80000001, 31);
+    //     simple_op_code_test(Opcode::SRA, 0x7fffffff, 0x7fffffff, 0);
+    //     simple_op_code_test(Opcode::SRA, 0x3fffffff, 0x7fffffff, 1);
+    //     simple_op_code_test(Opcode::SRA, 0x00ffffff, 0x7fffffff, 7);
+    //     simple_op_code_test(Opcode::SRA, 0x0001ffff, 0x7fffffff, 14);
+    //     simple_op_code_test(Opcode::SRA, 0x00000000, 0x7fffffff, 31);
+    //     simple_op_code_test(Opcode::SRA, 0x81818181, 0x81818181, 0);
+    //     simple_op_code_test(Opcode::SRA, 0xc0c0c0c0, 0x81818181, 1);
+    //     simple_op_code_test(Opcode::SRA, 0xff030303, 0x81818181, 7);
+    //     simple_op_code_test(Opcode::SRA, 0xfffe0606, 0x81818181, 14);
+    //     simple_op_code_test(Opcode::SRA, 0xffffffff, 0x81818181, 31);
+    // }
+    //
+    // #[test]
+    // #[allow(clippy::unreadable_literal)]
+    // fn test_simple_memory_program_run() {
+    //     let program = simple_memory_program();
+    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+    //     runtime.run().unwrap();
+    //
+    //     // Assert SW & LW case
+    //     assert_eq!(runtime.register(Register::X28), 0x12348765);
+    //
+    //     // Assert LBU cases
+    //     assert_eq!(runtime.register(Register::X27), 0x65);
+    //     assert_eq!(runtime.register(Register::X26), 0x87);
+    //     assert_eq!(runtime.register(Register::X25), 0x34);
+    //     assert_eq!(runtime.register(Register::X24), 0x12);
+    //
+    //     // Assert LB cases
+    //     assert_eq!(runtime.register(Register::X23), 0x65);
+    //     assert_eq!(runtime.register(Register::X22), 0xffffff87);
+    //
+    //     // Assert LHU cases
+    //     assert_eq!(runtime.register(Register::X21), 0x8765);
+    //     assert_eq!(runtime.register(Register::X20), 0x1234);
+    //
+    //     // Assert LH cases
+    //     assert_eq!(runtime.register(Register::X19), 0xffff8765);
+    //     assert_eq!(runtime.register(Register::X18), 0x1234);
+    //
+    //     // Assert SB cases
+    //     assert_eq!(runtime.register(Register::X16), 0x12348725);
+    //     assert_eq!(runtime.register(Register::X15), 0x12342525);
+    //     assert_eq!(runtime.register(Register::X14), 0x12252525);
+    //     assert_eq!(runtime.register(Register::X13), 0x25252525);
+    //
+    //     // Assert SH cases
+    //     assert_eq!(runtime.register(Register::X12), 0x12346525);
+    //     assert_eq!(runtime.register(Register::X11), 0x65256525);
+    // }
 }
-*/
