@@ -13,7 +13,7 @@ use p3_matrix::dense::RowMajorMatrix;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use zkm2_core_machine::{
-//    cpu::MAX_CPU_LOG_DEGREE,
+    //    cpu::MAX_CPU_LOG_DEGREE,
     mips::{MipsAir, MAX_LOG_NUMBER_OF_SHARDS},
 };
 
@@ -248,11 +248,9 @@ where
                 // flag.
 
                 // Assert that the shard is boolean.
-                builder
-                    .assert_felt_eq(is_first_shard * (is_first_shard - C::F::ONE), C::F::ZERO);
+                builder.assert_felt_eq(is_first_shard * (is_first_shard - C::F::ONE), C::F::ZERO);
                 // Assert that if the flag is set to `1`, then the shard idex is `1`.
-                builder
-                    .assert_felt_eq(is_first_shard * (initial_shard - C::F::ONE), C::F::ZERO);
+                builder.assert_felt_eq(is_first_shard * (initial_shard - C::F::ONE), C::F::ZERO);
                 // Assert that if the flag is set to `0`, then the shard index is not `1`.
                 builder.assert_felt_ne(
                     (SymbolicFelt::ONE - is_first_shard) * initial_shard,
@@ -266,8 +264,9 @@ where
                 let first_challenger_public_values = first_shard_challenger.public_values(builder);
                 let initial_challenger_public_values =
                     initial_reconstruct_challenger.public_values(builder);
-                for (first, initial) in
-                    first_challenger_public_values.into_iter().zip(initial_challenger_public_values)
+                for (first, initial) in first_challenger_public_values
+                    .into_iter()
+                    .zip(initial_challenger_public_values)
                 {
                     builder.assert_felt_eq(is_first_shard * (first - initial), C::F::ZERO);
                 }
@@ -291,8 +290,9 @@ where
             // between all shards.
             let mut challenger = leaf_challenger.copy(builder);
 
-            let global_permutation_challenges =
-                (0..2).map(|_| challenger.sample_ext(builder)).collect::<Vec<_>>();
+            let global_permutation_challenges = (0..2)
+                .map(|_| challenger.sample_ext(builder))
+                .collect::<Vec<_>>();
 
             StarkVerifier::verify_shard(
                 builder,
@@ -409,8 +409,9 @@ where
                 }
 
                 // Update the MemoryInitialize address bits.
-                for (bit, pub_bit) in
-                    current_init_addr_bits.iter_mut().zip(public_values.last_init_addr_bits.iter())
+                for (bit, pub_bit) in current_init_addr_bits
+                    .iter_mut()
+                    .zip(public_values.last_init_addr_bits.iter())
                 {
                     *bit = *pub_bit;
                 }
@@ -441,8 +442,9 @@ where
 
                 // Using the flags, we can constrain the equality.
                 for is_non_zero in is_non_zero_flags {
-                    for (word_current, word_public) in
-                        committed_value_digest.into_iter().zip(public_values.committed_value_digest)
+                    for (word_current, word_public) in committed_value_digest
+                        .into_iter()
+                        .zip(public_values.committed_value_digest)
                     {
                         for (byte_current, byte_public) in word_current.into_iter().zip(word_public)
                         {
@@ -616,8 +618,11 @@ impl ZKMRecursionWitnessValues<BabyBearPoseidon2> {
         machine: &StarkMachine<BabyBearPoseidon2, MipsAir<BabyBear>>,
         shape: &ZKMRecursionShape,
     ) -> Self {
-        let (mut vks, shard_proofs): (Vec<_>, Vec<_>) =
-            shape.proof_shapes.iter().map(|shape| dummy_vk_and_shard_proof(machine, shape)).unzip();
+        let (mut vks, shard_proofs): (Vec<_>, Vec<_>) = shape
+            .proof_shapes
+            .iter()
+            .map(|shape| dummy_vk_and_shard_proof(machine, shape))
+            .unzip();
         let vk = vks.pop().unwrap();
         Self {
             vk,

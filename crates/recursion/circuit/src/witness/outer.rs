@@ -10,8 +10,8 @@ use zkm2_recursion_compiler::{
     ir::{Builder, Var},
 };
 use zkm2_recursion_core::stark::{
-    BabyBearPoseidon2Outer, OuterInputProof, OuterBatchOpening, OuterChallenge, OuterChallengeMmcs,
-    OuterDigest, OuterFriProof, OuterVal,
+    BabyBearPoseidon2Outer, OuterBatchOpening, OuterChallenge, OuterChallengeMmcs, OuterDigest,
+    OuterFriProof, OuterInputProof, OuterVal,
 };
 
 use crate::{

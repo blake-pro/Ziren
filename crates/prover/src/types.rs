@@ -16,8 +16,8 @@ use zkm2_recursion_circuit::machine::{
 
 use zkm2_recursion_gnark_ffi::proof::{Groth16Bn254Proof, PlonkBn254Proof};
 
-use zkm2_stark::{ShardProof, StarkGenericConfig, StarkProvingKey, StarkVerifyingKey, DIGEST_SIZE};
 use thiserror::Error;
+use zkm2_stark::{ShardProof, StarkGenericConfig, StarkProvingKey, StarkVerifyingKey, DIGEST_SIZE};
 
 use crate::{
     utils::{babybears_to_bn254, words_to_bytes_be},
@@ -53,7 +53,10 @@ pub trait HashableKey {
 
     fn bytes32(&self) -> String {
         let vkey_digest_bn254 = self.hash_bn254();
-        format!("0x{:0>64}", vkey_digest_bn254.as_canonical_biguint().to_str_radix(16))
+        format!(
+            "0x{:0>64}",
+            vkey_digest_bn254.as_canonical_biguint().to_str_radix(16)
+        )
     }
 
     /// Hash the key into a digest of bytes elements.
@@ -130,7 +133,9 @@ impl<P: Serialize + DeserializeOwned + Clone> ZKMProofWithMetadata<P> {
 
 impl<P: std::fmt::Debug + Clone> std::fmt::Debug for ZKMProofWithMetadata<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ZKMProofWithMetadata").field("proof", &self.proof).finish()
+        f.debug_struct("ZKMProofWithMetadata")
+            .field("proof", &self.proof)
+            .finish()
     }
 }
 

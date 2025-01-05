@@ -20,8 +20,7 @@ use crate::{
     merkle_tree::{verify, MerkleProof},
     stark::MerkleProofVariable,
     witness::{WitnessWriter, Witnessable},
-    BabyBearFriConfig, BabyBearFriConfigVariable, CircuitConfig,
-    FriProofVariable,
+    BabyBearFriConfig, BabyBearFriConfigVariable, CircuitConfig, FriProofVariable,
 };
 
 use super::{

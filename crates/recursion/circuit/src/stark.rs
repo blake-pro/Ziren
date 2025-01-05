@@ -25,8 +25,7 @@ use crate::{
     challenger::CanObserveVariable,
     fri::{dummy_hash, dummy_pcs_proof, PolynomialBatchShape, PolynomialShape},
     hash::FieldHasherVariable,
-    BabyBearFriConfig, CircuitConfig, TwoAdicPcsMatsVariable,
-    FriProofVariable,
+    BabyBearFriConfig, CircuitConfig, FriProofVariable, TwoAdicPcsMatsVariable,
 };
 
 use crate::{

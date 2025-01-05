@@ -19,11 +19,11 @@ pub use zkm2_recursion_core::stark::zkm2_dev_mode;
 pub use zkm2_recursion_circuit::witness::{OuterWitness, Witnessable};
 
 use zkm2_recursion_gnark_ffi::{Groth16Bn254Prover, PlonkBn254Prover};
-use zkm2_stark::{ZKMProverOpts, ShardProof, StarkVerifyingKey};
+use zkm2_stark::{ShardProof, StarkVerifyingKey, ZKMProverOpts};
 
 use crate::{
     utils::{babybear_bytes_to_bn254, babybears_to_bn254, words_to_bytes},
-    OuterSC, ZKMProver, WrapAir,
+    OuterSC, WrapAir, ZKMProver,
 };
 
 /// Tries to build the PLONK artifacts inside the development directory.
@@ -50,12 +50,20 @@ pub fn try_build_groth16_bn254_artifacts_dev(
 
 /// Gets the directory where the PLONK artifacts are installed in development mode.
 pub fn plonk_bn254_artifacts_dev_dir() -> PathBuf {
-    dirs::home_dir().unwrap().join(".sp1").join("circuits").join("dev")
+    dirs::home_dir()
+        .unwrap()
+        .join(".sp1")
+        .join("circuits")
+        .join("dev")
 }
 
 /// Gets the directory where the groth16 artifacts are installed in development mode.
 pub fn groth16_bn254_artifacts_dev_dir() -> PathBuf {
-    dirs::home_dir().unwrap().join(".sp1").join("circuits").join("dev")
+    dirs::home_dir()
+        .unwrap()
+        .join(".sp1")
+        .join("circuits")
+        .join("dev")
 }
 
 /// Build the plonk bn254 artifacts to the given directory for the given verification key and
@@ -133,8 +141,9 @@ pub fn build_constraints_and_witness(
 
     let pv: &RecursionPublicValues<BabyBear> = template_proof.public_values.as_slice().borrow();
     let vkey_hash = babybears_to_bn254(&pv.zkm2_vk_digest);
-    let committed_values_digest_bytes: [BabyBear; 32] =
-        words_to_bytes(&pv.committed_value_digest).try_into().unwrap();
+    let committed_values_digest_bytes: [BabyBear; 32] = words_to_bytes(&pv.committed_value_digest)
+        .try_into()
+        .unwrap();
     let committed_values_digest = babybear_bytes_to_bn254(&committed_values_digest_bytes);
 
     tracing::info!("building template witness");
