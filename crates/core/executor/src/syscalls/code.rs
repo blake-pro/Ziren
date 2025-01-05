@@ -24,7 +24,6 @@ use strum_macros::EnumIter;
 #[allow(non_camel_case_types)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum SyscallCode {
-
     // SYSGETPID = 4020,
     SYSMMAP2 = 4210,
     SYSMMAP = 4090,

@@ -705,8 +705,8 @@ impl<F: PrimeField32> Default for CoreShapeConfig<F> {
                 let memory_finalize_heights =
                     vec![None, Some(10), Some(16), Some(18), Some(19), Some(20), Some(21)];
                 let memory_allowed_log_heights = HashMap::from([
-                //    (MipsAir::MemoryGlobalInit(MemoryGlobalChip::new(Initialize)), memory_init_heights),
-                //    (MipsAir::MemoryGlobalFinal(MemoryGlobalChip::new(Finalize)), memory_finalize_heights),
+                    (MipsAir::MemoryGlobalInit(MemoryGlobalChip::new(Initialize)), memory_init_heights),
+                    (MipsAir::MemoryGlobalFinal(MemoryGlobalChip::new(Finalize)), memory_finalize_heights),
                 ]);
 
                 let mut precompile_allowed_log_heights = HashMap::new();

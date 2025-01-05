@@ -2133,7 +2133,6 @@ fn log2_ceil_usize(n: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use zkm2_stark::ZKMCoreOpts;
-
     use crate::programs::tests::{
          fibonacci_program,
          // anic_program, secp256r1_add_program, secp256r1_double_program,
