@@ -2134,10 +2134,12 @@ fn log2_ceil_usize(n: usize) -> usize {
 mod tests {
     use zkm2_stark::ZKMCoreOpts;
 
-    // use crate::programs::tests::{
-    //     fibonacci_program, panic_program, secp256r1_add_program, secp256r1_double_program,
-    //     simple_memory_program, simple_program, ssz_withdrawals_program, u256xu2048_mul_program,
-    // };
+    use crate::programs::tests::{
+         fibonacci_program,
+         // anic_program, secp256r1_add_program, secp256r1_double_program,
+         simple_program,
+         //simple_memory_program, ssz_withdrawals_program, u256xu2048_mul_program,
+    };
 
     use crate::{Instruction, Opcode, Register};
 
@@ -2150,20 +2152,20 @@ mod tests {
         _assert_send::<Executor>();
     }
 
-    // #[test]
-    // fn test_simple_program_run() {
-    //     let program = simple_program();
-    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-    //     runtime.run().unwrap();
-    //     assert_eq!(runtime.register(Register::RA), 42);
-    // }
-    //
-    // #[test]
-    // fn test_fibonacci_program_run() {
-    //     let program = fibonacci_program();
-    //     let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-    //     runtime.run().unwrap();
-    // }
+    #[test]
+    fn test_simple_program_run() {
+        let program = simple_program();
+        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+        runtime.run().unwrap();
+        assert_eq!(runtime.register(Register::RA), 42);
+    }
+
+    #[test]
+    fn test_fibonacci_program_run() {
+        let program = fibonacci_program();
+        let mut runtime = Executor::new(program, ZKMCoreOpts::default());
+        runtime.run().unwrap();
+    }
     //
     // #[test]
     // fn test_secp256r1_add_program_run() {

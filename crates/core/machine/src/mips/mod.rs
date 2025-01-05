@@ -593,26 +593,26 @@ impl<F: PrimeField32> core::hash::Hash for MipsAir<F> {
     }
 }
 
-/*
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub mod tests {
 
     use crate::{
-        io::SP1Stdin,
-        riscv::MipsAir,
+        io::ZKMStdin,
+        mips::MipsAir,
         utils,
         utils::{prove, run_test, setup_logger},
     };
 
     use zkm2_core_executor::{
         programs::tests::{
-            fibonacci_program, simple_memory_program, simple_program, ssz_withdrawals_program,
+            fibonacci_program, simple_program,
+            //ssz_withdrawals_program, simple_memory_program,
         },
         Instruction, Opcode, Program,
     };
-    use sp1_stark::{
-        baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, SP1CoreOpts, StarkProvingKey,
+    use zkm2_stark::{
+        baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, ZKMCoreOpts, StarkProvingKey,
         StarkVerifyingKey,
     };
 
@@ -632,15 +632,16 @@ pub mod tests {
         for shift_op in shift_ops.iter() {
             for op in operands.iter() {
                 let instructions = vec![
-                    Instruction::new(Opcode::ADD, 29, 0, op.0, false, true),
-                    Instruction::new(Opcode::ADD, 30, 0, op.1, false, true),
-                    Instruction::new(*shift_op, 31, 29, 3, false, false),
+                    Instruction::new(Opcode::ADD, 29, 0, op.0, 0, false, true),
+                    Instruction::new(Opcode::ADD, 30, 0, op.1, 0, false, true),
+                    Instruction::new(*shift_op, 31, 29, 3, 0, false, false),
                 ];
                 let program = Program::new(instructions, 0, 0);
                 run_test::<CpuProver<_, _>>(program).unwrap();
             }
         }
     }
+/*
 
     #[test]
     fn test_sub_prove() {
@@ -753,7 +754,7 @@ pub mod tests {
 
         let program = fibonacci_program();
         let stdin = SP1Stdin::new();
-        let mut opts = SP1CoreOpts::default();
+        let mut opts = ZKMCoreOpts::default();
         opts.shard_size = 1024;
         opts.shard_batch_size = 2;
         prove::<_, CpuProver<_, _>>(program, &stdin, BabyBearPoseidon2::new(), opts, None).unwrap();
@@ -768,7 +769,7 @@ pub mod tests {
             program,
             &stdin,
             BabyBearPoseidon2::new(),
-            SP1CoreOpts::default(),
+            ZKMCoreOpts::default(),
             None,
         )
         .unwrap();
@@ -820,5 +821,5 @@ pub mod tests {
         }
         assert_eq!(vk.chip_ordering, deserialized_vk.chip_ordering);
     }
-}
 */
+}

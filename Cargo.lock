@@ -3436,6 +3436,7 @@ dependencies = [
  "sha2",
  "strum",
  "strum_macros",
+ "test-artifacts",
  "thiserror",
  "tiny-keccak",
  "tracing",
@@ -3444,6 +3445,7 @@ dependencies = [
  "zkm2-core-emulator",
  "zkm2-primitives",
  "zkm2-stark",
+ "zkm2-zkvm",
 ]
 
 [[package]]
