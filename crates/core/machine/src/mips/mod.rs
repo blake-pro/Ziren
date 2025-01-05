@@ -1,14 +1,16 @@
 //pub mod cost;
 //
-mod shape;
 pub mod cost;
+mod shape;
 //
+pub use cost::*;
 use itertools::Itertools;
 pub use shape::*;
-pub use cost::*;
 use zkm2_core_executor::{
     //events::PrecompileLocalMemory,
-    syscalls::SyscallCode, ExecutionRecord, Program,
+    syscalls::SyscallCode,
+    ExecutionRecord,
+    Program,
 };
 //
 //use crate::{
@@ -562,7 +564,7 @@ impl<F: PrimeField32> MipsAir<F> {
         record: &ExecutionRecord,
     ) -> Option<(usize, usize)> {
         panic!("Unimpl")
-            /*
+        /*
         record
             .precompile_events
             .get_events(self.syscall_code())

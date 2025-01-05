@@ -12,8 +12,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     events::{
         add_sharded_byte_lookup_events, AluEvent, ByteLookupEvent, ByteRecord, CpuEvent, LookupId,
-        MemoryInitializeFinalizeEvent, MemoryLocalEvent, MemoryRecordEnum,
+        MemoryInitializeFinalizeEvent, MemoryLocalEvent, MemoryRecordEnum, SyscallEvent,
     },
+    syscalls::SyscallCode,
     CoreShape, Opcode, Program,
 };
 
@@ -54,7 +55,7 @@ pub struct ExecutionRecord {
     /// A trace of all the shard's local memory events.
     pub cpu_local_memory_access: Vec<MemoryLocalEvent>,
     // /// A trace of all the syscall events.
-    // pub syscall_events: Vec<SyscallEvent>,
+    pub syscall_events: Vec<SyscallEvent>,
     // /// The public values.
     pub public_values: PublicValues<u32, u32>,
     /// The nonce lookup.
@@ -83,7 +84,7 @@ impl Default for ExecutionRecord {
             global_memory_initialize_events: Vec::default(),
             global_memory_finalize_events: Vec::default(),
             cpu_local_memory_access: Vec::default(),
-            // syscall_events: Vec::default(),
+            syscall_events: Vec::default(),
             public_values: PublicValues::default(),
             nonce_lookup: Vec::default(),
             next_nonce: 0,
@@ -385,7 +386,7 @@ impl MachineRecord for ExecutionRecord {
             .append(&mut other.shift_right_events);
         self.divrem_events.append(&mut other.divrem_events);
         self.lt_events.append(&mut other.lt_events);
-        // self.syscall_events.append(&mut other.syscall_events);
+        self.syscall_events.append(&mut other.syscall_events);
 
         // self.precompile_events.append(&mut other.precompile_events);
 

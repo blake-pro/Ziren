@@ -83,14 +83,14 @@ pub enum Opcode {
     SetContext = 60,
     NOP = 61,
     SYSCALL = 62,
-    // EXT = 63,
-    // INS = 64,
-    // MADDU = 65,
+    EXT = 63,
+    INS = 64,
+    MADDU = 65,
     ROR = 66,
-    // RDHWR = 67,
-    // SIGNEXT = 68,
-    // SWAP_HALF = 69,
-    // TEQ = 70,
+    RDHWR = 67,
+    SIGNEXT = 68,
+    SWAP_HALF = 69,
+    TEQ = 70,
 }
 
 impl Opcode {
@@ -156,12 +156,19 @@ impl Opcode {
             Opcode::Jump => "jump",
             Opcode::Jumpi => "jumpi",
             Opcode::JumpDirect => "jump_direct",
+            Opcode::EXT => "ext",
+            Opcode::INS => "ins",
+            Opcode::MADDU => "maddu",
+            Opcode::ROR => "ror",
+            Opcode::RDHWR => "rdhwr",
+            Opcode::SIGNEXT => "sext",
+            Opcode::SWAP_HALF => "swap_half",
+            Opcode::TEQ => "teq",
             Opcode::PC => "pc",
             Opcode::GetContext => "get_context",
             Opcode::SetContext => "set_context",
             Opcode::NOP => "nop",
             Opcode::SYSCALL => "syscall",
-            Opcode::ROR => "ror",
         }
     }
 
@@ -174,12 +181,7 @@ impl Opcode {
     // todo: add other opcodes
     pub fn is_use_lo_hi_alu(&self) -> bool {
         match self {
-            Opcode::DIV
-            | Opcode::DIVU
-            | Opcode::MULT
-            | Opcode::MULTU
-            | Opcode::DIV
-            | Opcode::DIVU => true,
+            Opcode::DIV | Opcode::DIVU | Opcode::MULT | Opcode::MULTU => true,
             _ => false,
         }
     }

@@ -17,7 +17,7 @@ use zkm2_recursion_core::{
     air::{RecursionPublicValues, NUM_PV_ELMS_TO_HASH},
     stark::BabyBearPoseidon2Outer,
 };
-use zkm2_stark::{baby_bear_poseidon2::MyHash as InnerHash, ZKMCoreOpts, Word};
+use zkm2_stark::{baby_bear_poseidon2::MyHash as InnerHash, Word, ZKMCoreOpts};
 
 use crate::{InnerSC, ZKMCoreProofData};
 
@@ -64,7 +64,12 @@ pub fn assert_root_public_values_valid(
     public_values: &RootPublicValues<BabyBear>,
 ) {
     let expected_digest = root_public_values_digest(config, public_values);
-    for (value, expected) in public_values.digest().iter().copied().zip_eq(expected_digest) {
+    for (value, expected) in public_values
+        .digest()
+        .iter()
+        .copied()
+        .zip_eq(expected_digest)
+    {
         assert_eq!(value, expected);
     }
 }
@@ -86,8 +91,9 @@ pub fn zkm2_committed_values_digest_bn254(
 ) -> Bn254Fr {
     let proof = &proof.proof;
     let pv: &RecursionPublicValues<BabyBear> = proof.public_values.as_slice().borrow();
-    let committed_values_digest_bytes: [BabyBear; 32] =
-        words_to_bytes(&pv.committed_value_digest).try_into().unwrap();
+    let committed_values_digest_bytes: [BabyBear; 32] = words_to_bytes(&pv.committed_value_digest)
+        .try_into()
+        .unwrap();
     babybear_bytes_to_bn254(&committed_values_digest_bytes)
 }
 

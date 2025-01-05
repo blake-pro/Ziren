@@ -17,14 +17,14 @@
 pub mod air;
 mod alu;
 pub mod bytes;
-pub mod mips;
-pub mod io;
 pub mod cpu;
+pub mod io;
+pub mod mips;
 mod operations;
 //pub mod memory;
 pub mod utils;
-pub use mips::*;
 pub use cpu::*;
+pub use mips::*;
 
 /// The global version for all components of ZKM.
 

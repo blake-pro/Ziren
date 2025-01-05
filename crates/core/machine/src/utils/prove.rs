@@ -8,7 +8,7 @@ use std::{
 };
 use web_time::Instant;
 
-use crate::mips::{MipsAir, CoreShapeConfig};
+use crate::mips::{CoreShapeConfig, MipsAir};
 use p3_challenger::FieldChallenger;
 use p3_maybe_rayon::prelude::*;
 use serde::{de::DeserializeOwned, Serialize};
@@ -30,9 +30,10 @@ use crate::{
     utils::{chunk_vec, concurrency::TurnBasedSync},
 };
 use zkm2_core_executor::{
-    events::{format_table_line, sorted_table_lines}, Executor,
-    ExecutionState, Program, ExecutionRecord, ExecutionReport,
-    subproof::NoOpSubproofVerifier, ZKMContext, ExecutionError,
+    events::{format_table_line, sorted_table_lines},
+    subproof::NoOpSubproofVerifier,
+    ExecutionError, ExecutionRecord, ExecutionReport, ExecutionState, Executor, Program,
+    ZKMContext,
 };
 use zkm2_primitives::io::ZKMPublicValues;
 
@@ -72,15 +73,25 @@ where
     let (pk, _) = prover.setup(runtime.program.as_ref());
 
     // Set the shard numbers.
-    runtime.records.iter_mut().enumerate().for_each(|(i, shard)| {
-        shard.public_values.shard = (i + 1) as u32;
-    });
+    runtime
+        .records
+        .iter_mut()
+        .enumerate()
+        .for_each(|(i, shard)| {
+            shard.public_values.shard = (i + 1) as u32;
+        });
 
     // Prove the program.
     let mut challenger = prover.config().challenger();
     let proving_start = Instant::now();
-    let proof =
-        prover.prove(&pk, runtime.records, &mut challenger, ZKMCoreOpts::default()).unwrap();
+    let proof = prover
+        .prove(
+            &pk,
+            runtime.records,
+            &mut challenger,
+            ZKMCoreOpts::default(),
+        )
+        .unwrap();
     let proving_duration = proving_start.elapsed().as_millis();
     let nb_bytes = bincode::serialize(&proof).unwrap().len();
 
@@ -142,8 +153,13 @@ where
 {
     // Setup the runtime.
     let mut runtime = Executor::with_context(program.clone(), opts, context);
-    runtime.maximal_shapes = shape_config
-        .map(|config| config.maximal_core_shapes().into_iter().map(|s| s.inner).collect());
+    runtime.maximal_shapes = shape_config.map(|config| {
+        config
+            .maximal_core_shapes()
+            .into_iter()
+            .map(|s| s.inner)
+            .collect()
+    });
     runtime.write_vecs(&stdin.buffer);
     for proof in stdin.proofs.iter() {
         let (proof, vk) = proof.clone();
@@ -203,9 +219,10 @@ where
         let p1_record_gen_sync = Arc::new(TurnBasedSync::new());
         let p1_trace_gen_sync = Arc::new(TurnBasedSync::new());
         let (p1_records_and_traces_tx, p1_records_and_traces_rx) =
-            sync_channel::<(Vec<ExecutionRecord>, Vec<Vec<(String, RowMajorMatrix<Val<SC>>)>>)>(
-                opts.records_and_traces_channel_capacity,
-            );
+            sync_channel::<(
+                Vec<ExecutionRecord>,
+                Vec<Vec<(String, RowMajorMatrix<Val<SC>>)>>,
+            )>(opts.records_and_traces_channel_capacity);
         let p1_records_and_traces_tx = Arc::new(Mutex::new(p1_records_and_traces_tx));
         let checkpoints_rx = Arc::new(Mutex::new(checkpoints_rx));
 
@@ -416,7 +433,9 @@ where
         let public_values_stream = checkpoint_generator_handle.join().unwrap().unwrap();
 
         // Wait until the records and traces have been fully generated.
-        p1_record_and_trace_gen_handles.into_iter().for_each(|handle| handle.join().unwrap());
+        p1_record_and_trace_gen_handles
+            .into_iter()
+            .for_each(|handle| handle.join().unwrap());
 
         // Wait until the phase 1 prover has completely finished.
         let mut challenger = phase_1_prover_handle.join().unwrap();
@@ -532,7 +551,9 @@ where
 
                             // Generate the dependencies.
                             tracing::debug_span!("generate dependencies", index).in_scope(|| {
-                                prover.machine().generate_dependencies(&mut records, &opts, None);
+                                prover
+                                    .machine()
+                                    .generate_dependencies(&mut records, &opts, None);
                             });
 
                             // Let another worker update the state.
@@ -657,7 +678,9 @@ where
         });
 
         // Wait until the records and traces have been fully generated for phase 2.
-        p2_record_and_trace_gen_handles.into_iter().for_each(|handle| handle.join().unwrap());
+        p2_record_and_trace_gen_handles
+            .into_iter()
+            .for_each(|handle| handle.join().unwrap());
 
         // Wait until the phase 2 prover has finished.
         let shard_proofs = p2_prover_handle.join().unwrap();
@@ -712,7 +735,9 @@ where
             let all_records = all_records_rx.iter().flatten().collect::<Vec<_>>();
             let mut challenger = prover.machine().config().challenger();
             let pk_host = prover.pk_to_host(pk);
-            prover.machine().debug_constraints(&pk_host, all_records, &mut challenger);
+            prover
+                .machine()
+                .debug_constraints(&pk_host, all_records, &mut challenger);
         }
 
         Ok((proof, public_values_stream, cycles))
@@ -728,8 +753,13 @@ pub fn run_test_io<P: MachineProver<BabyBearPoseidon2, MipsAir<BabyBear>>>(
     shape_config.fix_preprocessed_shape(&mut program).unwrap();
     let runtime = tracing::debug_span!("runtime.run(...)").in_scope(|| {
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.maximal_shapes =
-            Some(shape_config.maximal_core_shapes().into_iter().map(|s| s.inner).collect());
+        runtime.maximal_shapes = Some(
+            shape_config
+                .maximal_core_shapes()
+                .into_iter()
+                .map(|s| s.inner)
+                .collect(),
+        );
         runtime.write_vecs(&inputs.buffer);
         runtime.run().unwrap();
         runtime
@@ -747,8 +777,13 @@ pub fn run_test<P: MachineProver<BabyBearPoseidon2, MipsAir<BabyBear>>>(
     shape_config.fix_preprocessed_shape(&mut program).unwrap();
     let runtime = tracing::debug_span!("runtime.run(...)").in_scope(|| {
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.maximal_shapes =
-            Some(shape_config.maximal_core_shapes().into_iter().map(|s| s.inner).collect());
+        runtime.maximal_shapes = Some(
+            shape_config
+                .maximal_core_shapes()
+                .into_iter()
+                .map(|s| s.inner)
+                .collect(),
+        );
         runtime.run().unwrap();
         runtime
     });
@@ -866,8 +901,13 @@ where
     let state: ExecutionState =
         bincode::deserialize_from(&mut reader).expect("failed to deserialize state");
     let mut runtime = Executor::recover(program, state, opts);
-    runtime.maximal_shapes = shape_config
-        .map(|config| config.maximal_core_shapes().into_iter().map(|s| s.inner).collect());
+    runtime.maximal_shapes = shape_config.map(|config| {
+        config
+            .maximal_core_shapes()
+            .into_iter()
+            .map(|s| s.inner)
+            .collect()
+    });
 
     // We already passed the deferred proof verifier when creating checkpoints, so the proofs were
     // already verified. So here we use a noop verifier to not print any warnings.
