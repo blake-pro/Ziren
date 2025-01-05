@@ -11,6 +11,7 @@ use crate::{
     events::MemoryRecord,
     memory::PagedMemory,
     record::{ExecutionRecord, MemoryAccessRecord},
+    syscalls::SyscallCode,
     ExecutorMode, ZKMReduceProof,
 };
 
@@ -64,7 +65,7 @@ pub struct ExecutionState {
     /// `public_values_stream`.
     pub public_values_stream_ptr: usize,
     // /// Keeps track of how many times a certain syscall has been called.
-    //pub syscall_counts: HashMap<SyscallCode, u64>,
+    pub syscall_counts: HashMap<SyscallCode, u64>,
 }
 
 impl ExecutionState {
@@ -86,7 +87,7 @@ impl ExecutionState {
             public_values_stream_ptr: 0,
             proof_stream: Vec::new(),
             proof_stream_ptr: 0,
-            //syscall_counts: HashMap::new(),
+            syscall_counts: HashMap::new(),
         }
     }
 }

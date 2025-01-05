@@ -1,10 +1,10 @@
 //! Types and methods for subproof verification inside the [`crate::Executor`].
 
+use crate::ZKMReduceProof;
 use std::sync::atomic::AtomicBool;
 use zkm2_stark::{
     baby_bear_poseidon2::BabyBearPoseidon2, MachineVerificationError, StarkVerifyingKey,
 };
-use crate::ZKMReduceProof;
 
 /// Verifier used in runtime when `zkm2_zkvm::precompiles::verify::verify_zkm2_proof` is called. This
 /// is then used to sanity check that the user passed in the correct proof; the actual constraints
@@ -49,7 +49,8 @@ impl SubproofVerifier for DefaultSubproofVerifier {
     ) -> Result<(), MachineVerificationError<BabyBearPoseidon2>> {
         if !self.printed.load(std::sync::atomic::Ordering::SeqCst) {
             tracing::info!("Not verifying sub proof during runtime");
-            self.printed.store(true, std::sync::atomic::Ordering::SeqCst);
+            self.printed
+                .store(true, std::sync::atomic::Ordering::SeqCst);
         }
         Ok(())
     }
