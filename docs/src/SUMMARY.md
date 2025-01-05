@@ -31,4 +31,6 @@
         - [Proof Composition](./design/proof-composition.md)
     - [Continuation](./design/continuation.md)
 - [Background Material](./background.md)
-- [Chapter template](./chapter_template.md)
+- [Template](./template/template.md)
+    - [Overview](./template/overview.md)
+    - [Examples](./template/examples.md)
