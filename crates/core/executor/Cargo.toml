@@ -11,7 +11,7 @@ categories = { workspace = true }
 
 [dependencies]
 zkm2-primitives = { workspace = true }
-#zkm2-curves = { workspace = true }
+zkm2-curves = { workspace = true }
 zkm2-stark = { workspace = true }
 zkm2-core-emulator = { workspace = true }
 
@@ -50,5 +50,6 @@ test-artifacts = { workspace = true, optional = true }
 zkm2-zkvm = { workspace = true }
 
 [features]
+default = ["programs"]
 programs = ["dep:test-artifacts"]
-#bigint-rug = ["sp1-curves/bigint-rug"]
+bigint-rug = ["zkm2-curves/bigint-rug"]

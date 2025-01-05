@@ -15,13 +15,15 @@
 #![warn(unused_extern_crates)]
 
 pub mod air;
-mod alu;
+pub mod alu;
 pub mod bytes;
 pub mod cpu;
 pub mod io;
 pub mod mips;
-mod operations;
-//pub mod memory;
+pub mod operations;
+pub mod program;
+pub mod memory;
+pub mod syscall;
 pub mod utils;
 pub use cpu::*;
 pub use mips::*;

@@ -668,7 +668,7 @@ impl<'a> Executor<'a> {
         let branch_add_lookup_id = self.record.create_lookup_id();
         let jump_jal_lookup_id = self.record.create_lookup_id();
         let jump_jalr_lookup_id = self.record.create_lookup_id();
-        // let auipc_lookup_id = self.record.create_lookup_id();
+        let auipc_lookup_id = self.record.create_lookup_id();
         self.record.cpu_events.push(CpuEvent {
             clk,
             pc,
@@ -691,7 +691,7 @@ impl<'a> Executor<'a> {
             branch_add_lookup_id,
             jump_jal_lookup_id,
             jump_jalr_lookup_id,
-            // auipc_lookup_id,
+            auipc_lookup_id,
         });
 
         // todo: impl

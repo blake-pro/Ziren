@@ -91,6 +91,8 @@ pub enum Opcode {
     SIGNEXT = 68,
     SWAP_HALF = 69,
     TEQ = 70,
+    JAL = 71,
+    JALR = 72,
 }
 
 impl Opcode {
@@ -169,6 +171,8 @@ impl Opcode {
             Opcode::SetContext => "set_context",
             Opcode::NOP => "nop",
             Opcode::SYSCALL => "syscall",
+            Opcode::JAL => "jal",
+            Opcode::JALR => "jalr",
         }
     }
 

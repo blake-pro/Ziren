@@ -7,11 +7,11 @@ mod tracer;
 pub use logger::*;
 use p3_field::Field;
 pub use prove::*;
-//use sp1_curves::params::Limbs;
+use zkm2_curves::params::Limbs;
 pub use span::*;
 pub use tracer::*;
 
-//use crate::memory::MemoryCols;
+use crate::memory::MemoryCols;
 use generic_array::ArrayLength;
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
 
@@ -34,7 +34,6 @@ pub fn pad_to_power_of_two<const N: usize, T: Clone + Default>(values: &mut Vec<
     values.resize(n_real_rows.next_power_of_two() * N, T::default());
 }
 
-/*
 pub fn limbs_from_prev_access<T: Copy, N: ArrayLength, M: MemoryCols<T>>(
     cols: &[M],
 ) -> Limbs<T, N> {
@@ -50,7 +49,6 @@ pub fn limbs_from_access<T: Copy, N: ArrayLength, M: MemoryCols<T>>(cols: &[M]) 
     let sized = vec.try_into().unwrap_or_else(|_| panic!("failed to convert to limbs"));
     Limbs(sized)
 }
-*/
 
 /// Pad to a power of two, with an option to specify the power.
 //
@@ -207,7 +205,7 @@ pub fn zkm2_debug_mode() -> bool {
     value == "1" || value.to_lowercase() == "true"
 }
 
-/// Returns a vector of zeros of the given length. This is faster than vec![F::zero(); len] which
+/// Returns a vector of zeros of the given length. This is faster than vec![F::ZERO; len] which
 /// requires copying.
 ///
 /// This function is safe to use only for fields that can be transmuted from 0u32.

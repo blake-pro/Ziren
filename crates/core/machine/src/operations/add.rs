@@ -1,10 +1,11 @@
 use zkm2_core_executor::events::ByteRecord;
-use zkm2_stark::{Word, ZKMAirBuilder};
+use zkm2_stark::{air::ZKMAirBuilder, Word};
+
+use p3_air::AirBuilder;
+use p3_field::{FieldAlgebra, Field};
+use zkm2_derive::AlignedBorrow;
 
 use crate::air::WordAirBuilder;
-use p3_air::AirBuilder;
-use p3_field::{Field, FieldAlgebra};
-use zkm2_derive::AlignedBorrow;
 
 /// A set of columns needed to compute the add of two words.
 #[derive(AlignedBorrow, Default, Debug, Clone, Copy)]
@@ -45,9 +46,7 @@ impl<F: Field> AddOperation<F> {
         }
 
         let base = 256u32;
-        let overflow = a[0]
-            .wrapping_add(b[0])
-            .wrapping_sub(expected.to_le_bytes()[0]) as u32;
+        let overflow = a[0].wrapping_add(b[0]).wrapping_sub(expected.to_le_bytes()[0]) as u32;
         debug_assert_eq!(overflow.wrapping_mul(overflow.wrapping_sub(base)), 0);
 
         // Range check

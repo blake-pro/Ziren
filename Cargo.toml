@@ -24,6 +24,7 @@ members = [
     "crates/build",
     "crates/zkvm/*",
     "crates/test-artifacts",
+    "crates/curves",
 ]
 resolver = "2"
 
@@ -111,6 +112,7 @@ zkm2-prover = { path = "crates/prover", version = "0.0.1" }
 
 zkm2-lib = { path = "crates/zkvm/lib", version = "0.0.1", default-features = false }
 zkm2-zkvm = { path = "crates/zkvm/entrypoint", version = "0.0.1", default-features = false }
+zkm2-curves = { path = "crates/curves", version = "0.0.1" }
 
 # For testing.
 test-artifacts = { path = "crates/test-artifacts", version = "0.0.1" }

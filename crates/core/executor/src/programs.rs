@@ -66,9 +66,10 @@ pub mod tests {
     // ///
     // /// This function will panic if the program fails to load.
     // #[must_use]
-    // pub fn ssz_withdrawals_program() -> Program {
+    pub fn ssz_withdrawals_program() -> Program {
     //     Program::from_elf(KECCAK_PERMUTE_ELF).unwrap()
-    // }
+        panic!("Unimpl")
+    }
 
     // /// Get the panic program.
     // ///
@@ -80,9 +81,10 @@ pub mod tests {
     //     Program::from_elf(PANIC_ELF).unwrap()
     // }
 
-    // #[must_use]
-    // #[allow(clippy::unreadable_literal)]
-    // pub fn simple_memory_program() -> Program {
+    #[must_use]
+    #[allow(clippy::unreadable_literal)]
+    pub fn simple_memory_program() -> Program {
+        panic!("Invalid")
     //     let instructions = vec![
     //         Instruction::new(Opcode::ADD, 29, 0, 0x12348765, false, true),
     //         // SW and LW
@@ -123,5 +125,5 @@ pub mod tests {
     //         Instruction::new(Opcode::LW, 11, 0, 0x43627530, false, true),
     //     ];
     //     Program::new(instructions, 0, 0)
-    // }
+    }
 }

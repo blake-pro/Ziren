@@ -13,6 +13,7 @@ use crate::{
     events::{
         add_sharded_byte_lookup_events, AluEvent, ByteLookupEvent, ByteRecord, CpuEvent, LookupId,
         MemoryInitializeFinalizeEvent, MemoryLocalEvent, MemoryRecordEnum, SyscallEvent,
+        PrecompileEvents, PrecompileEvent,
     },
     syscalls::SyscallCode,
     CoreShape, Opcode, Program,
@@ -46,8 +47,8 @@ pub struct ExecutionRecord {
     pub lt_events: Vec<AluEvent>,
     /// A trace of the byte lookups that are needed.
     pub byte_lookups: HashMap<u32, HashMap<ByteLookupEvent, usize>>,
-    // /// A trace of the precompile events.
-    // pub precompile_events: PrecompileEvents,
+    /// A trace of the precompile events.
+    pub precompile_events: PrecompileEvents,
     // /// A trace of the global memory initialize events.
     pub global_memory_initialize_events: Vec<MemoryInitializeFinalizeEvent>,
     // /// A trace of the global memory finalize events.
@@ -80,7 +81,7 @@ impl Default for ExecutionRecord {
             divrem_events: Vec::default(),
             lt_events: Vec::default(),
             byte_lookups: HashMap::default(),
-            // precompile_events: PrecompileEvents::default(),
+            precompile_events: PrecompileEvents::default(),
             global_memory_initialize_events: Vec::default(),
             global_memory_finalize_events: Vec::default(),
             cpu_local_memory_access: Vec::default(),
@@ -281,33 +282,33 @@ impl ExecutionRecord {
         !self.cpu_events.is_empty()
     }
 
-    // #[inline]
-    // /// Add a precompile event to the execution record.
-    // pub fn add_precompile_event(
-    //     &mut self,
-    //     syscall_code: SyscallCode,
-    //     syscall_event: SyscallEvent,
-    //     event: PrecompileEvent,
-    // ) {
-    //     self.precompile_events.add_event(syscall_code, syscall_event, event);
-    // }
-    //
-    // /// Get all the precompile events for a syscall code.
-    // #[inline]
-    // #[must_use]
-    // pub fn get_precompile_events(
-    //     &self,
-    //     syscall_code: SyscallCode,
-    // ) -> &Vec<(SyscallEvent, PrecompileEvent)> {
-    //     self.precompile_events.get_events(syscall_code).expect("Precompile events not found")
-    // }
-    //
-    // /// Get all the local memory events.
-    // #[inline]
-    // pub fn get_local_mem_events(&self) -> impl Iterator<Item=&MemoryLocalEvent> {
-    //     let precompile_local_mem_events = self.precompile_events.get_local_mem_events();
-    //     precompile_local_mem_events.chain(self.cpu_local_memory_access.iter())
-    // }
+    #[inline]
+    /// Add a precompile event to the execution record.
+    pub fn add_precompile_event(
+        &mut self,
+        syscall_code: SyscallCode,
+        syscall_event: SyscallEvent,
+        event: PrecompileEvent,
+    ) {
+        self.precompile_events.add_event(syscall_code, syscall_event, event);
+    }
+
+    /// Get all the precompile events for a syscall code.
+    #[inline]
+    #[must_use]
+    pub fn get_precompile_events(
+        &self,
+        syscall_code: SyscallCode,
+    ) -> &Vec<(SyscallEvent, PrecompileEvent)> {
+        self.precompile_events.get_events(syscall_code).expect("Precompile events not found")
+    }
+
+    /// Get all the local memory events.
+    #[inline]
+    pub fn get_local_mem_events(&self) -> impl Iterator<Item=&MemoryLocalEvent> {
+        let precompile_local_mem_events = self.precompile_events.get_local_mem_events();
+        precompile_local_mem_events.chain(self.cpu_local_memory_access.iter())
+    }
 }
 
 /// A memory access record.
@@ -388,7 +389,7 @@ impl MachineRecord for ExecutionRecord {
         self.lt_events.append(&mut other.lt_events);
         self.syscall_events.append(&mut other.syscall_events);
 
-        // self.precompile_events.append(&mut other.precompile_events);
+        self.precompile_events.append(&mut other.precompile_events);
 
         if self.byte_lookups.is_empty() {
             self.byte_lookups = std::mem::take(&mut other.byte_lookups);

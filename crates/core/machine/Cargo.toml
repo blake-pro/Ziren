@@ -27,6 +27,7 @@ p3-util = { workspace = true }
 zkm2-derive = { workspace = true }
 zkm2-primitives = { workspace = true }
 zkm2-core-executor = { workspace = true }
+zkm2-curves = { workspace = true }
 
 amcl = { package = "snowbridge-amcl", version = "1.0.2", default-features = false, features = [
   "bls381",
@@ -64,7 +65,7 @@ test-artifacts = { workspace = true }
 
 [features]
 debug = []
-#bigint-rug = ["sp1-curves/bigint-rug"]
+bigint-rug = ["zkm2-curves/bigint-rug"]
 
 [lib]
 bench = false

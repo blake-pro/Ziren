@@ -46,6 +46,9 @@ pub struct Program {
     /// The shape for the preprocessed tables.
     // todo: check if necessary
     pub preprocessed_shape: Option<CoreShape>,
+
+    /// The initial memory image, useful for global constants.
+    pub memory_image: hashbrown::HashMap<u32, u32>,
 }
 
 impl Program {
@@ -286,6 +289,7 @@ impl Program {
             public_values_stream: Vec::new(),
             public_values_stream_ptr: 0,
             preprocessed_shape: None,
+            memory_image: hashbrown::HashMap::new(),
         })
     }
 
