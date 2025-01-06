@@ -12,7 +12,6 @@
     - [Runtime](./dev/runtime.md)
         - [Host Program](./dev/host-program.md)
         - [Guest Program](./dev/guest-program.md)
-    - [Trust Setup](./dev/trust-setup.md)
     - [Prover](./dev/prover.md)
     - [Proof Composition](./dev/proof-composition.md)
 - [Design](./design/design.md)
