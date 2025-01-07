@@ -48,6 +48,7 @@ test-artifacts = { workspace = true, optional = true }
 
 [dev-dependencies]
 zkm2-zkvm = { workspace = true }
+zkm2-lib = { workspace = true }
 
 [features]
 default = ["programs"]

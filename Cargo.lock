@@ -3575,6 +3575,7 @@ dependencies = [
  "vec_map",
  "zkm2-core-emulator",
  "zkm2-curves",
+ "zkm2-lib",
  "zkm2-primitives",
  "zkm2-stark",
  "zkm2-zkvm",

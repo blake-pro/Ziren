@@ -17,6 +17,7 @@ use crate::{
         AluEvent, CpuEvent, LookupId, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
         MemoryLocalEvent, MemoryReadRecord, MemoryRecord, MemoryWriteRecord, SyscallEvent,
     },
+    hook::{HookEnv, HookRegistry},
     memory::{Entry, PagedMemory},
     record::{ExecutionRecord, MemoryAccessRecord},
     sign_extend,
@@ -121,8 +122,8 @@ pub struct Executor<'a> {
     /// Verifier used to sanity check `verify_sp1_proof` during runtime.
     pub subproof_verifier: Arc<dyn SubproofVerifier + 'a>,
 
-    // /// Registry of hooks, to be invoked by writing to certain file descriptors.
-    // pub hook_registry: HookRegistry<'a>,
+    /// Registry of hooks, to be invoked by writing to certain file descriptors.
+    pub hook_registry: HookRegistry<'a>,
     /// The maximal shapes for the program.
     pub maximal_shapes: Option<Vec<HashMap<String, usize>>>,
 }
@@ -221,7 +222,7 @@ impl<'a> Executor<'a> {
         let subproof_verifier = context
             .subproof_verifier
             .unwrap_or_else(|| Arc::new(DefaultSubproofVerifier::new()));
-        // let hook_registry = context.hook_registry.unwrap_or_default();
+        let hook_registry = context.hook_registry.unwrap_or_default();
 
         Self {
             record,
@@ -243,7 +244,7 @@ impl<'a> Executor<'a> {
             report: ExecutionReport::default(),
             print_report: false,
             subproof_verifier,
-            // hook_registry,
+            hook_registry,
             opts,
             max_cycles: context.max_cycles,
             deferred_proof_verification: if context.skip_deferred_proof_verification {
@@ -258,7 +259,6 @@ impl<'a> Executor<'a> {
         }
     }
 
-    /*
     /// Invokes a hook with the given file descriptor `fd` with the data `buf`.
     ///
     /// # Errors
@@ -278,7 +278,6 @@ impl<'a> Executor<'a> {
     pub fn hook_env<'b>(&'b self) -> HookEnv<'b, 'a> {
         HookEnv { runtime: self }
     }
-     */
 
     /// Recover runtime state from a program and existing execution state.
     #[must_use]
@@ -694,7 +693,6 @@ impl<'a> Executor<'a> {
             auipc_lookup_id,
         });
 
-        // todo: impl
         emit_cpu_dependencies(self, self.record.cpu_events.len() - 1);
     }
 
@@ -969,9 +967,9 @@ impl<'a> Executor<'a> {
                     .entry(syscall_for_count)
                     .or_insert(0);
                 let (threshold, multiplier) = match syscall_for_count {
-                    // SyscallCode::KECCAK_PERMUTE => (self.opts.split_opts.keccak, 24),
-                    // SyscallCode::SHA_EXTEND => (self.opts.split_opts.sha_extend, 48),
-                    // SyscallCode::SHA_COMPRESS => (self.opts.split_opts.sha_compress, 80),
+                    SyscallCode::KECCAK_PERMUTE => (self.opts.split_opts.keccak, 24),
+                    SyscallCode::SHA_EXTEND => (self.opts.split_opts.sha_extend, 48),
+                    SyscallCode::SHA_COMPRESS => (self.opts.split_opts.sha_compress, 80),
                     _ => (self.opts.split_opts.deferred, 1),
                 };
                 let nonce = (((*syscall_count as usize) % threshold) * multiplier) as u32;
@@ -1119,9 +1117,6 @@ impl<'a> Executor<'a> {
             }
             Opcode::SIGNEXT => {
                 (a, b, c) = self.execute_signext(instruction);
-            }
-            Opcode::SWAP_HALF => {
-                (a, b, c) = self.execute_swaphalf(instruction);
             }
             Opcode::TEQ => {
                 (a, b, c) = self.execute_teq(instruction);

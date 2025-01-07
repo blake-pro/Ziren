@@ -113,7 +113,7 @@ impl ExecutionRecord {
         // let id = self.nonce_lookup.len() as u64;
         let id = self.next_nonce;
         self.next_nonce += 1;
-        self.nonce_lookup.insert(id as usize, 0);
+        //self.nonce_lookup.insert(id as usize, 0);
         LookupId(id)
     }
 
@@ -250,7 +250,6 @@ impl ExecutionRecord {
                             finalize_addr_bits = last_finalize_addr_bits;
                         }
                         shard.public_values.last_finalize_addr_bits = finalize_addr_bits;
-
                         shards.push(shard);
                     }
         }
@@ -342,9 +341,9 @@ impl MachineRecord for ExecutionRecord {
         stats.insert("divrem_events".to_string(), self.divrem_events.len());
         stats.insert("lt_events".to_string(), self.lt_events.len());
 
-        // for (syscall_code, events) in self.precompile_events.iter() {
-        //     stats.insert(format!("syscall {syscall_code:?}"), events.len());
-        // }
+        for (syscall_code, events) in self.precompile_events.iter() {
+            stats.insert(format!("syscall {syscall_code:?}"), events.len());
+        }
 
         stats.insert(
             "global_memory_initialize_events".to_string(),

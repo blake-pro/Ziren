@@ -89,10 +89,9 @@ pub enum Opcode {
     ROR = 66,
     RDHWR = 67,
     SIGNEXT = 68,
-    SWAP_HALF = 69,
-    TEQ = 70,
-    JAL = 71,
-    JALR = 72,
+    TEQ = 69,
+    JAL = 70,
+    JALR = 71,
 }
 
 impl Opcode {
@@ -164,7 +163,6 @@ impl Opcode {
             Opcode::ROR => "ror",
             Opcode::RDHWR => "rdhwr",
             Opcode::SIGNEXT => "sext",
-            Opcode::SWAP_HALF => "swap_half",
             Opcode::TEQ => "teq",
             Opcode::PC => "pc",
             Opcode::GetContext => "get_context",
