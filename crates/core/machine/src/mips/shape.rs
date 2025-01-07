@@ -200,6 +200,7 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
                 return Err(CoreShapeError::ShapeError(record.stats()));
             }
         }
+        println!("record: {:?}", record);
         Err(CoreShapeError::PrecompileNotIncluded(record.stats()))
     }
 
