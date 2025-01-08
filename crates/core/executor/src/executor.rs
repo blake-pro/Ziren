@@ -1615,6 +1615,7 @@ impl<'a> Executor<'a> {
         if !self.unconstrained {
             // If there's not enough cycles left for another instruction, move to the next shard.
             let cpu_exit = self.max_syscall_cycles + self.state.clk >= self.shard_size;
+            println!("cpu exit {cpu_exit}, {} {}, {}", self.max_syscall_cycles, self.state.clk, self.shard_size);
 
             // Every N cycles, check if there exists at least one shape that fits.
             //
