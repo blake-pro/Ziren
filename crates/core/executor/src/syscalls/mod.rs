@@ -96,6 +96,10 @@ pub fn default_syscall_map() -> HashMap<SyscallCode, Arc<dyn Syscall>> {
         Arc::new(EdwardsDecompressSyscall::<Ed25519Parameters>::new()),
     );
 
+    syscall_map.insert(SyscallCode::SYSMMAP2, Arc::new(MmapSyscall));
+    syscall_map.insert(SyscallCode::SYSCLONE, Arc::new(CloneSyscall));
+    syscall_map.insert(SyscallCode::SYSBRK, Arc::new(BrkSyscall));
+
     syscall_map.insert(SyscallCode::KECCAK_PERMUTE, Arc::new(Keccak256PermuteSyscall));
 
     syscall_map.insert(
