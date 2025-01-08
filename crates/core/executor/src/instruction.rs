@@ -311,7 +311,7 @@ impl Instruction {
                     Ok(Self::new(Opcode::JumpDirect, 31, offset, 0, 0, true, true))
                 } else {
                     // todo: change to ProgramError later
-                    panic!("InvalidOpcode")
+                    Ok(Self::new(Opcode::INVALID, 0, 0, 0, 0,  false, false))
                 }
             }
             // (0x02, _) => Ok(Operation::Jumpi(0u8, target)), // J
@@ -560,8 +560,7 @@ impl Instruction {
             (0b000000, 0b110100) => Ok(Self::new(Opcode::TEQ, rd, rs, rt, 0, false, false)), // teq
             _ => {
                 log::warn!("decode: invalid opcode {:#08b} {:#08b}", opcode, func);
-                // todo: change to ProgramError later
-                panic!("InvalidOpcode")
+                Ok(Self::new(Opcode::INVALID, 0, 0, 0, 0,  false, false))
             }
         }
     }

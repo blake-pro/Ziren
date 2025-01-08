@@ -92,6 +92,7 @@ pub enum Opcode {
     TEQ = 69,
     JAL = 70,
     JALR = 71,
+    INVALID = 100,
 }
 
 impl Opcode {
@@ -171,6 +172,7 @@ impl Opcode {
             Opcode::SYSCALL => "syscall",
             Opcode::JAL => "jal",
             Opcode::JALR => "jalr",
+            Opcode::INVALID => "invalid opcode",
         }
     }
 
