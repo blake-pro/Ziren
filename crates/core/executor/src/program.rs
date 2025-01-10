@@ -272,10 +272,10 @@ impl Program {
         cur_sp += 8;
         image.insert(cur_sp, 0); // auxv[term] = 0
         cur_sp += 4;
-        image.insert(cur_sp, 0x5f28df1du32.to_be()); // auxv[term] = 0
-        image.insert(cur_sp + 4, 0x2cd1002au32.to_be()); // auxv[term] = 0
-        image.insert(cur_sp + 8, 0x5ff9f682u32.to_be()); // auxv[term] = 0
-        image.insert(cur_sp + 12, 0xd4d8d538u32.to_be()); // auxv[term] = 0
+        image.insert(cur_sp, 0x5f28df1du32); // auxv[term] = 0
+        image.insert(cur_sp + 4, 0x2cd1002au32); // auxv[term] = 0
+        image.insert(cur_sp + 8, 0x5ff9f682u32); // auxv[term] = 0
+        image.insert(cur_sp + 12, 0xd4d8d538u32); // auxv[term] = 0
         cur_sp += 16;
         image.insert(cur_sp, 0x00); // auxv[term] = 0
         cur_sp += 4;
@@ -319,15 +319,21 @@ impl Program {
         let mut gprs = [0; 32];
         gprs[29] = INIT_SP as usize;
 
+        let lo = 0;
+        let hi = 0;
+        let heap = 0x20000000;
+        let local_user = 0;
+        let end_pc: u32 = 0;
+
         // initialize gprs
         gprs.iter()
             .enumerate()
             .for_each(|(i, &x)| { image.insert(i as u32, x as u32); });
-
-        let lo = 0;
-        let hi = 0;
-        let heap = 0x20000000;
-        let end_pc: u32 = 0;
+        image.insert(32, lo as u32);
+        image.insert(33, hi as u32);
+        image.insert(34, heap as u32);
+        image.insert(35, brk);
+        image.insert(36, local_user as u32);
 
         // this is just for test
         let mut final_data = [0u8; 36];
@@ -372,7 +378,7 @@ impl Program {
             hi,
             heap,
             brk: brk as usize,
-            local_user: 0,
+            local_user,
             end_pc: end_pc as usize,
             step: 0,
             image_id: image_id.try_into().unwrap(),

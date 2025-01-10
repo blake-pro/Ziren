@@ -1028,6 +1028,7 @@ impl<'a> Executor<'a> {
                 clk = self.state.clk;
                 pc = self.state.pc;
 
+                // todo: change memory access point, otherwise would panic in debug mode
                 self.rw(Register::V0, a);
                 self.rw(Register::A3, v1);
                 next_pc = precompile_next_pc;
@@ -1569,7 +1570,7 @@ impl<'a> Executor<'a> {
             MemoryAccessPosition::Memory,
         );
         if instruction.opcode == Opcode::SC {
-            self.rw(rt_reg, val);
+            self.rw(rt_reg, 1);
 
             Ok((val, rs, offset))
         } else {
@@ -1943,6 +1944,13 @@ impl<'a> Executor<'a> {
         }
     }
 
+    pub fn run_very_fast(&mut self) -> Result<(), ExecutionError> {
+        self.executor_mode = ExecutorMode::Simple;
+        self.print_report = false;
+        while !self.execute()? {}
+        Ok(())
+    }
+
     /// Executes the program without tracing and without emitting events.
     ///
     /// # Errors
@@ -2158,6 +2166,11 @@ impl<'a> Executor<'a> {
             );
         }
     }
+
+    fn show_regs(&self) {
+        let regs = (0..37).map(|i| self.state.memory.get(i).unwrap().value).collect::<Vec<_>>();
+        println!("global_clk: {}, pc: {}, regs {:?}", self.state.global_clk, self.state.pc, regs);
+    }
 }
 
 impl Default for ExecutorMode {
@@ -2222,8 +2235,9 @@ mod tests {
         env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
         let program = Program::from_elf("../emulator/test-vectors/hello").unwrap();
+        // let program = Program::from_elf("crates/core/emulator/test-vectors/hello").unwrap();
         let mut runtime = Executor::new(program, ZKMCoreOpts::default());
-        runtime.run().unwrap();
+        runtime.run_very_fast().unwrap();
     }
     //
     // #[test]

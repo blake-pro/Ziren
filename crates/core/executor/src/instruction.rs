@@ -249,14 +249,14 @@ impl Instruction {
             // (0b000000, 0b011010) => {
             //     Ok(Operation::BinaryArithmetic(BinaryOperator::DIV, rs, rt, rd))
             // } // DIV: (hi, lo) = rt / rs
-            (0b000000, 0b011010) => Ok(Self::new(Opcode::DIV, rd, rt, rs, 0, false, false)), // DIV: (hi, lo) = rt / rs
+            (0b000000, 0b011010) => Ok(Self::new(Opcode::DIV, rd, rs, rt, 0, false, false)), // DIV: (hi, lo) = rs / rt
             // (0b000000, 0b011011) => Ok(Operation::BinaryArithmetic(
             //     BinaryOperator::DIVU,
             //     rs,
             //     rt,
             //     rd,
             // )), // DIVU: (hi, lo) = rt / rs
-            (0b000000, 0b011011) => Ok(Self::new(Opcode::DIVU, rd, rt, rs, 0, false, false)), // DIVU: (hi, lo) = rt / rs
+            (0b000000, 0b011011) => Ok(Self::new(Opcode::DIVU, rd, rs, rt, 0, false, false)), // DIVU: (hi, lo) = rs / rt
             // (0b000000, 0b010000) => {
             //     Ok(Operation::BinaryArithmetic(BinaryOperator::MFHI, 33, 0, rd))
             // } // MFHI: rd = hi
