@@ -25,12 +25,15 @@ pub struct MemoryRecord {
 pub enum MemoryAccessPosition {
     /// Memory access position.
     Memory = 0,
+    /// A register Read access position.
+    // todo: update memory access constraints in circuit
+    AR = 1,
     /// C register access position.
-    C = 1,
+    C = 2,
     /// B register access position.
-    B = 2,
+    B = 3,
     /// A register access position.
-    A = 3,
+    A = 4,
 }
 
 /// Memory Read Record.

@@ -1,13 +1,8 @@
-use crate::{
-    events::AluEvent,
-    utils::{get_msb, get_quotient_and_remainder, is_signed_operation},
-    Executor,
-};
+use crate::{events::AluEvent, utils::{get_msb, get_quotient_and_remainder, is_signed_operation}, Executor, Opcode};
 
 /// Emits the dependencies for division and remainder operations.
 #[allow(clippy::too_many_lines)]
 pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
-    todo!("impl")
     /*
     let shard = executor.shard();
     let (quotient, remainder) = get_quotient_and_remainder(event.b, event.c, event.opcode);
@@ -27,7 +22,7 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
             lookup_id: event.sub_lookups[4],
             shard,
             clk: event.clk,
-            opcode: BinaryOperator::ADD,
+            opcode: Opcode::ADD,
             a: 0,
             b: event.c,
             c: (event.c as i32).unsigned_abs(),
@@ -40,7 +35,7 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
             lookup_id: event.sub_lookups[5],
             shard,
             clk: event.clk,
-            opcode: BinaryOperator::ADD,
+            opcode: Opcode::ADD,
             a: 0,
             b: remainder,
             c: (remainder as i32).unsigned_abs(),
@@ -62,7 +57,7 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
         lookup_id: event.sub_lookups[0],
         shard,
         clk: event.clk,
-        opcode: BinaryOperator::MUL,
+        opcode: Opcode::MUL,
         a: lower_word,
         c: event.c,
         b: quotient,
@@ -76,9 +71,9 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
         clk: event.clk,
         opcode: {
             if is_signed_operation {
-                BinaryOperator::MULH
+                Opcode::MULT
             } else {
-                BinaryOperator::MULHU
+                Opcode::MULTU
             }
         },
         a: upper_word,
@@ -92,7 +87,7 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
         AluEvent {
             lookup_id: event.sub_lookups[2],
             shard,
-            opcode: BinaryOperator::SLTU,
+            opcode: Opcode::SLTU,
             a: 1,
             b: (remainder as i32).unsigned_abs(),
             c: u32::max(1, (event.c as i32).unsigned_abs()),
@@ -103,7 +98,7 @@ pub fn emit_divrem_dependencies(executor: &mut Executor, event: AluEvent) {
         AluEvent {
             lookup_id: event.sub_lookups[3],
             shard,
-            opcode: BinaryOperator::SLTU,
+            opcode: Opcode::SLTU,
             a: 1,
             b: remainder,
             c: u32::max(1, event.c),

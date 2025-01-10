@@ -78,9 +78,9 @@ pub enum Opcode {
     Jump = 55,
     Jumpi = 56,
     JumpDirect = 57,
-    PC = 58,
-    GetContext = 59,
-    SetContext = 60,
+    // PC = 58,
+    // GetContext = 59,
+    // SetContext = 60,
     NOP = 61,
     SYSCALL = 62,
     EXT = 63,
@@ -91,8 +91,9 @@ pub enum Opcode {
     SIGNEXT = 68,
     SWAP_HALF = 69,
     TEQ = 70,
-    JAL = 71,
-    JALR = 72,
+    // JAL = 71,
+    // JALR = 72,
+    UNIMPL = 0xff,
 }
 
 impl Opcode {
@@ -166,13 +167,14 @@ impl Opcode {
             Opcode::SIGNEXT => "sext",
             Opcode::SWAP_HALF => "swap_half",
             Opcode::TEQ => "teq",
-            Opcode::PC => "pc",
-            Opcode::GetContext => "get_context",
-            Opcode::SetContext => "set_context",
+            // Opcode::PC => "pc",
+            // Opcode::GetContext => "get_context",
+            // Opcode::SetContext => "set_context",
             Opcode::NOP => "nop",
             Opcode::SYSCALL => "syscall",
-            Opcode::JAL => "jal",
-            Opcode::JALR => "jalr",
+            // Opcode::JAL => "jal",
+            // Opcode::JALR => "jalr",
+            Opcode::UNIMPL => "unimpl",
         }
     }
 
