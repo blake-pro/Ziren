@@ -200,7 +200,7 @@ impl Program {
                     image.insert(addr, 0x0800e003u32.to_be());
                     image.insert(addr + 4, 0);
 
-                    log::debug!("patch addr: {}, {}", addr, 0x0800e003u32.to_be());
+                    // log::debug!("patch addr: {}, {}", addr, 0x0800e003u32.to_be());
                     let pc = ((addr - base_address) / 4) as usize;
                     instructions[pc] = 0x0800e003u32.to_be();
                     instructions[pc + 1] = 0;

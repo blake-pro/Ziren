@@ -1024,6 +1024,10 @@ impl<'a> Executor<'a> {
                         (self.state.next_pc, 5, 0)
                     };
 
+                if syscall == SyscallCode::SYSEXITGROUP && returned_exit_code == 0 {
+                    self.state.exited = true;
+                }
+
                 // Allow the syscall impl to modify state.clk/pc (exit unconstrained does this)
                 clk = self.state.clk;
                 pc = self.state.pc;
@@ -1814,6 +1818,7 @@ impl<'a> Executor<'a> {
 
         // todo: check done
         let done = self.state.pc == 0
+            || self.state.exited
             || self.state.pc.wrapping_sub(self.program.pc_base)
             >= (self.program.instructions.len() * 4) as u32;
         if done && self.unconstrained {
