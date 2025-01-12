@@ -326,9 +326,9 @@ impl Program {
         let end_pc: u32 = 0;
 
         // initialize gprs
-        gprs.iter()
-            .enumerate()
-            .for_each(|(i, &x)| { image.insert(i as u32, x as u32); });
+        gprs.iter().enumerate().for_each(|(i, &x)| {
+            image.insert(i as u32, x as u32);
+        });
         image.insert(32, lo as u32);
         image.insert(33, hi as u32);
         image.insert(34, heap as u32);

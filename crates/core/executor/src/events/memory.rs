@@ -25,15 +25,18 @@ pub struct MemoryRecord {
 pub enum MemoryAccessPosition {
     /// Memory access position.
     Memory = 0,
-    /// A register Read access position.
-    // todo: update memory access constraints in circuit
-    AR = 1,
     /// C register access position.
-    C = 2,
+    C = 1,
     /// B register access position.
-    B = 3,
+    B = 2,
     /// A register access position.
-    A = 4,
+    A = 3,
+    // todo: update memory access constraints in circuit
+    /// AH register access position.
+    /// could be used in HI register and other special registers
+    AH = 4,
+    ///  special registers for syscalls
+    S = 5,
 }
 
 /// Memory Read Record.
@@ -177,9 +180,9 @@ impl MemoryWriteRecord {
         prev_shard: u32,
         prev_timestamp: u32,
     ) -> Self {
-        // debug_assert!(
-        //     shard > prev_shard || ((shard == prev_shard) && (timestamp > prev_timestamp)),
-        // );
+        debug_assert!(
+            shard > prev_shard || ((shard == prev_shard) && (timestamp > prev_timestamp)),
+        );
         Self {
             value,
             shard,

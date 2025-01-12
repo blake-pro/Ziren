@@ -586,7 +586,8 @@ impl<'a> Executor<'a> {
                 MemoryAccessPosition::A => self.memory_accesses.a = Some(record.into()),
                 MemoryAccessPosition::B => self.memory_accesses.b = Some(record.into()),
                 MemoryAccessPosition::C => self.memory_accesses.c = Some(record.into()),
-                MemoryAccessPosition::AR => self.memory_accesses.ar = Some(record.into()),
+                MemoryAccessPosition::AH => self.memory_accesses.ah = Some(record.into()),
+                MemoryAccessPosition::S => self.memory_accesses.s = Some(record.into()),
                 MemoryAccessPosition::Memory => self.memory_accesses.memory = Some(record.into()),
             }
         }
@@ -621,14 +622,15 @@ impl<'a> Executor<'a> {
                     debug_assert!(self.memory_accesses.c.is_none());
                     self.memory_accesses.c = Some(record.into());
                 }
-                MemoryAccessPosition::AR => {
-                    debug_assert!(self.memory_accesses.ar.is_none());
-                    self.memory_accesses.ar = Some(record.into());
+                MemoryAccessPosition::AH => {
+                    debug_assert!(self.memory_accesses.ah.is_none());
+                    self.memory_accesses.ah = Some(record.into());
+                }
+                MemoryAccessPosition::S => {
+                    debug_assert!(self.memory_accesses.s.is_none());
+                    self.memory_accesses.s = Some(record.into());
                 }
                 MemoryAccessPosition::Memory => {
-                    if addr == 2147471372 && self.state.global_clk < 110 {
-                        println!("write mem addr {}, val {}", addr, value);
-                    }
                     debug_assert!(self.memory_accesses.memory.is_none());
                     self.memory_accesses.memory = Some(record.into());
                 }
@@ -641,15 +643,15 @@ impl<'a> Executor<'a> {
         self.mr_cpu(register as u32, position)
     }
 
-    /// Write to a register.
-    // todo: specify MemoryAccessPosition
-    pub fn rw(&mut self, register: Register, value: u32) {
-        // The only time we are writing to a register is when it is in operand A.
+    /// Write to a register A or AH
+    pub fn rw(&mut self, register: Register, value: u32, position: MemoryAccessPosition) {
+        // The only time we are writing to a register is when it is in operand A or AH.
+        debug_assert!(vec![MemoryAccessPosition::A, MemoryAccessPosition::AH, MemoryAccessPosition::S].contains(&position));
         // Register 0 should always be 0
         if register == Register::ZERO {
-            self.mw_cpu(register as u32, 0, MemoryAccessPosition::A);
+            self.mw_cpu(register as u32, 0, position);
         } else {
-            self.mw_cpu(register as u32, value, MemoryAccessPosition::A);
+            self.mw_cpu(register as u32, value, position);
         }
     }
 
@@ -829,11 +831,11 @@ impl<'a> Executor<'a> {
         lookup_id: LookupId,
     ) -> (Option<u32>, u32, u32, u32) {
         let hi = if op.opcode.is_use_lo_hi_alu() {
-            self.rw(Register::LO, a);
-            self.rw(Register::HI, hi);
+            self.rw(Register::LO, a, MemoryAccessPosition::A);
+            self.rw(Register::HI, hi, MemoryAccessPosition::AH);
             Some(hi)
         } else {
-            self.rw(rd.into(), a);
+            self.rw(rd.into(), a, MemoryAccessPosition::A);
             None
         };
 
@@ -962,8 +964,8 @@ impl<'a> Executor<'a> {
             // syscall
             Opcode::SYSCALL => {
                 let syscall_id = self.register(Register::V0);
-                b = self.rr(Register::A0, MemoryAccessPosition::C);
-                c = self.rr(Register::A1, MemoryAccessPosition::B);
+                c = self.rr(Register::A1, MemoryAccessPosition::C);
+                b = self.rr(Register::A0, MemoryAccessPosition::B);
                 let syscall = SyscallCode::from_u32(syscall_id);
 
                 if self.print_report && !self.unconstrained {
@@ -1032,9 +1034,9 @@ impl<'a> Executor<'a> {
                 clk = self.state.clk;
                 pc = self.state.pc;
 
-                // todo: change memory access point, otherwise would panic in debug mode
-                self.rw(Register::V0, a);
-                self.rw(Register::A3, v1);
+                // todo: update circuit
+                self.rw(Register::V0, a, MemoryAccessPosition::A);
+                self.rw(Register::A3, v1, MemoryAccessPosition::AH);
                 next_pc = precompile_next_pc;
                 self.state.clk += precompile_cycles;
                 exit_code = returned_exit_code;
@@ -1185,7 +1187,7 @@ impl<'a> Executor<'a> {
         let mask_msb = (1 << (msbd + lsb + 1)) - 1;
         let a = (b & mask_msb) >> lsb;
 
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
@@ -1204,7 +1206,7 @@ impl<'a> Executor<'a> {
         let mask_field = mask << lsb;
         let a = (rt & !mask_field) | ((b << lsb) & mask_field);
 
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
@@ -1220,24 +1222,25 @@ impl<'a> Executor<'a> {
         let sin = (b as u64) + ((b as u64) << 32);
         let a = (sin >> sa) as u32;
 
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
     fn execute_rdhwr(&mut self, instruction: &Instruction) -> (u32, u32, u32) {
         let (rt, rd) = (instruction.op_a.into(), (instruction.op_b as u8).into());
 
+        let c = self.rr(Register::LOCAL_USER, MemoryAccessPosition::C);
         let b = self.rr(rd, MemoryAccessPosition::B);
 
         let a = if b == 0 {
             1
         } else if b == 29 {
-            self.register(Register::LOCAL_USER)
+            c
         } else {
             0
         };
-        self.rw(rt, a);
-        (a, b, 0)
+        self.rw(rt, a, MemoryAccessPosition::A);
+        (a, b, c)
     }
 
     fn execute_signext(&mut self, instruction: &Instruction) -> (u32, u32, u32) {
@@ -1258,7 +1261,7 @@ impl<'a> Executor<'a> {
         } else {
             b & mask
         };
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
@@ -1272,7 +1275,7 @@ impl<'a> Executor<'a> {
             | ((b & 0xFF) << 8)
             | ((b >> 8) & 0xFF);
 
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
@@ -1306,8 +1309,9 @@ impl<'a> Executor<'a> {
         let (result, _) = mul.overflowing_add(addend);
         let a = result as u32;
         let hi = (result >> 32) as u32;
-        self.rw(Register::HI, hi);
-        self.rw(Register::LO, a);
+        self.rw(Register::LO, a, MemoryAccessPosition::A);
+        self.rw(Register::HI, hi, MemoryAccessPosition::AH);
+
         (Some(hi), a, b, c)
     }
 
@@ -1329,7 +1333,7 @@ impl<'a> Executor<'a> {
         };
 
         let a = if mov { b } else { a };
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, c)
     }
 
@@ -1344,7 +1348,7 @@ impl<'a> Executor<'a> {
             }
         };
         let a = value.leading_zeros();
-        self.rw(rd, a);
+        self.rw(rd, a, MemoryAccessPosition::A);
         (a, b, 0)
     }
 
@@ -1456,10 +1460,9 @@ impl<'a> Executor<'a> {
             instruction.op_c,
         );
         let rs = self.rr(rs_reg, MemoryAccessPosition::B);
-        let mut rt = 0;
-        if instruction.opcode == Opcode::LWL || instruction.opcode == Opcode::LWR {
-            rt = self.rr(rt_reg, MemoryAccessPosition::AR)
-        }
+        // We needn't the memory access record here, because we will write to rt_reg,
+        // and we could use the `prev_value` of the MemoryWriteRecord in the circuit.
+        let rt = self.register(rt_reg);
 
         let virt_raw = rs.wrapping_add(sign_extend::<16>(offset));
         let virt = virt_raw & 0xFFFF_FFFC;
@@ -1504,7 +1507,7 @@ impl<'a> Executor<'a> {
             }
             _ => unreachable!(),
         };
-        self.rw(rt_reg, val);
+        self.rw(rt_reg, val, MemoryAccessPosition::A);
         Ok((val, rs, offset))
     }
 
@@ -1520,7 +1523,7 @@ impl<'a> Executor<'a> {
         let rs = self.rr(rs_reg, MemoryAccessPosition::B);
         // todo: add constraints in cpu chip
         let rt = if instruction.opcode == Opcode::SC {
-            self.rr(rt_reg, MemoryAccessPosition::AR)
+            self.register(rt_reg)
         } else {
             self.rr(rt_reg, MemoryAccessPosition::A)
         };
@@ -1574,7 +1577,7 @@ impl<'a> Executor<'a> {
             MemoryAccessPosition::Memory,
         );
         if instruction.opcode == Opcode::SC {
-            self.rw(rt_reg, 1);
+            self.rw(rt_reg, 1, MemoryAccessPosition::A);
 
             Ok((val, rs, offset))
         } else {
@@ -1619,7 +1622,7 @@ impl<'a> Executor<'a> {
         let target_pc = self.rr(target, MemoryAccessPosition::B);
         // maybe rename it
         let next_pc = self.state.pc.wrapping_add(8);
-        self.rw(link, next_pc);
+        self.rw(link, next_pc, MemoryAccessPosition::A);
 
         (next_pc, target_pc, c, target_pc)
     }
@@ -1632,7 +1635,7 @@ impl<'a> Executor<'a> {
         // maybe rename it
         let pc = self.state.pc;
         let next_pc = pc.wrapping_add(8);
-        self.rw(link, next_pc);
+        self.rw(link, next_pc, MemoryAccessPosition::A);
 
         (next_pc, target, c, target_pc)
     }
@@ -1642,12 +1645,12 @@ impl<'a> Executor<'a> {
         let target = sign_extend::<16>(imm);
         let (target_pc, _) = target.overflowing_shl(2);
         //todo: check if necessary
-        self.rw(Register::ZERO, target_pc);
+        // self.rw(Register::ZERO, target_pc);
         let pc = self.state.pc;
         let target_pc = target_pc.wrapping_add(pc + 4);
         // maybe rename it
         let next_pc = pc.wrapping_add(8);
-        self.rw(link, next_pc);
+        self.rw(link, next_pc, MemoryAccessPosition::A);
 
         (next_pc, imm, c, target_pc)
     }
