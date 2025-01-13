@@ -1,20 +1,19 @@
 use super::{Syscall, SyscallCode, SyscallContext};
 
-pub(crate) struct CommitSyscall;
+pub(crate) struct CommitDeferredSyscall;
 
-impl Syscall for CommitSyscall {
+impl Syscall for CommitDeferredSyscall {
     #[allow(clippy::mut_mut)]
     fn execute(
         &self,
         ctx: &mut SyscallContext,
         _: SyscallCode,
         word_idx: u32,
-        public_values_digest_word: u32,
+        word: u32,
     ) -> Option<(u32, u32)> {
         let rt = &mut ctx.rt;
 
-        rt.record.public_values.committed_value_digest[word_idx as usize] =
-            public_values_digest_word;
+        rt.record.public_values.deferred_proofs_digest[word_idx as usize] = word;
 
         None
     }

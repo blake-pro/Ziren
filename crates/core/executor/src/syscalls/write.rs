@@ -2,7 +2,7 @@ use zkm2_primitives::consts::num_to_comma_separated;
 
 use crate::{Executor, Register};
 
-use super::{Syscall, SyscallCode, SyscallContext, MIPS_EBADF};
+use super::{Syscall, SyscallCode, SyscallContext, stdsys::MIPS_EBADF};
 
 pub(crate) struct WriteSyscall;
 

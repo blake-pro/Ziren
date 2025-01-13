@@ -545,9 +545,6 @@ impl Instruction {
                 } else if sa == 0b010000 {
                     //         Ok(Operation::Signext(rd, rt, 8)) // seb
                     Ok(Self::new(Opcode::SIGNEXT, rd, rt, 8, 0, true, false)) // seh
-                } else if sa == 0b000010 {
-                    //         Ok(Operation::SwapHalf(rd, rt)) // wsbh
-                    Ok(Self::new(Opcode::SWAP_HALF, rd, rt, 0, 0, false, false))
                 // seh
                 } else {
                     //         log::warn!(
