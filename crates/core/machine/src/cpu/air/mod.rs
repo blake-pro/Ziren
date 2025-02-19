@@ -1,4 +1,3 @@
-pub mod branch;
 pub mod memory;
 pub mod register;
 pub mod syscall;
@@ -48,11 +47,10 @@ where
 
         // Compute some flags for which type of instruction we are dealing with.
         let is_memory_instruction: AB::Expr = self.is_memory_instruction::<AB>(&local.selectors);
-        let is_branch_instruction: AB::Expr = self.is_branch_instruction::<AB>(&local.selectors);
         let is_alu_instruction: AB::Expr = self.is_alu_instruction::<AB>(&local.selectors);
 
         // Register constraints.
-        self.eval_registers::<AB>(builder, local, is_branch_instruction.clone());
+        self.eval_registers::<AB>(builder, local);
 
         // Memory instructions.
         self.eval_memory_address_and_access::<AB>(builder, local, is_memory_instruction.clone());
@@ -70,12 +68,6 @@ where
             local.nonce,
             is_alu_instruction,
         );
-
-        // Branch instructions.
-        self.eval_branch_ops::<AB>(builder, is_branch_instruction.clone(), local, next);
-
-        // Jump instructions.
-        self.eval_jump_ops::<AB>(builder, local, next);
 
         // syscall instruction.
         self.eval_syscall(builder, local);
@@ -99,7 +91,7 @@ where
         self.eval_shard_clk(builder, local, next);
 
         // Check that the pc is updated correctly.
-        self.eval_pc(builder, local, next, is_branch_instruction.clone());
+        // TOFIX self.eval_pc(builder, local, next, is_branch_instruction.clone());
 
         // Check public values constraints.
         self.eval_public_values(builder, local, next, public_values);
@@ -127,78 +119,6 @@ impl CpuChip {
         opcode_selectors: &OpcodeSelectorCols<AB::Var>,
     ) -> AB::Expr {
         opcode_selectors.is_alu.into()
-    }
-
-    /// Constraints related to jump operations.
-    pub(crate) fn eval_jump_ops<AB: ZKMAirBuilder>(
-        &self,
-        builder: &mut AB,
-        local: &CpuCols<AB::Var>,
-        next: &CpuCols<AB::Var>,
-    ) {
-        // Get the jump specific columns
-        let jump_columns = local.opcode_specific_columns.jump();
-
-        let is_jump_instruction = local.selectors.is_jump + local.selectors.is_jumpd;
-
-        // Verify that the local.pc + 8 is saved in op_a for both jump instructions.
-        // When op_a is set to register X0, the RISC-V spec states that the jump instruction will
-        // not have a return destination address (it is effectively a GOTO command).  In this case,
-        // we shouldn't verify the return address.
-        builder
-            .when(is_jump_instruction.clone())
-            .when_not(local.instruction.op_a_0)
-            .assert_eq(local.op_a_val().reduce::<AB>(), local.pc + AB::F::from_canonical_u8(8));
-
-        // Verify that the word form of local.pc is correct for JAL instructions.
-        builder
-            .when(is_jump_instruction.clone())
-            .assert_eq(jump_columns.next_pc.reduce::<AB>(), local.next_pc);
-
-        // Verify that the word form of target.pc is correct for both jump instructions.
-        builder
-            .when_transition()
-            .when(local.is_real)
-            .when(is_jump_instruction.clone())
-            .assert_eq(jump_columns.target_pc.reduce::<AB>(), local.next_next_pc);
-
-        // When the last row is real and it's a jump instruction, assert that local.next_pc <==>
-        // jump_column.next_pc
-        builder
-            .when(local.is_real)
-            .when(is_jump_instruction.clone())
-            .assert_eq(jump_columns.next_pc.reduce::<AB>(), local.next_pc);
-
-        // Range check op_a, pc, and next_pc.
-        KoalaBearWordRangeChecker::<AB::F>::range_check(
-            builder,
-            local.op_a_val(),
-            jump_columns.op_a_range_checker,
-            is_jump_instruction.clone(),
-        );
-        KoalaBearWordRangeChecker::<AB::F>::range_check(
-            builder,
-            jump_columns.next_pc,
-            jump_columns.next_pc_range_checker,
-            is_jump_instruction.clone(),
-        );
-        KoalaBearWordRangeChecker::<AB::F>::range_check(
-            builder,
-            jump_columns.target_pc,
-            jump_columns.target_pc_range_checker,
-            is_jump_instruction.clone(),
-        );
-
-        // Verify that the new pc is calculated correctly for Jumpdirect instructions.
-        builder.send_alu(
-            AB::Expr::from_canonical_u32(Opcode::ADD as u32),
-            jump_columns.target_pc,
-            jump_columns.next_pc,
-            local.op_b_val(),
-            local.shard,
-            jump_columns.jumpd_nonce,
-            local.selectors.is_jumpd,
-        );
     }
 
     // /// Constraints related to the AUIPC opcode.
@@ -291,6 +211,7 @@ impl CpuChip {
     ) {
         // When is_sequential_instr is true, assert that instruction is not branch, jump.
         // Note that the condition `when(local_is_real)` is implied from the previous constraint.
+       /* TODO
         let is_halt = self.get_is_halt_syscall::<AB>(builder, local);
         builder.when(local.is_real).assert_eq(
             local.is_sequential_instr,
@@ -300,7 +221,7 @@ impl CpuChip {
                     + local.selectors.is_jumpd
                     + is_halt),
         );
-
+         */
         // Verify that the pc increments by 4 for all instructions except instruction after branch, jump
         // instructions. The other case is handled by eval_jump, eval_branch and eval_syscall
         // (for halt).

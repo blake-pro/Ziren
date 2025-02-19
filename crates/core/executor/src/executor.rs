@@ -12,9 +12,9 @@ use zkm2_stark::ZKMCoreOpts;
 
 use crate::{
     context::ZKMContext,
-    dependencies::{emit_cloclz_dependencies, emit_cpu_dependencies, emit_divrem_dependencies},
+    dependencies::{emit_branch_dependencies, emit_memory_dependencies, emit_divrem_dependencies, emit_cloclz_dependencies},
     events::{
-        AluEvent, CpuEvent, LookupId, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
+        AluEvent, BranchEvent, CpuEvent, JumpEvent, MemInstrEvent, LookupId, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
         MemoryLocalEvent, MemoryReadRecord, MemoryRecord, MemoryWriteRecord, SyscallEvent,
     },
     hook::{HookEnv, HookRegistry},
@@ -35,6 +35,13 @@ pub enum DeferredProofVerification {
     /// Skip verification of deferred proofs
     Disabled,
 }
+
+/// The default increment for the program counter.  Is used for all instructions except
+/// for branches and jumps.
+pub const DEFAULT_PC_INC: u32 = 4;
+/// This is used in the `InstrEvent` to indicate that the instruction is not from the CPU.
+/// A valid pc should be divisible by 4, so we use 1 to indicate that the pc is not used.
+pub const UNUSED_PC: u32 = 1;
 
 /// An executor for the MIPS zkVM.
 ///
@@ -622,6 +629,46 @@ impl<'a> Executor<'a> {
         }
     }
 
+    /// Emit events for this cycle.
+    #[allow(clippy::too_many_arguments)]
+    fn emit_events(
+        &mut self,
+        clk: u32,
+        pc: u32,
+        next_pc: u32,
+        // this is added for branch instruction
+        next_next_pc: u32,
+        instruction: &Instruction,
+        a: u32,
+        b: u32,
+        c: u32,
+        hi: Option<u32>,
+        op_a_0: bool,
+        record: MemoryAccessRecord,
+        exit_code: u32,
+        syscall_code: u32,
+        lookup_id: LookupId,
+        syscall_lookup_id: LookupId,
+    ) {
+        self.emit_cpu(clk, pc, next_pc, next_next_pc, a, b, c, hi, record, exit_code, lookup_id, syscall_lookup_id);
+
+        if instruction.is_alu_instruction() {
+            self.emit_alu_event(clk, instruction.opcode, hi, a, b, c, lookup_id);
+        } else if instruction.is_memory_load_instruction()
+            || instruction.is_memory_store_instruction()
+        {
+            self.emit_mem_instr_event(instruction.opcode, a, b, c, op_a_0);
+        } else if instruction.is_branch_instruction() {
+            self.emit_branch_event(instruction.opcode, a, b, c, op_a_0, next_pc, next_next_pc);
+        } else if instruction.is_jump_instruction() {
+            self.emit_jump_event(instruction.opcode, a, b, c, op_a_0, next_pc);
+        } else if instruction.is_syscall_instruction() {
+            self.emit_syscall_event(clk, syscall_code, b, c, syscall_lookup_id);
+        } else {
+            unreachable!()
+        }
+    }
+
     /// Emit a CPU event.
     #[allow(clippy::too_many_arguments)]
     fn emit_cpu(
@@ -672,12 +719,10 @@ impl<'a> Executor<'a> {
             jump_jump_lookup_id,
             jump_jumpd_lookup_id,
         });
-
-        emit_cpu_dependencies(self, self.record.cpu_events.len() - 1);
     }
 
     /// Emit an ALU event.
-    fn emit_alu(
+    fn emit_alu_event(
         &mut self,
         clk: u32,
         opcode: Opcode,
@@ -732,6 +777,62 @@ impl<'a> Executor<'a> {
         }
     }
 
+    /// Emit a memory instruction event.
+    #[inline]
+    fn emit_mem_instr_event(&mut self, opcode: Opcode, a: u32, b: u32, c: u32, op_a_0: bool) {
+        let event = MemInstrEvent {
+            shard: self.shard(),
+            clk: self.state.clk,
+            pc: self.state.pc,
+            opcode,
+            a,
+            b,
+            c,
+            op_a_0,
+            mem_access: self.memory_accesses.memory.expect("Must have memory access"),
+        };
+
+        self.record.memory_instr_events.push(event);
+        emit_memory_dependencies(
+            self,
+            event,
+            self.memory_accesses.memory.expect("Must have memory access").current_record(),
+            self.record.cpu_events.len() - 1
+        );
+    }
+ 
+    /// Emit a branch event.
+    #[inline]
+    fn emit_branch_event(
+        &mut self,
+        opcode: Opcode,
+        a: u32,
+        b: u32,
+        c: u32,
+        op_a_0: bool,
+        next_pc: u32,
+        next_next_pc: u32,
+    ) {
+        let event = BranchEvent { pc: self.state.pc, next_pc, next_next_pc, opcode, a, b, c, op_a_0 };
+        self.record.branch_events.push(event);
+        emit_branch_dependencies(self, event, self.record.cpu_events.len() - 1);
+    }
+ 
+    /// Emit a jump event.
+    #[inline]
+    fn emit_jump_event(
+        &mut self,
+        opcode: Opcode,
+        a: u32,
+        b: u32,
+        c: u32,
+        op_a_0: bool,
+        next_pc: u32,
+    ) {
+        let event = JumpEvent::new(self.state.pc, next_pc, opcode, a, b, c, op_a_0);
+        self.record.jump_events.push(event);
+    }
+
     #[inline]
     pub(crate) fn syscall_event(
         &self,
@@ -752,7 +853,7 @@ impl<'a> Executor<'a> {
         }
     }
 
-    fn emit_syscall(
+    fn emit_syscall_event(
         &mut self,
         clk: u32,
         syscall_id: u32,
@@ -807,10 +908,6 @@ impl<'a> Executor<'a> {
             None
         };
 
-        if self.executor_mode == ExecutorMode::Trace {
-            self.emit_alu(self.state.clk, op.opcode, hi, a, b, c, lookup_id);
-        }
-
         (hi, a, b, c)
     }
 
@@ -847,6 +944,7 @@ impl<'a> Executor<'a> {
         let mut b = 0u32;
         let mut c = 0u32;
         let mut hi = None;
+        let mut syscall_code = 0u32;
 
         if self.executor_mode == ExecutorMode::Trace {
             self.memory_accesses = MemoryAccessRecord::default();
@@ -939,9 +1037,8 @@ impl<'a> Executor<'a> {
                 *syscall_count += 1;
 
                 let syscall_impl = self.get_syscall(syscall).cloned();
-                if syscall.should_send() != 0 && self.executor_mode == ExecutorMode::Trace {
-                    self.emit_syscall(clk, syscall.syscall_id(), b, c, syscall_lookup_id);
-                }
+                syscall_code = syscall.syscall_id();
+
                 let mut precompile_rt = SyscallContext::new(self);
                 precompile_rt.syscall_lookup_id = syscall_lookup_id;
                 let (precompile_next_pc, precompile_cycles, returned_exit_code) =
@@ -1075,19 +1172,23 @@ impl<'a> Executor<'a> {
         // Update the clk to the next cycle.
         self.state.clk += 5;
 
+        let op_a_0 = instruction.op_a == Register::ZERO as u8;
         // Emit the CPU event for this cycle.
         if self.executor_mode == ExecutorMode::Trace {
-            self.emit_cpu(
+            self.emit_events(
                 clk,
                 pc,
                 next_pc,
                 next_next_pc,
+                instruction,
                 a,
                 b,
                 c,
                 hi,
+                op_a_0,
                 self.memory_accesses,
                 exit_code,
+                syscall_code,
                 lookup_id,
                 syscall_lookup_id,
             );

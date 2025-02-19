@@ -1,14 +1,11 @@
-mod branch;
+mod syscall;
 mod instruction;
-mod jump;
 mod memory;
 mod opcode;
 mod opcode_specific;
-mod syscall;
 
-pub use branch::*;
+pub use syscall::*;
 pub use instruction::*;
-pub use jump::*;
 pub use memory::*;
 pub use opcode::*;
 pub use opcode_specific::*;
@@ -67,25 +64,6 @@ pub struct CpuCols<T: Copy> {
     /// Selector to label whether this row is a non padded row.
     pub is_real: T,
 
-    /// The branching column is equal to:
-    ///
-    /// > is_beq & a_eq_b ||
-    /// > is_bne & !a_eq_b ||
-    /// > is_bltz & a_lt_0 ||
-    /// > is_bgtz & a_gt_0 ||
-    /// > is_blez & (a_lt_0  | a_eq_0) ||
-    /// > is_bgez & (a_gt_0  | a_eq_0)
-    pub branching: T,
-
-    /// The not branching column is equal to:
-    ///
-    /// > is_beq & !a_eq_b ||
-    /// > is_bne & a_eq_b ||
-    /// > is_bltz & (a_gt_0 | a_eq_0) ||
-    /// > is_bgtz & (a_lt_0 | a_eq_0) ||
-    /// > is_blez & a_gt_0 ||
-    /// > is_bgez & a_lt_0
-    pub not_branching: T,
 
     /// Flag for load mem instructions where the value is negative and not writing to x0.
     /// More formally, it is
@@ -118,6 +96,8 @@ pub struct CpuCols<T: Copy> {
     /// This is true for all instructions that are not jumps, branches, and halt.  Those
     /// instructions may move the program counter to a non sequential instruction.
     pub is_sequential_instr: T,
+
+    pub op_a_immutable: T,
 }
 
 impl<T: Copy> CpuCols<T> {

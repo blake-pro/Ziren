@@ -11,9 +11,9 @@ use std::{mem::take, sync::Arc};
 
 use crate::{
     events::{
-        add_sharded_byte_lookup_events, AluEvent, ByteLookupEvent, ByteRecord, CpuEvent, LookupId,
-        MemoryInitializeFinalizeEvent, MemoryLocalEvent, MemoryRecordEnum, PrecompileEvent,
-        PrecompileEvents, SyscallEvent,
+        add_sharded_byte_lookup_events, BranchEvent, JumpEvent, MemInstrEvent, AluEvent, ByteLookupEvent, ByteRecord, CpuEvent, LookupId,
+        MemoryInitializeFinalizeEvent, MemoryLocalEvent, MemoryRecordEnum, SyscallEvent,
+        PrecompileEvents, PrecompileEvent,
     },
     syscalls::SyscallCode,
     CoreShape, Opcode, Program,
@@ -47,6 +47,13 @@ pub struct ExecutionRecord {
     pub lt_events: Vec<AluEvent>,
     /// A trace of the CLO and CLZ events.
     pub cloclz_events: Vec<AluEvent>,
+    /// A trace of the memory instructions.
+    pub memory_instr_events: Vec<MemInstrEvent>,
+    /// A trace of the branch events.
+    pub branch_events: Vec<BranchEvent>,
+    /// A trace of the jump events.
+    pub jump_events: Vec<JumpEvent>,
+    /// A trace of the byte lookups that are needed.
     /// A trace of the byte lookups that are needed.
     pub byte_lookups: HashMap<u32, HashMap<ByteLookupEvent, usize>>,
     /// A trace of the precompile events.
@@ -83,6 +90,9 @@ impl Default for ExecutionRecord {
             divrem_events: Vec::default(),
             lt_events: Vec::default(),
             cloclz_events: Vec::default(),
+            memory_instr_events: Vec::default(),
+            branch_events: Vec::default(),
+            jump_events: Vec::default(),
             byte_lookups: HashMap::default(),
             precompile_events: PrecompileEvents::default(),
             global_memory_initialize_events: Vec::default(),
@@ -446,5 +456,22 @@ impl ByteRecord for ExecutionRecord {
         new_events: Vec<&HashMap<u32, HashMap<ByteLookupEvent, usize>>>,
     ) {
         add_sharded_byte_lookup_events(&mut self.byte_lookups, new_events);
+    }
+
+    #[inline]
+    fn add_byte_lookup_events_from_maps(
+        &mut self,
+        new_events: Vec<&HashMap<ByteLookupEvent, usize>>,
+    ) {
+        for new_blu_map in new_events {
+            for (blu_event, count) in new_blu_map.iter() {
+                *self
+                    .byte_lookups
+                    .entry(blu_event.shard)
+                    .or_default()
+                    .entry(*blu_event)
+                    .or_insert(0) += count;
+            }
+        }
     }
 }

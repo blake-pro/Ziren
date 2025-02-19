@@ -141,6 +141,11 @@ impl CpuChip {
         cols.next_next_pc = F::from_canonical_u32(event.next_next_pc);
         cols.instruction.populate(instruction);
         cols.selectors.populate(instruction);
+
+        cols.op_a_immutable = F::from_bool(
+            instruction.is_memory_store_instruction_except_sc() || instruction.is_branch_instruction(),
+        );
+
         if let Some(hi) = event.hi {
             *cols.op_hi_access.value_mut() = hi.into();
         }
@@ -196,8 +201,6 @@ impl CpuChip {
 
         // Populate memory, branch, jump, and auipc specific fields.
         self.populate_memory(cols, event, blu_events, nonce_lookup, shard, instruction);
-        self.populate_branch(cols, event, nonce_lookup, instruction);
-        self.populate_jump(cols, event, nonce_lookup, instruction);
         //self.populate_auipc(cols, event, nonce_lookup, instruction);
         let is_halt = self.populate_syscall(cols, event, nonce_lookup);
 
@@ -404,110 +407,6 @@ impl CpuChip {
                 b: byte_pair[0],
                 c: byte_pair[1],
             });
-        }
-    }
-
-    /// Populates columns related to branching.
-    fn populate_branch<F: PrimeField>(
-        &self,
-        cols: &mut CpuCols<F>,
-        event: &CpuEvent,
-        nonce_lookup: &[u32],
-        instruction: &Instruction,
-    ) {
-        if instruction.is_branch_instruction() {
-            let branch_columns = cols.opcode_specific_columns.branch_mut();
-
-            let a_eq_b = event.a == event.b;
-            let a_eq_0 = (event.a as i32) == 0;
-            let a_lt_0 = (event.a as i32) < 0;
-            let a_gt_0 = (event.a as i32) > 0;
-
-            branch_columns.a_lt_0_nonce = F::from_canonical_u32(
-                nonce_lookup.get(event.branch_lt_lookup_id.0 as usize).copied().unwrap_or_default(),
-            );
-
-            branch_columns.a_gt_0_nonce = F::from_canonical_u32(
-                nonce_lookup.get(event.branch_gt_lookup_id.0 as usize).copied().unwrap_or_default(),
-            );
-
-            branch_columns.a_eq_b = F::from_bool(a_eq_b);
-            branch_columns.a_eq_0 = F::from_bool(a_eq_0);
-            branch_columns.a_lt_0 = F::from_bool(a_lt_0);
-            branch_columns.a_gt_0 = F::from_bool(a_gt_0);
-
-            let branching = match instruction.opcode {
-                Opcode::BEQ => a_eq_b,
-                Opcode::BNE => !a_eq_b,
-                Opcode::BLTZ => a_lt_0,
-                Opcode::BLEZ => a_lt_0 || a_eq_0,
-                Opcode::BGTZ => a_gt_0,
-                Opcode::BGEZ => a_eq_0 || a_gt_0,
-                _ => panic!("Invalid opcode: {}", instruction.opcode),
-            };
-
-            let target_pc = event.next_pc.wrapping_add(event.c);
-            branch_columns.next_pc = Word::from(event.next_pc);
-            branch_columns.target_pc = Word::from(target_pc);
-            branch_columns.next_pc_range_checker.populate(event.next_pc);
-            branch_columns.target_pc_range_checker.populate(target_pc);
-
-            if branching {
-                cols.branching = F::ONE;
-                branch_columns.target_pc_nonce = F::from_canonical_u32(
-                    nonce_lookup
-                        .get(event.branch_add_lookup_id.0 as usize)
-                        .copied()
-                        .unwrap_or_default(),
-                );
-            } else {
-                cols.not_branching = F::ONE;
-            }
-        }
-    }
-
-    /// Populate columns related to jumping.
-    fn populate_jump<F: PrimeField>(
-        &self,
-        cols: &mut CpuCols<F>,
-        event: &CpuEvent,
-        nonce_lookup: &[u32],
-        instruction: &Instruction,
-    ) {
-        if instruction.is_jump_instruction() {
-            let jump_columns = cols.opcode_specific_columns.jump_mut();
-
-            match instruction.opcode {
-                Opcode::Jump | Opcode::Jumpi => {
-                    let target_pc = event.b;
-                    jump_columns.op_a_range_checker.populate(event.a);
-                    jump_columns.target_pc = Word::from(target_pc);
-                    jump_columns.next_pc = Word::from(event.next_pc);
-                    jump_columns.next_pc_range_checker.populate(event.next_pc);
-                    jump_columns.target_pc_range_checker.populate(target_pc);
-                    jump_columns.jump_nonce = F::from_canonical_u32(
-                        nonce_lookup
-                            .get(event.jump_jump_lookup_id.0 as usize)
-                            .copied()
-                            .unwrap_or_default(),
-                    );
-                }
-                Opcode::JumpDirect => {
-                    let target_pc = event.next_pc.wrapping_add(event.b);
-                    jump_columns.op_a_range_checker.populate(event.a);
-                    jump_columns.next_pc = Word::from(event.next_pc);
-                    jump_columns.next_pc_range_checker.populate(event.next_pc);
-                    jump_columns.target_pc = Word::from(target_pc);
-                    jump_columns.target_pc_range_checker.populate(target_pc);
-                    jump_columns.jumpd_nonce = F::from_canonical_u32(
-                        nonce_lookup
-                            .get(event.jump_jumpd_lookup_id.0 as usize)
-                            .copied()
-                            .unwrap_or_default(),
-                    );
-                }
-                _ => unreachable!(),
-            }
         }
     }
 

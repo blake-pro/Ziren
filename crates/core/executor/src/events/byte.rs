@@ -38,6 +38,12 @@ pub trait ByteRecord {
     /// Adds a new [`ByteLookupEvent`] to the record.
     fn add_byte_lookup_event(&mut self, blu_event: ByteLookupEvent);
 
+    /// Adds a list of [`ByteLookupEvent`] maps to the record.
+    fn add_byte_lookup_events_from_maps(
+        &mut self,
+        new_blu_events_vec: Vec<&HashMap<ByteLookupEvent, usize>>,
+    );
+
     /// Adds a list of sharded [`ByteLookupEvent`]s to the record.
     fn add_sharded_byte_lookup_events(
         &mut self,
@@ -135,6 +141,10 @@ impl ByteRecord for Vec<ByteLookupEvent> {
     ) {
         todo!()
     }
+
+    fn add_byte_lookup_events_from_maps(&mut self, _: Vec<&HashMap<ByteLookupEvent, usize>>) {
+        unimplemented!()
+    }
 }
 
 impl ByteRecord for HashMap<u32, HashMap<ByteLookupEvent, usize>> {
@@ -152,6 +162,21 @@ impl ByteRecord for HashMap<u32, HashMap<ByteLookupEvent, usize>> {
         new_events: Vec<&HashMap<u32, HashMap<ByteLookupEvent, usize>>>,
     ) {
         add_sharded_byte_lookup_events(self, new_events);
+    }
+
+    fn add_byte_lookup_events_from_maps(
+        &mut self,
+        new_events: Vec<&HashMap<ByteLookupEvent, usize>>,
+    ) {
+        for new_blu_map in new_events {
+            for (blu_event, count) in new_blu_map.iter() {
+                *self
+                    .entry(blu_event.shard)
+                    .or_default()
+                    .entry(*blu_event)
+                    .or_insert(0) += count;
+            }
+        }
     }
 }
 

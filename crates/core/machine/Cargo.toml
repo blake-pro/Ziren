@@ -29,6 +29,9 @@ zkm2-primitives = { workspace = true }
 zkm2-core-executor = { workspace = true, default-features = true }
 zkm2-curves = { workspace = true }
 
+rayon = "1.10.0"
+rayon-scan = "0.1.1"
+
 amcl = { package = "snowbridge-amcl", version = "1.0.2", default-features = false, features = [
     "bls381",
 ] }

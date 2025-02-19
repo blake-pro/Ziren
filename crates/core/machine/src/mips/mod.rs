@@ -31,10 +31,8 @@ pub const MAX_NUMBER_OF_SHARDS: usize = 1 << MAX_LOG_NUMBER_OF_SHARDS;
 /// A module for importing all the different MIPS chips.
 pub(crate) mod mips_chips {
     pub use crate::{
-        alu::{
-            AddSubChip, BitwiseChip, CloClzChip, DivRemChip, LtChip, MulChip, ShiftLeft,
-            ShiftRightChip,
-        },
+        control_flow::{BranchChip, JumpChip},
+        alu::{AddSubChip, BitwiseChip, DivRemChip, LtChip, MulChip, ShiftLeft, ShiftRightChip, CloClzChip},
         bytes::ByteChip,
         cpu::CpuChip,
         memory::MemoryGlobalChip,
@@ -91,6 +89,10 @@ pub enum MipsAir<F: PrimeField32> {
     ShiftLeft(ShiftLeft),
     /// An AIR for MIPS SRL and SRA instruction.
     ShiftRight(ShiftRightChip),
+    /// An AIR for MIPS Branch instructions.
+    Branch(BranchChip),
+     /// An AIR for MIPS Jump instructions.
+    Jump(JumpChip),
     /// A lookup table for byte operations.
     ByteLookup(ByteChip<F>),
     /// A table for initializing the global memory state.
@@ -352,6 +354,14 @@ impl<F: PrimeField32> MipsAir<F> {
         costs.insert(MipsAirDiscriminants::ShiftLeft, shift_left.cost());
         chips.push(shift_left);
 
+        let branch = Chip::new(MipsAir::Branch(BranchChip::default()));
+        costs.insert(MipsAirDiscriminants::Branch, branch.cost());
+        chips.push(branch);
+
+        let jump = Chip::new(MipsAir::Jump(JumpChip::default()));
+        costs.insert(MipsAirDiscriminants::Jump, jump.cost());
+        chips.push(jump);
+
         let lt = Chip::new(MipsAir::Lt(LtChip::default()));
         costs.insert(MipsAirDiscriminants::Lt, lt.cost());
         chips.push(lt);
@@ -432,6 +442,8 @@ impl<F: PrimeField32> MipsAir<F> {
             MipsAir::CloClz(CloClzChip::default()),
             MipsAir::ShiftLeft(ShiftLeft::default()),
             MipsAir::ShiftRight(ShiftRightChip::default()),
+            MipsAir::Branch(BranchChip::default()),
+            MipsAir::Jump(JumpChip::default()),
             MipsAir::MemoryLocal(MemoryLocalChip::new()),
             MipsAir::SyscallCore(SyscallChip::core()),
         ]
@@ -529,6 +541,8 @@ impl<F: PrimeField32> MipsAir<F> {
             Self::Bitwise(_) => unreachable!("Invalid for core chip"),
             Self::DivRem(_) => unreachable!("Invalid for core chip"),
             Self::Cpu(_) => unreachable!("Invalid for core chip"),
+            Self::Branch(_) => unreachable!("Invalid for core chip"),
+            Self::Jump(_) => unreachable!("Invalid for core chip"),
             Self::MemoryGlobalInit(_) => unreachable!("Invalid for memory init/final"),
             Self::MemoryGlobalFinal(_) => unreachable!("Invalid for memory init/final"),
             Self::MemoryLocal(_) => unreachable!("Invalid for memory local"),

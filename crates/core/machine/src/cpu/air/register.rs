@@ -13,8 +13,7 @@ impl CpuChip {
     pub(crate) fn eval_registers<AB: ZKMAirBuilder>(
         &self,
         builder: &mut AB,
-        local: &CpuCols<AB::Var>,
-        is_branch_instruction: AB::Expr,
+        local: &CpuCols<AB::Var>
     ) {
         // Load immediates into b and c, if the immediate flags are on.
         builder
@@ -69,10 +68,7 @@ impl CpuChip {
 
         // If we are performing a branch or a store, then the value of `a` is the previous value.
         builder
-            .when(
-                is_branch_instruction.clone()
-                    + self.is_store_instruction_except_sc::<AB>(&local.selectors),
-            )
+            .when(local.op_a_immutable)
             .assert_word_eq(local.op_a_val(), local.op_a_access.prev_value);
     }
 }

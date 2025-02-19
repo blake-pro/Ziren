@@ -111,6 +111,18 @@ impl Instruction {
         )
     }
 
+    pub const fn is_memory_load_instruction(&self) -> bool {
+        matches!(self.opcode, Opcode::LB | Opcode::LH | Opcode::LW | Opcode::LWL | Opcode::LWR | Opcode::LBU | Opcode::LHU | Opcode::LL)
+    }
+
+    pub const fn is_memory_store_instruction(&self) -> bool {
+        matches!(self.opcode, Opcode::SB | Opcode::SH | Opcode::SW | Opcode::SWL | Opcode::SWR | Opcode::SC)
+    }
+
+    pub const fn is_memory_store_instruction_except_sc(&self) -> bool {
+        matches!(self.opcode, Opcode::SB | Opcode::SH | Opcode::SW | Opcode::SWL | Opcode::SWR)
+    }
+
     /// Returns if the instruction is a jump instruction.
     #[must_use]
     pub const fn is_jump_instruction(&self) -> bool {

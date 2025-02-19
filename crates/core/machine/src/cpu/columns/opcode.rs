@@ -54,17 +54,6 @@ pub struct OpcodeSelectorCols<T> {
     pub is_swr: T,
     pub is_sc: T,
     // pub is_sdc1: T,
-    /// Branch Instructions.
-    pub is_beq: T,
-    pub is_bne: T,
-    pub is_bltz: T,
-    pub is_blez: T,
-    pub is_bgtz: T,
-    pub is_bgez: T,
-
-    /// Jump Instructions.
-    pub is_jump: T,
-    pub is_jumpd: T,
 
     /// Miscellaneous.
     pub is_unimpl: T,
@@ -99,20 +88,6 @@ impl<F: PrimeField> OpcodeSelectorCols<F> {
                 // Opcode::SDC1 => self.is_sdc1 = F::ONE,
                 _ => unreachable!(),
             }
-        } else if instruction.is_branch_instruction() {
-            match instruction.opcode {
-                Opcode::BEQ => self.is_beq = F::ONE,
-                Opcode::BNE => self.is_bne = F::ONE,
-                Opcode::BLTZ => self.is_bltz = F::ONE,
-                Opcode::BLEZ => self.is_blez = F::ONE,
-                Opcode::BGTZ => self.is_bgtz = F::ONE,
-                Opcode::BGEZ => self.is_bgez = F::ONE,
-                _ => unreachable!(),
-            }
-        } else if instruction.opcode == Opcode::Jump || instruction.opcode == Opcode::Jumpi {
-            self.is_jump = F::ONE;
-        } else if instruction.opcode == Opcode::JumpDirect {
-            self.is_jumpd = F::ONE;
         }
     }
 }
@@ -143,14 +118,6 @@ impl<T> IntoIterator for OpcodeSelectorCols<T> {
             self.is_swr,
             self.is_sc,
             // self.is_sdc1,
-            self.is_beq,
-            self.is_bne,
-            self.is_bltz,
-            self.is_blez,
-            self.is_bgtz,
-            self.is_bgez,
-            self.is_jump,
-            self.is_jumpd,
             self.is_unimpl,
         ];
         assert_eq!(columns.len(), NUM_OPCODE_SELECTOR_COLS);
