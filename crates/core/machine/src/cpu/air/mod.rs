@@ -1,4 +1,3 @@
-pub mod memory;
 pub mod register;
 pub mod syscall;
 
@@ -45,17 +44,10 @@ where
             local.is_real,
         );
 
-        // Compute some flags for which type of instruction we are dealing with.
-        let is_memory_instruction: AB::Expr = self.is_memory_instruction::<AB>(&local.selectors);
         let is_alu_instruction: AB::Expr = self.is_alu_instruction::<AB>(&local.selectors);
 
         // Register constraints.
         self.eval_registers::<AB>(builder, local);
-
-        // Memory instructions.
-        self.eval_memory_address_and_access::<AB>(builder, local, is_memory_instruction.clone());
-        self.eval_memory_load::<AB>(builder, local);
-        self.eval_memory_store::<AB>(builder, local);
 
         // ALU instructions.
         builder.send_alu_with_hi(

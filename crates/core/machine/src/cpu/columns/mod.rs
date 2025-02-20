@@ -1,12 +1,10 @@
 mod syscall;
 mod instruction;
-mod memory;
 mod opcode;
 mod opcode_specific;
 
 pub use syscall::*;
 pub use instruction::*;
-pub use memory::*;
 pub use opcode::*;
 pub use opcode_specific::*;
 pub use syscall::*;
@@ -63,27 +61,6 @@ pub struct CpuCols<T: Copy> {
 
     /// Selector to label whether this row is a non padded row.
     pub is_real: T,
-
-
-    /// Flag for load mem instructions where the value is negative and not writing to x0.
-    /// More formally, it is
-    ///
-    /// > (is_lb | is_lh) & (most_sig_byte_decomp[7] == 1) & (not writing to x0)
-    pub mem_value_is_neg_not_x0: T,
-
-    /// Flag for load mem instructions where the value is positive and not writing to x0.
-    /// More formally, it is
-    ///
-    /// (
-    ///     ((is_lb | is_lh) & (most_sig_byte_decomp[7] == 0)) |
-    ///     is_lbu | is_lhu | is_lw
-    /// ) &
-    /// (not writing to x0)
-    pub mem_value_is_pos_not_x0: T,
-
-    /// The unsigned memory value is the value after the offset logic is applied. Used for the load
-    /// memory opcodes (i.e. LB, LH, LW, LBU, and LHU).
-    pub unsigned_mem_val: Word<T>,
 
     pub unsigned_mem_val_nonce: T,
 

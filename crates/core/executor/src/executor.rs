@@ -790,6 +790,7 @@ impl<'a> Executor<'a> {
             c,
             op_a_0,
             mem_access: self.memory_accesses.memory.expect("Must have memory access"),
+            op_a_access: self.memory_accesses.a.expect("Must have memory access"),
         };
 
         self.record.memory_instr_events.push(event);

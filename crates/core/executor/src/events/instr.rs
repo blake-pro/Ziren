@@ -91,6 +91,8 @@ pub struct MemInstrEvent {
     pub op_a_0: bool,
     /// The memory access record for memory operations.
     pub mem_access: MemoryRecordEnum,
+    /// The memory access record for memory operations.
+    pub op_a_access: MemoryRecordEnum,
 }
 
 impl MemInstrEvent {
@@ -107,8 +109,9 @@ impl MemInstrEvent {
         c: u32,
         op_a_0: bool,
         mem_access: MemoryRecordEnum,
+        op_a_access: MemoryRecordEnum,
     ) -> Self {
-        Self { shard, clk, pc, opcode, a, b, c, op_a_0, mem_access }
+        Self { shard, clk, pc, opcode, a, b, c, op_a_0, mem_access, op_a_access }
     }
 }
 

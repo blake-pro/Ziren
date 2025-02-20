@@ -130,6 +130,31 @@ impl ByteLookupEvent {
     }
 }
 
+impl ByteRecord for HashMap<ByteLookupEvent, usize> {
+    #[inline]
+    fn add_byte_lookup_event(&mut self, blu_event: ByteLookupEvent) {
+        self.entry(blu_event).and_modify(|e| *e += 1).or_insert(1);
+    }
+
+    fn add_sharded_byte_lookup_events(
+        &mut self,
+        _: Vec<&HashMap<u32, HashMap<ByteLookupEvent, usize>>>,
+    ) {
+        todo!()
+    }
+
+    fn add_byte_lookup_events_from_maps(
+        &mut self,
+        new_events: Vec<&HashMap<ByteLookupEvent, usize>>,
+    ) {
+        for new_blu_map in new_events {
+            for (blu_event, count) in new_blu_map.iter() {
+                *self.entry(*blu_event).or_insert(0) += count;
+            }
+        }
+    }
+}
+
 impl ByteRecord for Vec<ByteLookupEvent> {
     fn add_byte_lookup_event(&mut self, blu_event: ByteLookupEvent) {
         self.push(blu_event);
