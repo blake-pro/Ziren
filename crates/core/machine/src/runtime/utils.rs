@@ -11,7 +11,7 @@ macro_rules! assert_valid_memory_access {
         #[cfg(debug_assertions)]
         {
             use p3_baby_bear::BabyBear;
-            use p3_field::AbstractField;
+            use p3_field::FieldAlgebra;
             match $position {
                 MemoryAccessPosition::Memory => {
                     assert_eq!($addr % 4, 0, "addr is not aligned");
