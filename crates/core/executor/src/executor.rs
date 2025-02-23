@@ -15,7 +15,7 @@ use crate::{
     dependencies::{emit_branch_dependencies, emit_memory_dependencies, emit_divrem_dependencies, emit_cloclz_dependencies},
     events::{
         AluEvent, BranchEvent, CpuEvent, JumpEvent, MemInstrEvent, LookupId, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
-        MemoryLocalEvent, MemoryReadRecord, MemoryRecord, MemoryWriteRecord, SyscallEvent,
+        MemoryLocalEvent, MemoryReadRecord, MemoryRecord, MemoryWriteRecord, SyscallEvent, MemoryRecordEnum,
     },
     hook::{HookEnv, HookRegistry},
     memory::{Entry, PagedMemory},
@@ -663,7 +663,7 @@ impl<'a> Executor<'a> {
         } else if instruction.is_jump_instruction() {
             self.emit_jump_event(instruction.opcode, a, b, c, op_a_0, next_pc);
         } else if instruction.is_syscall_instruction() {
-            self.emit_syscall_event(clk, syscall_code, b, c, syscall_lookup_id);
+            self.emit_syscall_event(clk, record.a, op_a_0, next_pc, syscall_code, b, c, syscall_lookup_id);
         } else {
             unreachable!()
         }
@@ -838,18 +838,33 @@ impl<'a> Executor<'a> {
     pub(crate) fn syscall_event(
         &self,
         clk: u32,
+        a_record: Option<MemoryRecordEnum>,
+        op_a_0: Option<bool>,
         syscall_id: u32,
         arg1: u32,
         arg2: u32,
+        next_pc: u32,
         lookup_id: LookupId,
     ) -> SyscallEvent {
+        let (write, is_real) = match a_record {
+            Some(MemoryRecordEnum::Write(record)) => (record, true),
+            _ => (MemoryWriteRecord::default(), false),
+        };
+
+        let op_a_0 = op_a_0.unwrap_or(false);
+
         SyscallEvent {
+            pc: self.state.pc,
+            next_pc,
             shard: self.shard(),
             clk,
+            a_record: write,
+            a_record_is_real: is_real,
+            op_a_0,
+            lookup_id,
             syscall_id,
             arg1,
             arg2,
-            lookup_id,
             nonce: self.record.nonce_lookup[lookup_id.0 as usize],
         }
     }
@@ -857,15 +872,19 @@ impl<'a> Executor<'a> {
     fn emit_syscall_event(
         &mut self,
         clk: u32,
+        a_record: Option<MemoryRecordEnum>,
+        op_a_0: bool,
+        next_pc: u32,
         syscall_id: u32,
         arg1: u32,
         arg2: u32,
         lookup_id: LookupId,
     ) {
-        let syscall_event = self.syscall_event(clk, syscall_id, arg1, arg2, lookup_id);
+        let syscall_event = self.syscall_event(clk, a_record, Some(op_a_0), syscall_id, arg1, arg2, next_pc, lookup_id);
 
         self.record.syscall_events.push(syscall_event);
     }
+
     /// Fetch the destination register and input operand values for an ALU instruction.
     fn alu_rr(&mut self, instruction: &Instruction) -> (Register, u32, u32) {
         if !instruction.imm_c {

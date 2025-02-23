@@ -80,6 +80,18 @@ impl Instruction {
         self.opcode == Opcode::SYSCALL
     }
 
+    /// Returns if the instruction is a mult/div instruction.
+    #[must_use]
+    pub fn is_mult_div_instruction(&self) -> bool {
+        matches!(
+            self.opcode,
+            Opcode::MULT
+                | Opcode::MULTU
+                | Opcode::DIV
+                | Opcode::DIVU
+        )
+    }
+
     /// Returns if the instruction is a memory instruction.
     #[must_use]
     pub const fn is_memory_instruction(&self) -> bool {

@@ -1,13 +1,6 @@
-mod syscall;
-mod instruction;
-mod opcode;
-mod opcode_specific;
 
-pub use syscall::*;
+mod instruction;
 pub use instruction::*;
-pub use opcode::*;
-pub use opcode_specific::*;
-pub use syscall::*;
 
 use p3_util::indices_arr;
 use std::mem::{size_of, transmute};
@@ -48,8 +41,11 @@ pub struct CpuCols<T: Copy> {
     /// Columns related to the instruction.
     pub instruction: InstructionCols<T>,
 
-    /// Selectors for the opcode.
-    pub selectors: OpcodeSelectorCols<T>,
+    /// The number of extra cycles to add to the clk for a syscall instruction.
+    pub num_extra_cycles: T,
+
+    /// Table selectors for opcodes.
+    pub is_syscall: T,
 
     /// Operand values, either from registers or immediate values.
     pub op_hi_access: MemoryReadWriteCols<T>,
@@ -57,18 +53,12 @@ pub struct CpuCols<T: Copy> {
     pub op_b_access: MemoryReadCols<T>,
     pub op_c_access: MemoryReadCols<T>,
 
-    pub opcode_specific_columns: OpcodeSpecificCols<T>,
+    pub has_hi: T,
 
     /// Selector to label whether this row is a non padded row.
     pub is_real: T,
 
     pub unsigned_mem_val_nonce: T,
-
-    /// The result of selectors.is_syscall * the send_to_table column for the syscall opcode.
-    pub syscall_mul_send_to_table: T,
-
-    /// The result of selectors.is_syscall * (is_halt || is_commit_deferred_proofs)
-    pub syscall_range_check_operand: T,
 
     /// This is true for all instructions that are not jumps, branches, and halt.  Those
     /// instructions may move the program counter to a non sequential instruction.

@@ -17,10 +17,10 @@ impl CpuChip {
     ) {
         // Load immediates into b and c, if the immediate flags are on.
         builder
-            .when(local.selectors.imm_b)
+            .when(local.instruction.imm_b)
             .assert_word_eq(local.op_b_val(), local.instruction.op_b);
         builder
-            .when(local.selectors.imm_c)
+            .when(local.instruction.imm_c)
             .assert_word_eq(local.op_c_val(), local.instruction.op_c);
 
         // If they are not immediates, read `b` and `c` from memory.
@@ -29,7 +29,7 @@ impl CpuChip {
             local.clk + AB::F::from_canonical_u32(MemoryAccessPosition::B as u32),
             local.instruction.op_b[0],
             &local.op_b_access,
-            AB::Expr::ONE - local.selectors.imm_b,
+            AB::Expr::ONE - local.instruction.imm_b,
         );
 
         builder.eval_memory_access(
@@ -37,7 +37,7 @@ impl CpuChip {
             local.clk + AB::F::from_canonical_u32(MemoryAccessPosition::C as u32),
             local.instruction.op_c[0],
             &local.op_c_access,
-            AB::Expr::ONE - local.selectors.imm_c,
+            AB::Expr::ONE - local.instruction.imm_c,
         );
 
         // If we are writing to register 0, then the new value should be zero.
@@ -59,7 +59,7 @@ impl CpuChip {
             local.clk + AB::F::from_canonical_u32(MemoryAccessPosition::HI as u32),
             local.instruction.op_hi[0],
             &local.op_hi_access,
-            local.selectors.has_hi,
+            local.has_hi,
         );
 
         // Always range check the word value in `op_a`, as JUMP instructions may witness

@@ -100,9 +100,12 @@ impl<P: FpOpField> Syscall for Fp2AddSubSyscall<P> {
 
                 let syscall_event = rt.rt.syscall_event(
                     clk,
+                    None,
+                    None,
                     syscall_code.syscall_id(),
                     arg1,
                     arg2,
+                    rt.next_pc,
                     event.lookup_id,
                 );
                 rt.add_precompile_event(
@@ -121,9 +124,12 @@ impl<P: FpOpField> Syscall for Fp2AddSubSyscall<P> {
 
                 let syscall_event = rt.rt.syscall_event(
                     clk,
+                    None,
+                    None,
                     syscall_code.syscall_id(),
                     arg1,
                     arg2,
+                    rt.next_pc,
                     event.lookup_id,
                 );
                 rt.add_precompile_event(

@@ -52,8 +52,8 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
                     let cols: &mut CpuCols<F> = row.borrow_mut();
 
                     if idx >= input.cpu_events.len() {
-                        cols.selectors.imm_b = F::ONE;
-                        cols.selectors.imm_c = F::ONE;
+                        cols.instruction.imm_b = F::ONE;
+                        cols.instruction.imm_c = F::ONE;
                     } else {
                         let mut byte_lookup_events = Vec::new();
                         let event = &input.cpu_events[idx];
@@ -140,7 +140,6 @@ impl CpuChip {
         cols.next_pc = F::from_canonical_u32(event.next_pc);
         cols.next_next_pc = F::from_canonical_u32(event.next_next_pc);
         cols.instruction.populate(instruction);
-        cols.selectors.populate(instruction);
 
         cols.op_a_immutable = F::from_bool(
             instruction.is_memory_store_instruction_except_sc() || instruction.is_branch_instruction(),
@@ -167,6 +166,16 @@ impl CpuChip {
             cols.op_c_access.populate(record, blu_events);
         }
 
+        let mut is_halt = false;
+        if instruction.is_syscall_instruction() {
+            let syscall_id = cols.op_a_access.prev_value[0];
+            is_halt = syscall_id == F::from_canonical_u32(SyscallCode::HALT.syscall_id());
+            let num_extra_cycles = cols.op_a_access.prev_value[2]; 
+            cols.num_extra_cycles = num_extra_cycles;
+        }
+
+        cols.has_hi = F::from_bool(instruction.is_mult_div_instruction());
+    
         // Populate range checks for a.
         let a_bytes = cols
             .op_a_access
@@ -192,9 +201,6 @@ impl CpuChip {
             b: a_bytes[2] as u8,
             c: a_bytes[3] as u8,
         });
-
-        //self.populate_auipc(cols, event, nonce_lookup, instruction);
-        let is_halt = self.populate_syscall(cols, event, nonce_lookup);
 
         cols.is_sequential_instr = F::from_bool(
             !instruction.is_branch_instruction() && !instruction.is_jump_instruction() && !is_halt,
@@ -246,105 +252,4 @@ impl CpuChip {
         ));
     }
 
-    // /// Populate columns related to AUIPC.
-    // fn populate_auipc<F: PrimeField>(
-    //     &self,
-    //     cols: &mut CpuCols<F>,
-    //     event: &CpuEvent,
-    //     nonce_lookup: &[u32],
-    //     instruction: &Instruction,
-    // ) {
-    //     if matches!(instruction.opcode, Opcode::AUIPC) {
-    //         let auipc_columns = cols.opcode_specific_columns.auipc_mut();
-
-    //         auipc_columns.pc = Word::from(event.pc);
-    //         auipc_columns.pc_range_checker.populate(event.pc);
-    //         auipc_columns.auipc_nonce = F::from_canonical_u32(
-    //             nonce_lookup.get(event.auipc_lookup_id.0 as usize).copied().unwrap_or_default(),
-    //         );
-    //     }
-    // }
-
-    /// Populate columns related to syscall.
-    fn populate_syscall<F: PrimeField>(
-        &self,
-        cols: &mut CpuCols<F>,
-        event: &CpuEvent,
-        nonce_lookup: &[u32],
-    ) -> bool {
-        let mut is_halt = false;
-
-        if cols.selectors.is_syscall == F::ONE {
-            // The send_to_table column is the 1st entry of the op_a_access column prev_value field.
-            // Look at `syscall_eval` in cpu/air/mod.rs for the corresponding constraint and
-            // explanation.
-            let syscall_cols = cols.opcode_specific_columns.syscall_mut();
-
-            cols.syscall_mul_send_to_table =
-                cols.selectors.is_syscall * cols.op_a_access.prev_value[1];
-
-            let syscall_id = cols.op_a_access.prev_value[0];
-            // let send_to_table = cols.op_a_access.prev_value[1];
-            // let num_cycles = cols.op_a_access.prev_value[2];
-
-            // Populate `is_enter_unconstrained`.
-            syscall_cols.is_enter_unconstrained.populate_from_field_element(
-                syscall_id - F::from_canonical_u32(SyscallCode::ENTER_UNCONSTRAINED.syscall_id()),
-            );
-
-            // Populate `is_hint_len`.
-            syscall_cols.is_hint_len.populate_from_field_element(
-                syscall_id - F::from_canonical_u32(SyscallCode::SYSHINTLEN.syscall_id()),
-            );
-
-            // Populate `is_halt`.
-            syscall_cols.is_halt.populate_from_field_element(
-                syscall_id - F::from_canonical_u32(SyscallCode::HALT.syscall_id()),
-            );
-
-            // Populate `is_commit`.
-            syscall_cols.is_commit.populate_from_field_element(
-                syscall_id - F::from_canonical_u32(SyscallCode::COMMIT.syscall_id()),
-            );
-
-            // Populate `is_commit_deferred_proofs`.
-            syscall_cols.is_commit_deferred_proofs.populate_from_field_element(
-                syscall_id
-                    - F::from_canonical_u32(SyscallCode::COMMIT_DEFERRED_PROOFS.syscall_id()),
-            );
-
-            // If the syscall is `COMMIT` or `COMMIT_DEFERRED_PROOFS`, set the index bitmap and
-            // digest word.
-            if syscall_id == F::from_canonical_u32(SyscallCode::COMMIT.syscall_id())
-                || syscall_id
-                    == F::from_canonical_u32(SyscallCode::COMMIT_DEFERRED_PROOFS.syscall_id())
-            {
-                let digest_idx = cols.op_b_access.value().to_u32() as usize;
-                syscall_cols.index_bitmap[digest_idx] = F::ONE;
-            }
-
-            // Write the syscall nonce.
-            syscall_cols.syscall_nonce =
-                F::from_canonical_u32(nonce_lookup[event.syscall_lookup_id.0 as usize]);
-
-            is_halt = syscall_id == F::from_canonical_u32(SyscallCode::HALT.syscall_id());
-
-            // For halt and commit deferred proofs syscalls, we need to koala bear range check one of
-            // it's operands.
-            if is_halt {
-                syscall_cols.operand_to_check = event.b.into();
-                syscall_cols.operand_range_check_cols.populate(event.b);
-                cols.syscall_range_check_operand = F::ONE;
-            }
-
-            if syscall_id == F::from_canonical_u32(SyscallCode::COMMIT_DEFERRED_PROOFS.syscall_id())
-            {
-                syscall_cols.operand_to_check = event.c.into();
-                syscall_cols.operand_range_check_cols.populate(event.c);
-                cols.syscall_range_check_operand = F::ONE;
-            }
-        }
-
-        is_halt
-    }
 }
