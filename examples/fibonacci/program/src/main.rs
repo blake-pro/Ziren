@@ -9,6 +9,10 @@
 #![no_main]
 zkm2_zkvm::entrypoint!(main);
 
+extern "C" {
+    fn add(a: u32, b: u32) -> u32;
+}
+
 pub fn main() {
     // Read an input to the program.
     //
@@ -23,7 +27,7 @@ pub fn main() {
     let mut a = 0;
     let mut b = 1;
     for _ in 0..n {
-        let mut c = a + b;
+        let mut c = unsafe { add(a, b) };
         c %= 7919; // Modulus to prevent overflow.
         a = b;
         b = c;

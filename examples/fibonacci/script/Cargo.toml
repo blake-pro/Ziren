@@ -11,6 +11,7 @@ zkm2-sdk = { workspace = true }
 
 [build-dependencies]
 zkm2-build = { workspace = true }
+cc = "1.0.66"
 
 [[bin]]
 name = "plonk_bn254"
