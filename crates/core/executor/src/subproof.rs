@@ -3,7 +3,7 @@
 use crate::ZKMReduceProof;
 use std::sync::atomic::AtomicBool;
 use zkm2_stark::{
-    koala_bear_poseidon2::KoalaBearPoseidon2, MachineVerificationError, StarkVerifyingKey,
+    baby_bear_poseidon2::BabyBearPoseidon2, MachineVerificationError, StarkVerifyingKey,
 };
 
 /// Verifier used in runtime when `zkm2_zkvm::precompiles::verify::verify_zkm2_proof` is called. This
@@ -16,11 +16,11 @@ pub trait SubproofVerifier: Sync + Send {
     /// Verify a deferred proof.
     fn verify_deferred_proof(
         &self,
-        proof: &ZKMReduceProof<KoalaBearPoseidon2>,
-        vk: &StarkVerifyingKey<KoalaBearPoseidon2>,
+        proof: &ZKMReduceProof<BabyBearPoseidon2>,
+        vk: &StarkVerifyingKey<BabyBearPoseidon2>,
         vk_hash: [u32; 8],
         committed_value_digest: [u32; 8],
-    ) -> Result<(), MachineVerificationError<KoalaBearPoseidon2>>;
+    ) -> Result<(), MachineVerificationError<BabyBearPoseidon2>>;
 }
 
 /// A dummy verifier which prints a warning on the first proof and does nothing else.
@@ -40,11 +40,11 @@ impl DefaultSubproofVerifier {
 impl SubproofVerifier for DefaultSubproofVerifier {
     fn verify_deferred_proof(
         &self,
-        _proof: &ZKMReduceProof<KoalaBearPoseidon2>,
-        _vk: &StarkVerifyingKey<KoalaBearPoseidon2>,
+        _proof: &ZKMReduceProof<BabyBearPoseidon2>,
+        _vk: &StarkVerifyingKey<BabyBearPoseidon2>,
         _vk_hash: [u32; 8],
         _committed_value_digest: [u32; 8],
-    ) -> Result<(), MachineVerificationError<KoalaBearPoseidon2>> {
+    ) -> Result<(), MachineVerificationError<BabyBearPoseidon2>> {
         if !self.printed.load(std::sync::atomic::Ordering::SeqCst) {
             tracing::info!("Not verifying sub proof during runtime");
             self.printed.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -59,11 +59,11 @@ pub struct NoOpSubproofVerifier;
 impl SubproofVerifier for NoOpSubproofVerifier {
     fn verify_deferred_proof(
         &self,
-        _proof: &ZKMReduceProof<KoalaBearPoseidon2>,
-        _vk: &StarkVerifyingKey<KoalaBearPoseidon2>,
+        _proof: &ZKMReduceProof<BabyBearPoseidon2>,
+        _vk: &StarkVerifyingKey<BabyBearPoseidon2>,
         _vk_hash: [u32; 8],
         _committed_value_digest: [u32; 8],
-    ) -> Result<(), MachineVerificationError<KoalaBearPoseidon2>> {
+    ) -> Result<(), MachineVerificationError<BabyBearPoseidon2>> {
         Ok(())
     }
 }

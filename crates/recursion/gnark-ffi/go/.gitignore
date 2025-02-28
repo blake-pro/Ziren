@@ -1,5 +1,5 @@
 constraints.json
 *witness.json
-lib/libkoalabear.a
+lib/libbabybear.a
 build/
 main

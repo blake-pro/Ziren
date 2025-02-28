@@ -1,7 +1,7 @@
 package main
 
 /*
-#include "./koalabear.h"
+#include "./babybear.h"
 #include <stdlib.h>
 
 typedef struct {
@@ -32,7 +32,7 @@ import (
 	"github.com/consensys/gnark/frontend/cs/scs"
 	"github.com/consensys/gnark/test/unsafekzg"
 	"github.com/succinctlabs/sp1-recursion-gnark/sp1"
-	"github.com/succinctlabs/sp1-recursion-gnark/sp1/koalabear"
+	"github.com/succinctlabs/sp1-recursion-gnark/sp1/babybear"
 	"github.com/succinctlabs/sp1-recursion-gnark/sp1/poseidon2"
 )
 
@@ -234,48 +234,48 @@ func TestMain() error {
 	return nil
 }
 
-//export TestPoseidonKoalaBear2
-func TestPoseidonKoalaBear2() *C.char {
-	input := [poseidon2.KOALABEAR_WIDTH]koalabear.Variable{
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
-		koalabear.NewF("0"),
+//export TestPoseidonBabyBear2
+func TestPoseidonBabyBear2() *C.char {
+	input := [poseidon2.BABYBEAR_WIDTH]babybear.Variable{
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
+		babybear.NewF("0"),
 	}
 
-	expectedOutput := [poseidon2.KOALABEAR_WIDTH]koalabear.Variable{
-		koalabear.NewF("1246627235"),
-		koalabear.NewF("628715430"),
-		koalabear.NewF("728127883"),
-		koalabear.NewF("1210800983"),
-		koalabear.NewF("1104325841"),
-		koalabear.NewF("123548278"),
-		koalabear.NewF("109211657"),
-		koalabear.NewF("1347389604"),
-		koalabear.NewF("350632487"),
-		koalabear.NewF("1919729472"),
-		koalabear.NewF("1334300527"),
-		koalabear.NewF("1417472912"),
-		koalabear.NewF("1710206249"),
-		koalabear.NewF("1032515169"),
-		koalabear.NewF("431466777"),
-		koalabear.NewF("1825850772"),
+	expectedOutput := [poseidon2.BABYBEAR_WIDTH]babybear.Variable{
+		babybear.NewF("618910652"),
+		babybear.NewF("1488604963"),
+		babybear.NewF("659088560"),
+		babybear.NewF("1999029727"),
+		babybear.NewF("1121255343"),
+		babybear.NewF("20724378"),
+		babybear.NewF("956965955"),
+		babybear.NewF("1084245564"),
+		babybear.NewF("751155763"),
+		babybear.NewF("1075356210"),
+		babybear.NewF("1159054104"),
+		babybear.NewF("47710013"),
+		babybear.NewF("179166241"),
+		babybear.NewF("42705162"),
+		babybear.NewF("1517988227"),
+		babybear.NewF("1481867517"),
 	}
 
-	circuit := sp1.TestPoseidon2KoalaBearCircuit{Input: input, ExpectedOutput: expectedOutput}
-	assignment := sp1.TestPoseidon2KoalaBearCircuit{Input: input, ExpectedOutput: expectedOutput}
+	circuit := sp1.TestPoseidon2BabyBearCircuit{Input: input, ExpectedOutput: expectedOutput}
+	assignment := sp1.TestPoseidon2BabyBearCircuit{Input: input, ExpectedOutput: expectedOutput}
 
 	builder := r1cs.NewBuilder
 	r1cs, err := frontend.Compile(ecc.BN254.ScalarField(), builder, &circuit)

@@ -54,7 +54,7 @@ pub mod permute_tests {
     }
 
     #[test]
-    fn test_keccak_permute_prove_koalabear() {
+    fn test_keccak_permute_prove_babybear() {
         utils::setup_logger();
 
         let program = keccak_permute_program();

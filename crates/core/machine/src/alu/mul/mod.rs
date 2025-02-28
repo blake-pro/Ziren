@@ -444,12 +444,10 @@ where
 mod tests {
 
     use crate::utils::{uni_stark_prove as prove, uni_stark_verify as verify};
-    use p3_koala_bear::KoalaBear;
+    use p3_baby_bear::BabyBear;
     use p3_matrix::dense::RowMajorMatrix;
     use zkm2_core_executor::{events::AluEvent, ExecutionRecord, Opcode};
-    use zkm2_stark::{
-        air::MachineAir, koala_bear_poseidon2::KoalaBearPoseidon2, StarkGenericConfig,
-    };
+    use zkm2_stark::{air::MachineAir, baby_bear_poseidon2::BabyBearPoseidon2, StarkGenericConfig};
 
     use super::MulChip;
 
@@ -457,20 +455,27 @@ mod tests {
     fn generate_trace_mul() {
         let mut shard = ExecutionRecord::default();
 
-        // Fill mul_events with 10 MUL events.
-        let mut mul_events: Vec<AluEvent> = Vec::new();
-        for _ in 0..10 {
-            mul_events.push(AluEvent::new(0, 0, Opcode::MUL, 0x80004000, 0x80000000, 0xffff8000));
-        }
-        shard.mul_events = mul_events;
-        let chip = MulChip::default();
-        let _trace: RowMajorMatrix<KoalaBear> =
-            chip.generate_trace(&shard, &mut ExecutionRecord::default());
+       // Fill mul_events with 10 MUL events.
+       let mut mul_events: Vec<AluEvent> = Vec::new();
+       for _ in 0..10 {
+           mul_events.push(AluEvent::new(
+               0,
+               0,
+               Opcode::MUL,
+               0x80004000,
+               0x80000000,
+               0xffff8000,
+           ));
+       }
+       shard.mul_events = mul_events;
+       let chip = MulChip::default();
+       let _trace: RowMajorMatrix<BabyBear> =
+           chip.generate_trace(&shard, &mut ExecutionRecord::default());
     }
 
     #[test]
-    fn prove_koalabear() {
-        let config = KoalaBearPoseidon2::new();
+    fn prove_babybear() {
+        let config = BabyBearPoseidon2::new();
         let mut challenger = config.challenger();
 
         let mut shard = ExecutionRecord::default();
@@ -503,9 +508,9 @@ mod tests {
 
         shard.mul_events = mul_events;
         let chip = MulChip::default();
-        let trace: RowMajorMatrix<KoalaBear> =
+        let trace: RowMajorMatrix<BabyBear> =
             chip.generate_trace(&shard, &mut ExecutionRecord::default());
-        let proof = prove::<KoalaBearPoseidon2, _>(&config, &chip, &mut challenger, trace);
+        let proof = prove::<BabyBearPoseidon2, _>(&config, &chip, &mut challenger, trace);
 
         let mut challenger = config.challenger();
         verify(&config, &chip, &mut challenger, &proof).unwrap();

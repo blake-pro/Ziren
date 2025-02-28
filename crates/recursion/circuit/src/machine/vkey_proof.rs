@@ -1,15 +1,16 @@
 use std::marker::PhantomData;
 
 use p3_air::Air;
+use p3_baby_bear::BabyBear;
 use p3_commit::Mmcs;
 use p3_field::FieldAlgebra;
-use p3_koala_bear::KoalaBear;
+
 use p3_matrix::dense::RowMajorMatrix;
 use serde::{Deserialize, Serialize};
 use zkm2_recursion_compiler::ir::{Builder, Felt};
 use zkm2_recursion_core::DIGEST_SIZE;
 use zkm2_stark::{
-    air::MachineAir, koala_bear_poseidon2::KoalaBearPoseidon2, Com, InnerChallenge, OpeningProof,
+    air::MachineAir, baby_bear_poseidon2::BabyBearPoseidon2, Com, InnerChallenge, OpeningProof,
     StarkGenericConfig, StarkMachine,
 };
 
@@ -20,7 +21,7 @@ use crate::{
     merkle_tree::{verify, MerkleProof},
     stark::MerkleProofVariable,
     witness::{WitnessWriter, Witnessable},
-    CircuitConfig, FriProofVariable, KoalaBearFriConfig, KoalaBearFriConfigVariable,
+    BabyBearFriConfig, BabyBearFriConfigVariable, CircuitConfig, FriProofVariable,
 };
 
 use super::{
@@ -43,8 +44,8 @@ pub struct ZKMCompressWithVkeyShape {
 
 /// Witness layout for the compress stage verifier.
 pub struct ZKMMerkleProofWitnessVariable<
-    C: CircuitConfig<F = KoalaBear>,
-    SC: FieldHasherVariable<C> + KoalaBearFriConfigVariable<C>,
+    C: CircuitConfig<F = BabyBear>,
+    SC: FieldHasherVariable<C> + BabyBearFriConfigVariable<C>,
 > {
     /// The shard proofs to verify.
     pub vk_merkle_proofs: Vec<MerkleProofVariable<C, SC>>,
@@ -58,15 +59,15 @@ pub struct ZKMMerkleProofWitnessVariable<
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound(serialize = "SC::Digest: Serialize"))]
 #[serde(bound(deserialize = "SC::Digest: Deserialize<'de>"))]
-pub struct ZKMMerkleProofWitnessValues<SC: FieldHasher<KoalaBear>> {
-    pub vk_merkle_proofs: Vec<MerkleProof<KoalaBear, SC>>,
+pub struct ZKMMerkleProofWitnessValues<SC: FieldHasher<BabyBear>> {
+    pub vk_merkle_proofs: Vec<MerkleProof<BabyBear, SC>>,
     pub values: Vec<SC::Digest>,
     pub root: SC::Digest,
 }
 
 impl<C, SC> ZKMMerkleProofVerifier<C, SC>
 where
-    SC: KoalaBearFriConfigVariable<C>,
+    SC: BabyBearFriConfigVariable<C>,
     C: CircuitConfig<F = SC::Val, EF = SC::Challenge>,
 {
     /// Verify (via Merkle tree) that the vkey digests of a proof belong to a specified set (encoded
@@ -98,28 +99,28 @@ pub struct ZKMCompressWithVKeyVerifier<C, SC, A> {
 
 /// Witness layout for the verifier of the proof shape phase of the compress stage.
 pub struct ZKMCompressWithVKeyWitnessVariable<
-    C: CircuitConfig<F = KoalaBear>,
-    SC: KoalaBearFriConfigVariable<C>,
+    C: CircuitConfig<F = BabyBear>,
+    SC: BabyBearFriConfigVariable<C>,
 > {
     pub compress_var: ZKMCompressWitnessVariable<C, SC>,
     pub merkle_var: ZKMMerkleProofWitnessVariable<C, SC>,
 }
 
 /// An input layout for the verifier of the proof shape phase of the compress stage.
-pub struct ZKMCompressWithVKeyWitnessValues<SC: StarkGenericConfig + FieldHasher<KoalaBear>> {
+pub struct ZKMCompressWithVKeyWitnessValues<SC: StarkGenericConfig + FieldHasher<BabyBear>> {
     pub compress_val: ZKMCompressWitnessValues<SC>,
     pub merkle_val: ZKMMerkleProofWitnessValues<SC>,
 }
 
 impl<C, SC, A> ZKMCompressWithVKeyVerifier<C, SC, A>
 where
-    SC: KoalaBearFriConfigVariable<
+    SC: BabyBearFriConfigVariable<
         C,
         FriChallengerVariable = DuplexChallengerVariable<C>,
-        DigestVariable = [Felt<KoalaBear>; DIGEST_SIZE],
+        DigestVariable = [Felt<BabyBear>; DIGEST_SIZE],
     >,
-    C: CircuitConfig<F = SC::Val, EF = SC::Challenge, Bit = Felt<KoalaBear>>,
-    <SC::ValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>: Clone,
+    C: CircuitConfig<F = SC::Val, EF = SC::Challenge, Bit = Felt<BabyBear>>,
+    <SC::ValMmcs as Mmcs<BabyBear>>::ProverData<RowMajorMatrix<BabyBear>>: Clone,
     A: MachineAir<SC::Val> + for<'a> Air<RecursiveVerifierConstraintFolder<'a, C>>,
 {
     /// Verify the proof shape phase of the compress stage.
@@ -142,33 +143,38 @@ where
     }
 }
 
-impl<SC: KoalaBearFriConfig + FieldHasher<KoalaBear>> ZKMCompressWithVKeyWitnessValues<SC> {
+impl<SC: BabyBearFriConfig + FieldHasher<BabyBear>> ZKMCompressWithVKeyWitnessValues<SC> {
     pub fn shape(&self) -> ZKMCompressWithVkeyShape {
         let merkle_tree_height = self.merkle_val.vk_merkle_proofs.first().unwrap().path.len();
         ZKMCompressWithVkeyShape { compress_shape: self.compress_val.shape(), merkle_tree_height }
     }
 }
 
-impl ZKMMerkleProofWitnessValues<KoalaBearPoseidon2> {
+impl ZKMMerkleProofWitnessValues<BabyBearPoseidon2> {
     pub fn dummy(num_proofs: usize, height: usize) -> Self {
-        let dummy_digest = [KoalaBear::ZERO; DIGEST_SIZE];
-        let vk_merkle_proofs =
-            vec![MerkleProof { index: 0, path: vec![dummy_digest; height] }; num_proofs];
+        let dummy_digest = [BabyBear::ZERO; DIGEST_SIZE];
+        let vk_merkle_proofs = vec![
+            MerkleProof {
+                index: 0,
+                path: vec![dummy_digest; height]
+            };
+            num_proofs
+        ];
         let values = vec![dummy_digest; num_proofs];
 
         Self { vk_merkle_proofs, values, root: dummy_digest }
     }
 }
 
-impl ZKMCompressWithVKeyWitnessValues<KoalaBearPoseidon2> {
-    pub fn dummy<A: MachineAir<KoalaBear>>(
-        machine: &StarkMachine<KoalaBearPoseidon2, A>,
+impl ZKMCompressWithVKeyWitnessValues<BabyBearPoseidon2> {
+    pub fn dummy<A: MachineAir<BabyBear>>(
+        machine: &StarkMachine<BabyBearPoseidon2, A>,
         shape: &ZKMCompressWithVkeyShape,
     ) -> Self {
         let compress_val =
-            ZKMCompressWitnessValues::<KoalaBearPoseidon2>::dummy(machine, &shape.compress_shape);
+            ZKMCompressWitnessValues::<BabyBearPoseidon2>::dummy(machine, &shape.compress_shape);
         let num_proofs = compress_val.vks_and_proofs.len();
-        let merkle_val = ZKMMerkleProofWitnessValues::<KoalaBearPoseidon2>::dummy(
+        let merkle_val = ZKMMerkleProofWitnessValues::<BabyBearPoseidon2>::dummy(
             num_proofs,
             shape.merkle_tree_height,
         );
@@ -176,13 +182,13 @@ impl ZKMCompressWithVKeyWitnessValues<KoalaBearPoseidon2> {
     }
 }
 
-impl<C: CircuitConfig<F = KoalaBear, EF = InnerChallenge>, SC: KoalaBearFriConfigVariable<C>>
+impl<C: CircuitConfig<F = BabyBear, EF = InnerChallenge>, SC: BabyBearFriConfigVariable<C>>
     Witnessable<C> for ZKMCompressWithVKeyWitnessValues<SC>
 where
     Com<SC>: Witnessable<C, WitnessVariable = <SC as FieldHasherVariable<C>>::DigestVariable>,
     // This trait bound is redundant, but Rust-Analyzer is not able to infer it.
-    SC: FieldHasher<KoalaBear>,
-    <SC as FieldHasher<KoalaBear>>::Digest: Witnessable<C, WitnessVariable = SC::DigestVariable>,
+    SC: FieldHasher<BabyBear>,
+    <SC as FieldHasher<BabyBear>>::Digest: Witnessable<C, WitnessVariable = SC::DigestVariable>,
     OpeningProof<SC>: Witnessable<C, WitnessVariable = FriProofVariable<C, SC>>,
 {
     type WitnessVariable = ZKMCompressWithVKeyWitnessVariable<C, SC>;

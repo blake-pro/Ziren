@@ -493,7 +493,7 @@ where
             DslIr::AssertNeFI(lhs, rhs) => self.base_assert_ne(lhs, Imm::F(rhs), f),
             DslIr::AssertNeEI(lhs, rhs) => self.ext_assert_ne(lhs, Imm::EF(rhs), f),
 
-            DslIr::CircuitV2Poseidon2PermuteKoalaBear(data) => {
+            DslIr::CircuitV2Poseidon2PermuteBabyBear(data) => {
                 f(self.poseidon2_permute(data.0, data.1))
             }
             DslIr::CircuitV2ExpReverseBits(dst, base, exp) => {
@@ -840,15 +840,15 @@ impl<C: Config<F: PrimeField64>> Reg<C> for Address<C::F> {
 mod tests {
     use std::{collections::VecDeque, io::BufRead, iter::zip, sync::Arc};
 
+    use p3_baby_bear::Poseidon2InternalLayerBabyBear;
     use p3_field::{Field, PrimeField32};
-    use p3_koala_bear::Poseidon2InternalLayerKoalaBear;
     use p3_symmetric::{CryptographicHasher, Permutation};
     use rand::{rngs::StdRng, Rng, SeedableRng};
 
     use zkm2_core_machine::utils::{run_test_machine, setup_logger};
     use zkm2_recursion_core::{machine::RecursionAir, RecursionProgram, Runtime};
     use zkm2_stark::{
-        inner_perm, koala_bear_poseidon2::KoalaBearPoseidon2, InnerHash, KoalaBearPoseidon2Inner,
+        baby_bear_poseidon2::BabyBearPoseidon2, inner_perm, BabyBearPoseidon2Inner, InnerHash,
         StarkGenericConfig,
     };
 
@@ -856,14 +856,14 @@ mod tests {
 
     use super::*;
 
-    type SC = KoalaBearPoseidon2;
+    type SC = BabyBearPoseidon2;
     type F = <SC as StarkGenericConfig>::Val;
     type EF = <SC as StarkGenericConfig>::Challenge;
     fn test_operations(operations: TracedVec<DslIr<AsmConfig<F, EF>>>) {
         test_operations_with_runner(operations, |program| {
-            let mut runtime = Runtime::<F, EF, Poseidon2InternalLayerKoalaBear<16>>::new(
+            let mut runtime = Runtime::<F, EF, Poseidon2InternalLayerBabyBear<16>>::new(
                 program,
-                KoalaBearPoseidon2Inner::new().perm,
+                BabyBearPoseidon2Inner::new().perm,
             );
             runtime.run().unwrap();
             runtime.record
@@ -880,7 +880,7 @@ mod tests {
 
         // Run with the poseidon2 wide chip.
         let wide_machine =
-            RecursionAir::<_, 3>::machine_wide_with_all_chips(KoalaBearPoseidon2::default());
+            RecursionAir::<_, 3>::machine_wide_with_all_chips(BabyBearPoseidon2::default());
         let (pk, vk) = wide_machine.setup(&program);
         let result = run_test_machine(vec![record.clone()], wide_machine, pk, vk);
         if let Err(e) = result {
@@ -889,7 +889,7 @@ mod tests {
 
         // Run with the poseidon2 skinny chip.
         let skinny_machine = RecursionAir::<_, 9>::machine_skinny_with_all_chips(
-            KoalaBearPoseidon2::ultra_compressed(),
+            BabyBearPoseidon2::ultra_compressed(),
         );
         let (pk, vk) = skinny_machine.setup(&program);
         let result = run_test_machine(vec![record.clone()], skinny_machine, pk, vk);
@@ -1117,9 +1117,9 @@ mod tests {
         builder.cycle_tracker_v2_exit();
 
         test_operations_with_runner(builder.into_operations(), |program| {
-            let mut runtime = Runtime::<F, EF, Poseidon2InternalLayerKoalaBear<16>>::new(
+            let mut runtime = Runtime::<F, EF, Poseidon2InternalLayerBabyBear<16>>::new(
                 program,
-                KoalaBearPoseidon2Inner::new().perm,
+                BabyBearPoseidon2Inner::new().perm,
             );
             runtime.debug_stdout = Box::new(&mut buf);
             runtime.run().unwrap();

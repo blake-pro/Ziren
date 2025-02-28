@@ -152,8 +152,8 @@ pub fn verify<C: CircuitConfig, HV: FieldHasherVariable<C>>(
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
+    use p3_baby_bear::BabyBear;
     use p3_field::FieldAlgebra;
-    use p3_koala_bear::KoalaBear;
     use p3_util::log2_ceil_usize;
     use rand::rngs::OsRng;
     use zkhash::ark_ff::UniformRand;
@@ -162,7 +162,7 @@ mod tests {
         ir::{Builder, Felt},
     };
     use zkm2_recursion_core::DIGEST_SIZE;
-    use zkm2_stark::koala_bear_poseidon2::KoalaBearPoseidon2;
+    use zkm2_stark::baby_bear_poseidon2::BabyBearPoseidon2;
 
     use crate::{
         merkle_tree::{verify, MerkleTree},
@@ -171,8 +171,8 @@ mod tests {
         CircuitConfig,
     };
     type C = InnerConfig;
-    type F = KoalaBear;
-    type HV = KoalaBearPoseidon2;
+    type F = BabyBear;
+    type HV = BabyBearPoseidon2;
 
     #[test]
     fn test_merkle_tree_inner() {
@@ -182,12 +182,13 @@ mod tests {
         for _ in 0..5 {
             // Test with different number of leaves.
             for j in 2..20 {
-                let leaves: Vec<[F; DIGEST_SIZE]> =
-                    (0..j).map(|_| std::array::from_fn(|_| F::rand(&mut rng))).collect();
-                let (root, tree) = MerkleTree::<KoalaBear, HV>::commit(leaves.to_vec());
+                let leaves: Vec<[F; DIGEST_SIZE]> = (0..j)
+                    .map(|_| std::array::from_fn(|_| F::rand(&mut rng)))
+                    .collect();
+                let (root, tree) = MerkleTree::<BabyBear, HV>::commit(leaves.to_vec());
                 for (i, leaf) in leaves.iter().enumerate() {
-                    let (_, proof) = MerkleTree::<KoalaBear, HV>::open(&tree, i);
-                    MerkleTree::<KoalaBear, HV>::verify(proof.clone(), *leaf, root).unwrap();
+                    let (_, proof) = MerkleTree::<BabyBear, HV>::open(&tree, i);
+                    MerkleTree::<BabyBear, HV>::verify(proof.clone(), *leaf, root).unwrap();
                     let (value_variable, path_variable): ([Felt<_>; 8], Vec<[Felt<_>; 8]>) = (
                         std::array::from_fn(|i| builder.constant(leaf[i])),
                         proof
@@ -197,17 +198,17 @@ mod tests {
                             .collect_vec(),
                     );
 
-                    let index_var = builder.constant(KoalaBear::from_canonical_usize(i));
+                    let index_var = builder.constant(BabyBear::from_canonical_usize(i));
                     let index_bits = C::num2bits(&mut builder, index_var, log2_ceil_usize(j));
                     let root_variable: [Felt<_>; 8] =
                         root.iter().map(|x| builder.constant(*x)).collect_vec().try_into().unwrap();
 
-                    let proof_variable = MerkleProofVariable::<InnerConfig, KoalaBearPoseidon2> {
+                    let proof_variable = MerkleProofVariable::<InnerConfig, BabyBearPoseidon2> {
                         index: index_bits,
                         path: path_variable,
                     };
 
-                    verify::<InnerConfig, KoalaBearPoseidon2>(
+                    verify::<InnerConfig, BabyBearPoseidon2>(
                         &mut builder,
                         proof_variable,
                         value_variable,

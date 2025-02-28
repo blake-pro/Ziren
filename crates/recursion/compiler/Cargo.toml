@@ -11,7 +11,7 @@ categories = { workspace = true }
 
 [dependencies]
 p3-bn254-fr = { workspace = true }
-p3-koala-bear = { workspace = true }
+p3-baby-bear = { workspace = true }
 p3-field = { workspace = true }
 p3-symmetric = { workspace = true }
 
@@ -34,6 +34,3 @@ p3-dft = { workspace = true }
 p3-merkle-tree = { workspace = true }
 rand = "0.8.5"
 criterion = { version = "0.5.1", features = ["html_reports"] }
-
-[features]
-debug = ["zkm2-core-machine/debug"]

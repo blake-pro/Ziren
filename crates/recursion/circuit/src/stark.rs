@@ -4,9 +4,10 @@ use itertools::{izip, Itertools};
 use num_traits::cast::ToPrimitive;
 
 use p3_air::{Air, BaseAir};
+use p3_baby_bear::BabyBear;
 use p3_commit::{Mmcs, Pcs, PolynomialSpace, TwoAdicMultiplicativeCoset};
 use p3_field::{ExtensionField, Field, FieldAlgebra, TwoAdicField};
-use p3_koala_bear::KoalaBear;
+
 use p3_matrix::{dense::RowMajorMatrix, Dimensions};
 
 use zkm2_recursion_compiler::{
@@ -15,7 +16,7 @@ use zkm2_recursion_compiler::{
     prelude::Felt,
 };
 use zkm2_stark::{
-    air::InteractionScope, koala_bear_poseidon2::KoalaBearPoseidon2, AirOpenedValues, Challenger,
+    air::InteractionScope, baby_bear_poseidon2::BabyBearPoseidon2, AirOpenedValues, Challenger,
     Chip, ChipOpenedValues, InnerChallenge, ProofShape, ShardCommitment, ShardOpenedValues,
     ShardProof, Val, PROOF_MAX_NUM_PVS,
 };
@@ -25,18 +26,18 @@ use crate::{
     challenger::CanObserveVariable,
     fri::{dummy_hash, dummy_pcs_proof, PolynomialBatchShape, PolynomialShape},
     hash::FieldHasherVariable,
-    CircuitConfig, FriProofVariable, KoalaBearFriConfig, TwoAdicPcsMatsVariable,
+    BabyBearFriConfig, CircuitConfig, FriProofVariable, TwoAdicPcsMatsVariable,
 };
 
 use crate::{
     challenger::FieldChallengerVariable, constraints::RecursiveVerifierConstraintFolder,
-    domain::PolynomialSpaceVariable, fri::verify_two_adic_pcs, KoalaBearFriConfigVariable,
+    domain::PolynomialSpaceVariable, fri::verify_two_adic_pcs, BabyBearFriConfigVariable,
     TwoAdicPcsRoundVariable, VerifyingKeyVariable,
 };
 
 /// Reference: [zkm2_core::stark::ShardProof]
 #[derive(Clone)]
-pub struct ShardProofVariable<C: CircuitConfig<F = SC::Val>, SC: KoalaBearFriConfigVariable<C>> {
+pub struct ShardProofVariable<C: CircuitConfig<F = SC::Val>, SC: BabyBearFriConfigVariable<C>> {
     pub commitment: ShardCommitment<SC::DigestVariable>,
     pub opened_values: ShardOpenedValues<Ext<C::F, C::EF>>,
     pub opening_proof: FriProofVariable<C, SC>,
@@ -45,18 +46,21 @@ pub struct ShardProofVariable<C: CircuitConfig<F = SC::Val>, SC: KoalaBearFriCon
 }
 
 /// Get a dummy duplex challenger for use in dummy proofs.
-pub fn dummy_challenger(config: &KoalaBearPoseidon2) -> Challenger<KoalaBearPoseidon2> {
+pub fn dummy_challenger(config: &BabyBearPoseidon2) -> Challenger<BabyBearPoseidon2> {
     let mut challenger = config.challenger();
     challenger.input_buffer = vec![];
-    challenger.output_buffer = vec![KoalaBear::ZERO; challenger.sponge_state.len()];
+    challenger.output_buffer = vec![BabyBear::ZERO; challenger.sponge_state.len()];
     challenger
 }
 
 /// Make a dummy shard proof for a given proof shape.
-pub fn dummy_vk_and_shard_proof<A: MachineAir<KoalaBear>>(
-    machine: &StarkMachine<KoalaBearPoseidon2, A>,
+pub fn dummy_vk_and_shard_proof<A: MachineAir<BabyBear>>(
+    machine: &StarkMachine<BabyBearPoseidon2, A>,
     shape: &ProofShape,
-) -> (StarkVerifyingKey<KoalaBearPoseidon2>, ShardProof<KoalaBearPoseidon2>) {
+) -> (
+    StarkVerifyingKey<BabyBearPoseidon2>,
+    ShardProof<BabyBearPoseidon2>,
+) {
     // Make a dummy commitment.
     let commitment = ShardCommitment {
         global_main_commit: dummy_hash(),
@@ -150,16 +154,18 @@ pub fn dummy_vk_and_shard_proof<A: MachineAir<KoalaBear>>(
     let log_blowup = machine.config().fri_config().log_blowup;
     let opening_proof = dummy_pcs_proof(fri_queries, &batch_shapes, log_blowup);
 
-    let public_values = (0..PROOF_MAX_NUM_PVS).map(|_| KoalaBear::ZERO).collect::<Vec<_>>();
+    let public_values = (0..PROOF_MAX_NUM_PVS)
+        .map(|_| BabyBear::ZERO)
+        .collect::<Vec<_>>();
 
     // Get the preprocessed chip information.
     let pcs = machine.config().pcs();
     let preprocessed_chip_information: Vec<_> = preprocessed_names_and_dimensions
         .iter()
         .map(|(name, width, log_height)| {
-            let domain = <<KoalaBearPoseidon2 as StarkGenericConfig>::Pcs as Pcs<
-                <KoalaBearPoseidon2 as StarkGenericConfig>::Challenge,
-                <KoalaBearPoseidon2 as StarkGenericConfig>::Challenger,
+            let domain = <<BabyBearPoseidon2 as StarkGenericConfig>::Pcs as Pcs<
+                <BabyBearPoseidon2 as StarkGenericConfig>::Challenge,
+                <BabyBearPoseidon2 as StarkGenericConfig>::Challenger,
             >>::natural_domain_for_degree(pcs, 1 << log_height);
             (name.to_owned(), domain, Dimensions { width: *width, height: 1 << log_height })
         })
@@ -174,7 +180,7 @@ pub fn dummy_vk_and_shard_proof<A: MachineAir<KoalaBear>>(
 
     let vk = StarkVerifyingKey {
         commit: dummy_hash(),
-        pc_start: KoalaBear::ZERO,
+        pc_start: BabyBear::ZERO,
         chip_information: preprocessed_chip_information,
         chip_ordering: preprocessed_chip_ordering,
     };
@@ -245,8 +251,8 @@ impl<C, SC, A> StarkVerifier<C, SC, A>
 where
     C::F: TwoAdicField,
     C: CircuitConfig<F = SC::Val>,
-    SC: KoalaBearFriConfigVariable<C>,
-    <SC::ValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>: Clone,
+    SC: BabyBearFriConfigVariable<C>,
+    <SC::ValMmcs as Mmcs<BabyBear>>::ProverData<RowMajorMatrix<BabyBear>>: Clone,
     A: MachineAir<Val<SC>>,
 {
     pub fn natural_domain_for_degree(
@@ -522,7 +528,7 @@ where
     }
 }
 
-impl<C: CircuitConfig<F = SC::Val>, SC: KoalaBearFriConfigVariable<C>> ShardProofVariable<C, SC> {
+impl<C: CircuitConfig<F = SC::Val>, SC: BabyBearFriConfigVariable<C>> ShardProofVariable<C, SC> {
     pub fn contains_cpu(&self) -> bool {
         self.chip_ordering.contains_key("CPU")
     }
@@ -550,7 +556,7 @@ pub mod tests {
     use crate::{
         challenger::{CanCopyChallenger, CanObserveVariable, DuplexChallengerVariable},
         utils::tests::run_test_recursion_with_prover,
-        KoalaBearFriConfig,
+        BabyBearFriConfig,
     };
 
     use zkm2_core_executor::Program;
@@ -564,19 +570,19 @@ pub mod tests {
         ir::{Builder, DslIr, TracedVec},
     };
 
-    use test_artifacts::FIBONACCI_ELF;
-    use zkm2_recursion_core::{air::Block, machine::RecursionAir, stark::KoalaBearPoseidon2Outer};
+    use zkm2_recursion_core::{air::Block, machine::RecursionAir, stark::BabyBearPoseidon2Outer};
     use zkm2_stark::{
-        koala_bear_poseidon2::KoalaBearPoseidon2, CpuProver, InnerVal, MachineProver, ShardProof,
+        baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, InnerVal, MachineProver, ShardProof,
         ZKMCoreOpts,
     };
+    use test_artifacts::FIBONACCI_ELF;
 
     use super::*;
     use crate::witness::*;
 
     type F = InnerVal;
     type A = MipsAir<F>;
-    type SC = KoalaBearPoseidon2;
+    type SC = BabyBearPoseidon2;
 
     pub fn build_verify_shard_with_provers<
         C: CircuitConfig<F = InnerVal, EF = InnerChallenge, Bit = Felt<InnerVal>> + Debug,
@@ -587,7 +593,7 @@ pub mod tests {
         elf: &[u8],
         opts: ZKMCoreOpts,
         num_shards_in_batch: Option<usize>,
-    ) -> (TracedVec<DslIr<C>>, Vec<Block<KoalaBear>>) {
+    ) -> (TracedVec<DslIr<C>>, Vec<Block<BabyBear>>) {
         setup_logger();
         let machine = MipsAir::<C::F>::machine(SC::default());
         let (_, vk) = machine.setup(&Program::from(elf).unwrap());
@@ -609,7 +615,7 @@ pub mod tests {
 
         // Add a hash invocation, since the poseidon2 table expects that it's in the first row.
         let mut challenger = config.challenger_variable(&mut builder);
-        // let vk = VerifyingKeyVariable::from_constant_key_koalabear(&mut builder, &vk);
+        // let vk = VerifyingKeyVariable::from_constant_key_babybear(&mut builder, &vk);
         Witnessable::<C>::write(&vk, &mut witness_stream);
         let vk: VerifyingKeyVariable<_, _> = vk.read(&mut builder);
         vk.observe_into(&mut builder, &mut challenger);
@@ -655,7 +661,7 @@ pub mod tests {
     fn test_verify_shard_inner() {
         let (operations, stream) =
             build_verify_shard_with_provers::<InnerConfig, CpuProver<_, _>, CpuProver<_, _>>(
-                KoalaBearPoseidon2::new(),
+                BabyBearPoseidon2::new(),
                 FIBONACCI_ELF,
                 ZKMCoreOpts::default(),
                 Some(2),

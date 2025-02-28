@@ -4,7 +4,7 @@ use challenger::{
     CanCopyChallenger, CanObserveVariable, DuplexChallengerVariable, FieldChallengerVariable,
     MultiField32ChallengerVariable, SpongeChallengerShape,
 };
-use hash::{FieldHasherVariable, Posedion2KoalaBearHasherVariable};
+use hash::{FieldHasherVariable, Posedion2BabyBearHasherVariable};
 use itertools::izip;
 use p3_bn254_fr::Bn254Fr;
 use p3_field::FieldAlgebra;
@@ -31,7 +31,7 @@ pub mod witness;
 
 pub use types::*;
 use zkm2_stark::{
-    koala_bear_poseidon2::{KoalaBearPoseidon2, ValMmcs},
+    baby_bear_poseidon2::{BabyBearPoseidon2, ValMmcs},
     StarkGenericConfig,
 };
 
@@ -41,56 +41,56 @@ use p3_dft::Radix2DitParallel;
 use p3_fri::{FriConfig, TwoAdicFriPcs};
 use zkm2_recursion_core::{
     air::RecursionPublicValues,
-    stark::{KoalaBearPoseidon2Outer, OuterValMmcs},
+    stark::{outer_fri_config, BabyBearPoseidon2Outer, OuterValMmcs},
     D,
 };
 
-use p3_koala_bear::KoalaBear;
+use p3_baby_bear::BabyBear;
 use utils::{felt_bytes_to_bn254_var, felts_to_bn254_var, words_to_bytes};
 
-type EF = <KoalaBearPoseidon2 as StarkGenericConfig>::Challenge;
+type EF = <BabyBearPoseidon2 as StarkGenericConfig>::Challenge;
 
 pub type PcsConfig<C> = FriConfig<
     ExtensionMmcs<
         <C as StarkGenericConfig>::Val,
         <C as StarkGenericConfig>::Challenge,
-        <C as KoalaBearFriConfig>::ValMmcs,
+        <C as BabyBearFriConfig>::ValMmcs,
     >,
 >;
 
 pub type Digest<C, SC> = <SC as FieldHasherVariable<C>>::DigestVariable;
 
-pub type FriMmcs<C> = ExtensionMmcs<KoalaBear, EF, <C as KoalaBearFriConfig>::ValMmcs>;
+pub type FriMmcs<C> = ExtensionMmcs<BabyBear, EF, <C as BabyBearFriConfig>::ValMmcs>;
 
-pub trait KoalaBearFriConfig:
+pub trait BabyBearFriConfig:
     StarkGenericConfig<
-    Val = KoalaBear,
+    Val = BabyBear,
     Challenge = EF,
     Challenger = Self::FriChallenger,
     Pcs = TwoAdicFriPcs<
-        KoalaBear,
-        Radix2DitParallel<KoalaBear>,
+        BabyBear,
+        Radix2DitParallel<BabyBear>,
         Self::ValMmcs,
-        ExtensionMmcs<KoalaBear, EF, Self::ValMmcs>,
+        ExtensionMmcs<BabyBear, EF, Self::ValMmcs>,
     >,
 >
 {
-    type ValMmcs: Mmcs<KoalaBear, ProverData<RowMajorMatrix<KoalaBear>> = Self::RowMajorProverData>
+    type ValMmcs: Mmcs<BabyBear, ProverData<RowMajorMatrix<BabyBear>> = Self::RowMajorProverData>
         + Send
         + Sync;
     type RowMajorProverData: Clone + Send + Sync;
-    type FriChallenger: CanObserve<<Self::ValMmcs as Mmcs<KoalaBear>>::Commitment>
+    type FriChallenger: CanObserve<<Self::ValMmcs as Mmcs<BabyBear>>::Commitment>
         + CanSample<EF>
-        + GrindingChallenger<Witness = KoalaBear>
-        + FieldChallenger<KoalaBear>;
+        + GrindingChallenger<Witness = BabyBear>
+        + FieldChallenger<BabyBear>;
 
     fn fri_config(&self) -> &FriConfig<FriMmcs<Self>>;
 
     fn challenger_shape(challenger: &Self::FriChallenger) -> SpongeChallengerShape;
 }
 
-pub trait KoalaBearFriConfigVariable<C: CircuitConfig<F = KoalaBear>>:
-    KoalaBearFriConfig + FieldHasherVariable<C> + Posedion2KoalaBearHasherVariable<C>
+pub trait BabyBearFriConfigVariable<C: CircuitConfig<F = BabyBear>>:
+    BabyBearFriConfig + FieldHasherVariable<C> + Posedion2BabyBearHasherVariable<C>
 {
     type FriChallengerVariable: FieldChallengerVariable<C, <C as CircuitConfig>::Bit>
         + CanObserveVariable<C, <Self as FieldHasherVariable<C>>::DigestVariable>
@@ -557,10 +557,10 @@ impl CircuitConfig for OuterConfig {
     }
 }
 
-impl KoalaBearFriConfig for KoalaBearPoseidon2 {
+impl BabyBearFriConfig for BabyBearPoseidon2 {
     type ValMmcs = ValMmcs;
     type FriChallenger = <Self as StarkGenericConfig>::Challenger;
-    type RowMajorProverData = <ValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>;
+    type RowMajorProverData = <ValMmcs as Mmcs<BabyBear>>::ProverData<RowMajorMatrix<BabyBear>>;
 
     fn fri_config(&self) -> &FriConfig<FriMmcs<Self>> {
         self.pcs().fri_config()
@@ -574,12 +574,12 @@ impl KoalaBearFriConfig for KoalaBearPoseidon2 {
     }
 }
 
-impl KoalaBearFriConfig for KoalaBearPoseidon2Outer {
+impl BabyBearFriConfig for BabyBearPoseidon2Outer {
     type ValMmcs = OuterValMmcs;
     type FriChallenger = <Self as StarkGenericConfig>::Challenger;
 
     type RowMajorProverData =
-        <OuterValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>;
+        <OuterValMmcs as Mmcs<BabyBear>>::ProverData<RowMajorMatrix<BabyBear>>;
 
     fn fri_config(&self) -> &FriConfig<FriMmcs<Self>> {
         self.pcs().fri_config()
@@ -590,8 +590,8 @@ impl KoalaBearFriConfig for KoalaBearPoseidon2Outer {
     }
 }
 
-impl<C: CircuitConfig<F = KoalaBear, Bit = Felt<KoalaBear>>> KoalaBearFriConfigVariable<C>
-    for KoalaBearPoseidon2
+impl<C: CircuitConfig<F = BabyBear, Bit = Felt<BabyBear>>> BabyBearFriConfigVariable<C>
+    for BabyBearPoseidon2
 {
     type FriChallengerVariable = DuplexChallengerVariable<C>;
 
@@ -607,8 +607,8 @@ impl<C: CircuitConfig<F = KoalaBear, Bit = Felt<KoalaBear>>> KoalaBearFriConfigV
     }
 }
 
-impl<C: CircuitConfig<F = KoalaBear, N = Bn254Fr, Bit = Var<Bn254Fr>>> KoalaBearFriConfigVariable<C>
-    for KoalaBearPoseidon2Outer
+impl<C: CircuitConfig<F = BabyBear, N = Bn254Fr, Bit = Var<Bn254Fr>>> BabyBearFriConfigVariable<C>
+    for BabyBearPoseidon2Outer
 {
     type FriChallengerVariable = MultiField32ChallengerVariable<C>;
 

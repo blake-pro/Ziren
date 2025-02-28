@@ -5,7 +5,7 @@ pub use air::*;
 #[cfg(test)]
 mod tests {
     use num::{BigUint, Integer, One};
-    use p3_koala_bear::KoalaBear;
+    use p3_baby_bear::BabyBear;
     use p3_matrix::dense::RowMajorMatrix;
     use rand::Rng;
     use test_artifacts::U256XU2048_MUL_ELF;
@@ -19,7 +19,7 @@ mod tests {
     };
     use zkm2_primitives::consts::bytes_to_words_le;
     use zkm2_stark::{
-        air::MachineAir, koala_bear_poseidon2::KoalaBearPoseidon2, CpuProver, StarkGenericConfig,
+        air::MachineAir, baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, StarkGenericConfig,
     };
 
     use crate::{
@@ -183,25 +183,25 @@ mod tests {
 
     #[test]
     fn test_u256x2048_mul_pass() {
-        let config = KoalaBearPoseidon2::new();
+        let config = BabyBearPoseidon2::new();
         let execution_record = generate_test_execution_record(true);
         let chip = U256x2048MulChip::new();
-        let trace: RowMajorMatrix<KoalaBear> =
+        let trace: RowMajorMatrix<BabyBear> =
             chip.generate_trace(&execution_record, &mut ExecutionRecord::default());
-        let proof = prove::<KoalaBearPoseidon2, _>(&config, &chip, &mut config.challenger(), trace);
+        let proof = prove::<BabyBearPoseidon2, _>(&config, &chip, &mut config.challenger(), trace);
         verify(&config, &chip, &mut config.challenger(), &proof).unwrap();
     }
 
     #[test]
     fn test_u256x2048_mul_failure() {
         for _ in 0..10 {
-            let config = KoalaBearPoseidon2::new();
+            let config = BabyBearPoseidon2::new();
             let execution_record = generate_test_execution_record(false);
             let chip = U256x2048MulChip::new();
-            let trace: RowMajorMatrix<KoalaBear> =
+            let trace: RowMajorMatrix<BabyBear> =
                 chip.generate_trace(&execution_record, &mut ExecutionRecord::default());
             let proof =
-                prove::<KoalaBearPoseidon2, _>(&config, &chip, &mut config.challenger(), trace);
+                prove::<BabyBearPoseidon2, _>(&config, &chip, &mut config.challenger(), trace);
             let result = verify(&config, &chip, &mut config.challenger(), &proof);
             assert!(result.is_err());
         }

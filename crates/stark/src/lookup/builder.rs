@@ -190,8 +190,8 @@ mod tests {
     use std::borrow::Borrow;
 
     use p3_air::{Air, BaseAir};
+    use p3_baby_bear::BabyBear;
     use p3_field::FieldAlgebra;
-    use p3_koala_bear::KoalaBear;
     use p3_matrix::Matrix;
 
     use super::*;
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn test_symbolic_to_virtual_pair_col() {
-        type F = KoalaBear;
+        type F = BabyBear;
 
         let x = SymbolicVariable::<F>::new(Entry::Main { offset: 0 }, 0);
 
@@ -268,7 +268,7 @@ mod tests {
     fn test_lookup_interactions() {
         let air = LookupTestAir {};
 
-        let mut builder = InteractionBuilder::<KoalaBear>::new(0, NUM_COLS);
+        let mut builder = InteractionBuilder::<BabyBear>::new(0, NUM_COLS);
 
         air.eval(&mut builder);
 
@@ -278,17 +278,16 @@ mod tests {
         for interaction in receives {
             print!("Receive values: ");
             for value in interaction.values {
-                let expr = value
-                    .apply::<SymbolicExpression<KoalaBear>, SymbolicVariable<KoalaBear>>(
-                        &[],
-                        main.row_mut(0),
-                    );
+                let expr = value.apply::<SymbolicExpression<BabyBear>, SymbolicVariable<BabyBear>>(
+                    &[],
+                    main.row_mut(0),
+                );
                 print!("{expr:?}, ");
             }
 
             let multiplicity = interaction
                 .multiplicity
-                .apply::<SymbolicExpression<KoalaBear>, SymbolicVariable<KoalaBear>>(
+                .apply::<SymbolicExpression<BabyBear>, SymbolicVariable<BabyBear>>(
                     &[],
                     main.row_mut(0),
                 );
@@ -299,17 +298,16 @@ mod tests {
         for interaction in sends {
             print!("Send values: ");
             for value in interaction.values {
-                let expr = value
-                    .apply::<SymbolicExpression<KoalaBear>, SymbolicVariable<KoalaBear>>(
-                        &[],
-                        main.row_mut(0),
-                    );
+                let expr = value.apply::<SymbolicExpression<BabyBear>, SymbolicVariable<BabyBear>>(
+                    &[],
+                    main.row_mut(0),
+                );
                 print!("{expr:?}, ");
             }
 
             let multiplicity = interaction
                 .multiplicity
-                .apply::<SymbolicExpression<KoalaBear>, SymbolicVariable<KoalaBear>>(
+                .apply::<SymbolicExpression<BabyBear>, SymbolicVariable<BabyBear>>(
                     &[],
                     main.row_mut(0),
                 );

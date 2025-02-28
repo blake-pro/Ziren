@@ -1,6 +1,6 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use zkm2_core_executor::ZKMReduceProof;
-use zkm2_stark::{koala_bear_poseidon2::KoalaBearPoseidon2, StarkVerifyingKey};
+use zkm2_stark::{baby_bear_poseidon2::BabyBearPoseidon2, StarkVerifyingKey};
 
 /// Standard input for the prover.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -9,7 +9,10 @@ pub struct ZKMStdin {
     /// a vec of bytes at a time.
     pub buffer: Vec<Vec<u8>>,
     pub ptr: usize,
-    pub proofs: Vec<(ZKMReduceProof<KoalaBearPoseidon2>, StarkVerifyingKey<KoalaBearPoseidon2>)>,
+    pub proofs: Vec<(
+        ZKMReduceProof<BabyBearPoseidon2>,
+        StarkVerifyingKey<BabyBearPoseidon2>,
+    )>,
 }
 
 impl ZKMStdin {
@@ -55,8 +58,8 @@ impl ZKMStdin {
 
     pub fn write_proof(
         &mut self,
-        proof: ZKMReduceProof<KoalaBearPoseidon2>,
-        vk: StarkVerifyingKey<KoalaBearPoseidon2>,
+        proof: ZKMReduceProof<BabyBearPoseidon2>,
+        vk: StarkVerifyingKey<BabyBearPoseidon2>,
     ) {
         self.proofs.push((proof, vk));
     }
