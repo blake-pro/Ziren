@@ -27,7 +27,7 @@ pub trait WeierstrassParameters: EllipticCurveParameters {
     fn prime_group_order() -> BigUint;
 
     fn a_int() -> BigUint {
-        let mut modulus = BigUint::zero();
+        let mut modulus = BigUint::ZERO;
         for (i, limb) in Self::A.iter().enumerate() {
             modulus += BigUint::from(*limb) << (8 * i);
         }
@@ -35,7 +35,7 @@ pub trait WeierstrassParameters: EllipticCurveParameters {
     }
 
     fn b_int() -> BigUint {
-        let mut modulus = BigUint::zero();
+        let mut modulus = BigUint::ZERO;
         for (i, limb) in Self::B.iter().enumerate() {
             modulus += BigUint::from(*limb) << (8 * i);
         }

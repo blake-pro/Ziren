@@ -38,7 +38,7 @@ where
     pub fn verify_constraints(
         builder: &mut Builder<C>,
         chip: &MachineChip<SC, A>,
-        opening: &ChipOpenedValues<Ext<C::F, C::EF>>,
+        opening: &ChipOpenedValues<Felt<C::F>, Ext<C::F, C::EF>>,
         trace_domain: TwoAdicMultiplicativeCoset<C::F>,
         qc_domains: Vec<TwoAdicMultiplicativeCoset<C::F>>,
         zeta: Ext<C::F, C::EF>,
@@ -69,7 +69,7 @@ where
     pub fn eval_constraints(
         builder: &mut Builder<C>,
         chip: &MachineChip<SC, A>,
-        opening: &ChipOpenedValues<Ext<C::F, C::EF>>,
+        opening: &ChipOpenedValues<Felt<C::F>, Ext<C::F, C::EF>>,
         selectors: &LagrangeSelectors<Ext<C::F, C::EF>>,
         alpha: Ext<C::F, C::EF>,
         permutation_challenges: &[Ext<C::F, C::EF>],
@@ -102,7 +102,8 @@ where
             main: opening.main.view(),
             perm: perm_opening.view(),
             perm_challenges: permutation_challenges,
-            cumulative_sums: &[opening.local_cumulative_sum, opening.local_cumulative_sum],
+            local_cumulative_sum: &opening.local_cumulative_sum,
+            global_cumulative_sum: &opening.global_cumulative_sum,
             public_values,
             is_first_row: selectors.is_first_row,
             is_last_row: selectors.is_last_row,
@@ -118,7 +119,7 @@ where
 
     pub fn recompute_quotient(
         builder: &mut Builder<C>,
-        opening: &ChipOpenedValues<Ext<C::F, C::EF>>,
+        opening: &ChipOpenedValues<Felt<C::F>, Ext<C::F, C::EF>>,
         qc_domains: &[TwoAdicMultiplicativeCoset<C::F>],
         zeta: Ext<C::F, C::EF>,
     ) -> Ext<C::F, C::EF> {
@@ -192,7 +193,7 @@ where
 
     pub fn verify_opening_shape(
         chip: &MachineChip<SC, A>,
-        opening: &ChipOpenedValues<Ext<C::F, C::EF>>,
+        opening: &ChipOpenedValues<Felt<C::F>, Ext<C::F, C::EF>>,
     ) -> Result<(), OpeningShapeError> {
         // Verify that the preprocessed width matches the expected value for the chip.
         if opening.preprocessed.local.len() != chip.preprocessed_width() {
@@ -223,13 +224,17 @@ where
         }
 
         // Verify that the permutation width matches the expected value for the chip.
-        if opening.permutation.local.len() != chip.permutation_width() {
+        if opening.permutation.local.len()
+            != chip.permutation_width() * <SC::Challenge as FieldExtensionAlgebra<C::F>>::D
+        {
             return Err(OpeningShapeError::PermutationWidthMismatch(
                 chip.permutation_width(),
                 opening.permutation.local.len(),
             ));
         }
-        if opening.permutation.next.len() != chip.permutation_width() {
+        if opening.permutation.next.len()
+            != chip.permutation_width() * <SC::Challenge as FieldExtensionAlgebra<C::F>>::D
+        {
             return Err(OpeningShapeError::PermutationWidthMismatch(
                 chip.permutation_width(),
                 opening.permutation.next.len(),

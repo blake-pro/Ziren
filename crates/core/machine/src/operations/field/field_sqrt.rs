@@ -215,7 +215,7 @@ mod tests {
                 .collect();
 
             // hardcoded edge cases.
-            operands.extend(vec![BigUint::zero(), BigUint::one()]);
+            operands.extend(vec![BigUint::ZERO, BigUint::one()]);
 
             let rows = operands
                 .iter()

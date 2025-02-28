@@ -81,7 +81,7 @@ impl WeierstrassParameters for Bn254Parameters {
     }
 
     fn a_int() -> BigUint {
-        BigUint::zero()
+        BigUint::ZERO
     }
 
     fn b_int() -> BigUint {

@@ -60,7 +60,6 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
                         let instruction = &input.program.fetch(event.pc);
                         self.event_to_row(
                             event,
-                            &input.nonce_lookup,
                             cols,
                             &mut byte_lookup_events,
                             shard,
@@ -93,7 +92,6 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
                     let instruction = &input.program.fetch(op.pc);
                     self.event_to_row::<F>(
                         op,
-                        &input.nonce_lookup,
                         cols,
                         &mut blu,
                         shard,
@@ -121,7 +119,6 @@ impl CpuChip {
     fn event_to_row<F: PrimeField32>(
         &self,
         event: &CpuEvent,
-        nonce_lookup: &[u32],
         cols: &mut CpuCols<F>,
         blu_events: &mut impl ByteRecord,
         shard: u32,
@@ -129,11 +126,6 @@ impl CpuChip {
     ) {
         // Populate shard and clk columns.
         self.populate_shard_clk(cols, event, blu_events, shard);
-
-        // Populate the nonce.
-        cols.nonce = F::from_canonical_u32(
-            nonce_lookup.get(event.alu_lookup_id.0 as usize).copied().unwrap_or_default(),
-        );
 
         // Populate basic fields.
         cols.pc = F::from_canonical_u32(event.pc);
@@ -195,11 +187,11 @@ impl CpuChip {
         }
 
         // Populate memory, branch, jump, and auipc specific fields.
-        self.populate_memory(cols, event, blu_events, nonce_lookup, shard, instruction);
-        self.populate_branch(cols, event, nonce_lookup, instruction);
-        self.populate_jump(cols, event, nonce_lookup, instruction);
-        //self.populate_auipc(cols, event, nonce_lookup, instruction);
-        let is_halt = self.populate_syscall(cols, event, nonce_lookup);
+        self.populate_memory(cols, event, blu_events, shard, instruction);
+        self.populate_branch(cols, event, instruction);
+        self.populate_jump(cols, event, instruction);
+        //self.populate_auipc(cols, event, instruction);
+        let is_halt = self.populate_syscall(cols, event);
 
         cols.is_sequential_instr = F::from_bool(
             !instruction.is_branch_instruction() && !instruction.is_jump_instruction() && !is_halt,
@@ -257,7 +249,6 @@ impl CpuChip {
         cols: &mut CpuCols<F>,
         event: &CpuEvent,
         blu_events: &mut impl ByteRecord,
-        nonce_lookup: &[u32],
         shard: u32,
         instruction: &Instruction,
     ) {
@@ -294,9 +285,6 @@ impl CpuChip {
         let aligned_addr_ls_byte = (aligned_addr & 0x000000FF) as u8;
         let bits: [bool; 8] = array::from_fn(|i| aligned_addr_ls_byte & (1 << i) != 0);
         memory_columns.aa_least_sig_byte_decomp = array::from_fn(|i| F::from_bool(bits[i + 2]));
-        memory_columns.addr_word_nonce = F::from_canonical_u32(
-            nonce_lookup.get(event.memory_add_lookup_id.0 as usize).copied().unwrap_or_default(),
-        );
 
         // Populate memory offsets.
         let addr_offset = (memory_addr % WORD_SIZE as u32) as u8;
@@ -375,12 +363,6 @@ impl CpuChip {
                 }
                 if memory_columns.most_sig_byte_decomp[7] == F::ONE {
                     cols.mem_value_is_neg_not_x0 = F::from_bool(instruction.op_a != (ZERO as u8));
-                    cols.unsigned_mem_val_nonce = F::from_canonical_u32(
-                        nonce_lookup
-                            .get(event.memory_sub_lookup_id.0 as usize)
-                            .copied()
-                            .unwrap_or_default(),
-                    );
                 }
             }
 
@@ -412,7 +394,6 @@ impl CpuChip {
         &self,
         cols: &mut CpuCols<F>,
         event: &CpuEvent,
-        nonce_lookup: &[u32],
         instruction: &Instruction,
     ) {
         if instruction.is_branch_instruction() {
@@ -422,14 +403,6 @@ impl CpuChip {
             let a_eq_0 = (event.a as i32) == 0;
             let a_lt_0 = (event.a as i32) < 0;
             let a_gt_0 = (event.a as i32) > 0;
-
-            branch_columns.a_lt_0_nonce = F::from_canonical_u32(
-                nonce_lookup.get(event.branch_lt_lookup_id.0 as usize).copied().unwrap_or_default(),
-            );
-
-            branch_columns.a_gt_0_nonce = F::from_canonical_u32(
-                nonce_lookup.get(event.branch_gt_lookup_id.0 as usize).copied().unwrap_or_default(),
-            );
 
             branch_columns.a_eq_b = F::from_bool(a_eq_b);
             branch_columns.a_eq_0 = F::from_bool(a_eq_0);
@@ -454,12 +427,6 @@ impl CpuChip {
 
             if branching {
                 cols.branching = F::ONE;
-                branch_columns.target_pc_nonce = F::from_canonical_u32(
-                    nonce_lookup
-                        .get(event.branch_add_lookup_id.0 as usize)
-                        .copied()
-                        .unwrap_or_default(),
-                );
             } else {
                 cols.not_branching = F::ONE;
             }
@@ -471,7 +438,6 @@ impl CpuChip {
         &self,
         cols: &mut CpuCols<F>,
         event: &CpuEvent,
-        nonce_lookup: &[u32],
         instruction: &Instruction,
     ) {
         if instruction.is_jump_instruction() {
@@ -485,12 +451,6 @@ impl CpuChip {
                     jump_columns.next_pc = Word::from(event.next_pc);
                     jump_columns.next_pc_range_checker.populate(event.next_pc);
                     jump_columns.target_pc_range_checker.populate(target_pc);
-                    jump_columns.jump_nonce = F::from_canonical_u32(
-                        nonce_lookup
-                            .get(event.jump_jump_lookup_id.0 as usize)
-                            .copied()
-                            .unwrap_or_default(),
-                    );
                 }
                 Opcode::JumpDirect => {
                     let target_pc = event.next_pc.wrapping_add(event.b);
@@ -499,12 +459,6 @@ impl CpuChip {
                     jump_columns.next_pc_range_checker.populate(event.next_pc);
                     jump_columns.target_pc = Word::from(target_pc);
                     jump_columns.target_pc_range_checker.populate(target_pc);
-                    jump_columns.jumpd_nonce = F::from_canonical_u32(
-                        nonce_lookup
-                            .get(event.jump_jumpd_lookup_id.0 as usize)
-                            .copied()
-                            .unwrap_or_default(),
-                    );
                 }
                 _ => unreachable!(),
             }
@@ -535,7 +489,6 @@ impl CpuChip {
         &self,
         cols: &mut CpuCols<F>,
         event: &CpuEvent,
-        nonce_lookup: &[u32],
     ) -> bool {
         let mut is_halt = false;
 
@@ -587,10 +540,6 @@ impl CpuChip {
                 let digest_idx = cols.op_b_access.value().to_u32() as usize;
                 syscall_cols.index_bitmap[digest_idx] = F::ONE;
             }
-
-            // Write the syscall nonce.
-            syscall_cols.syscall_nonce =
-                F::from_canonical_u32(nonce_lookup[event.syscall_lookup_id.0 as usize]);
 
             is_halt = syscall_id == F::from_canonical_u32(SyscallCode::HALT.syscall_id());
 

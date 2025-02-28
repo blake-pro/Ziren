@@ -62,9 +62,6 @@ pub struct Uint256MulCols<T> {
     /// The clock cycle of the syscall.
     pub clk: T,
 
-    /// The nonce of the operation.
-    pub nonce: T,
-
     /// The pointer to the first input.
     pub x_ptr: T,
 
@@ -197,8 +194,8 @@ impl<F: PrimeField32> MachineAir<F> for Uint256MulChip {
                 let mut row: [F; NUM_COLS] = [F::ZERO; NUM_COLS];
                 let cols: &mut Uint256MulCols<F> = row.as_mut_slice().borrow_mut();
 
-                let x = BigUint::zero();
-                let y = BigUint::zero();
+                let x = BigUint::ZERO;
+                let y = BigUint::ZERO;
                 cols.output.populate(&mut vec![], 0, &x, &y, FieldOperation::Mul);
 
                 row
@@ -207,17 +204,7 @@ impl<F: PrimeField32> MachineAir<F> for Uint256MulChip {
         );
 
         // Convert the trace to a row major matrix.
-        let mut trace =
-            RowMajorMatrix::new(rows.into_iter().flatten().collect::<Vec<_>>(), NUM_COLS);
-
-        // Write the nonces to the trace.
-        for i in 0..trace.height() {
-            let cols: &mut Uint256MulCols<F> =
-                trace.values[i * NUM_COLS..(i + 1) * NUM_COLS].borrow_mut();
-            cols.nonce = F::from_canonical_usize(i);
-        }
-
-        trace
+        RowMajorMatrix::new(rows.into_iter().flatten().collect::<Vec<_>>(), NUM_COLS)
     }
 
     fn included(&self, shard: &Self::Record) -> bool {
@@ -226,6 +213,10 @@ impl<F: PrimeField32> MachineAir<F> for Uint256MulChip {
         } else {
             !shard.get_precompile_events(SyscallCode::UINT256_MUL).is_empty()
         }
+    }
+
+    fn local_only(&self) -> bool {
+        true
     }
 }
 
@@ -244,12 +235,6 @@ where
         let main = builder.main();
         let local = main.row_slice(0);
         let local: &Uint256MulCols<AB::Var> = (*local).borrow();
-        let next = main.row_slice(1);
-        let next: &Uint256MulCols<AB::Var> = (*next).borrow();
-
-        // Constrain the incrementing nonce.
-        builder.when_first_row().assert_zero(local.nonce);
-        builder.when_transition().assert_eq(local.nonce + AB::Expr::ONE, next.nonce);
 
         // We are computing (x * y) % modulus. The value of x is stored in the "prev_value" of
         // the x_memory, since we write to it later.
@@ -330,7 +315,6 @@ where
         builder.receive_syscall(
             local.shard,
             local.clk,
-            local.nonce,
             AB::F::from_canonical_u32(SyscallCode::UINT256_MUL.syscall_id()),
             local.x_ptr,
             local.y_ptr,

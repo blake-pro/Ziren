@@ -40,7 +40,6 @@ pub const fn num_fp2_addsub_cols<P: FpOpField>() -> usize {
 pub struct Fp2AddSubAssignCols<T, P: FpOpField> {
     pub is_real: T,
     pub shard: T,
-    pub nonce: T,
     pub clk: T,
     pub is_add: T,
     pub x_ptr: T,
@@ -158,7 +157,7 @@ impl<F: PrimeField32, P: FpOpField> MachineAir<F> for Fp2AddSubAssignChip<P> {
                 let mut row = zeroed_f_vec(num_fp2_addsub_cols::<P>());
                 let cols: &mut Fp2AddSubAssignCols<F, P> = row.as_mut_slice().borrow_mut();
                 cols.is_add = F::ONE;
-                let zero = BigUint::zero();
+                let zero = BigUint::ZERO;
                 Self::populate_field_ops(
                     &mut vec![],
                     0,
@@ -175,20 +174,10 @@ impl<F: PrimeField32, P: FpOpField> MachineAir<F> for Fp2AddSubAssignChip<P> {
         );
 
         // Convert the trace to a row major matrix.
-        let mut trace = RowMajorMatrix::new(
+        RowMajorMatrix::new(
             rows.into_iter().flatten().collect::<Vec<_>>(),
             num_fp2_addsub_cols::<P>(),
-        );
-
-        // Write the nonces to the trace.
-        for i in 0..trace.height() {
-            let cols: &mut Fp2AddSubAssignCols<F, P> = trace.values
-                [i * num_fp2_addsub_cols::<P>()..(i + 1) * num_fp2_addsub_cols::<P>()]
-                .borrow_mut();
-            cols.nonce = F::from_canonical_usize(i);
-        }
-
-        trace
+        )
     }
 
     fn included(&self, shard: &Self::Record) -> bool {
@@ -214,6 +203,10 @@ impl<F: PrimeField32, P: FpOpField> MachineAir<F> for Fp2AddSubAssignChip<P> {
             }
         }
     }
+
+    fn local_only(&self) -> bool {
+        true
+    }
 }
 
 impl<F, P: FpOpField> BaseAir<F> for Fp2AddSubAssignChip<P> {
@@ -231,14 +224,10 @@ where
         let main = builder.main();
         let local = main.row_slice(0);
         let local: &Fp2AddSubAssignCols<AB::Var, P> = (*local).borrow();
-        let next = main.row_slice(1);
-        let next: &Fp2AddSubAssignCols<AB::Var, P> = (*next).borrow();
 
         // Constrain the `is_add` flag to be boolean.
         builder.assert_bool(local.is_add);
 
-        builder.when_first_row().assert_zero(local.nonce);
-        builder.when_transition().assert_eq(local.nonce + AB::Expr::ONE, next.nonce);
         let num_words_field_element = <P as NumLimbs>::Limbs::USIZE / 4;
 
         let p_x = limbs_from_prev_access(&local.x_access[0..num_words_field_element]);
@@ -318,7 +307,6 @@ where
         builder.receive_syscall(
             local.shard,
             local.clk,
-            local.nonce,
             syscall_id_felt,
             local.x_ptr,
             local.y_ptr,

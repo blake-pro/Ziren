@@ -6,7 +6,7 @@ use core::{
 use hashbrown::HashMap;
 use itertools::Itertools;
 use p3_air::{Air, AirBuilder, BaseAir};
-use p3_field::{FieldAlgebra, PrimeField};
+use p3_field::{FieldAlgebra, PrimeField, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
 use zkm2_core_executor::{
@@ -43,9 +43,6 @@ pub struct AddSubCols<T> {
     /// The shard number, used for byte lookup table.
     pub shard: T,
 
-    /// The nonce of the operation.
-    pub nonce: T,
-
     /// Instance of `AddOperation` to handle addition logic in `AddSubChip`'s ALU operations.
     /// It's result will be `a` for the add operation and `b` for the sub operation.
     pub add_operation: AddOperation<T>,
@@ -63,7 +60,7 @@ pub struct AddSubCols<T> {
     pub is_sub: T,
 }
 
-impl<F: PrimeField> MachineAir<F> for AddSubChip {
+impl<F: PrimeField32> MachineAir<F> for AddSubChip {
     type Record = ExecutionRecord;
 
     type Program = Program;
@@ -98,7 +95,6 @@ impl<F: PrimeField> MachineAir<F> for AddSubChip {
                         let event = &merged_events[idx];
                         self.event_to_row(event, cols, &mut byte_lookup_events);
                     }
-                    cols.nonce = F::from_canonical_usize(idx);
                 });
             },
         );
@@ -136,6 +132,10 @@ impl<F: PrimeField> MachineAir<F> for AddSubChip {
         } else {
             !shard.add_events.is_empty()
         }
+    }
+
+    fn local_only(&self) -> bool {
+        true
     }
 }
 
@@ -194,7 +194,6 @@ where
             local.operand_1,
             local.operand_2,
             local.shard,
-            local.nonce,
             local.is_add,
         );
 
@@ -205,7 +204,6 @@ where
             local.add_operation.value,
             local.operand_2,
             local.shard,
-            local.nonce,
             local.is_sub,
         );
 

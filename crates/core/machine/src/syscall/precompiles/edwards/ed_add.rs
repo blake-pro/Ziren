@@ -142,7 +142,7 @@ impl<F: PrimeField32, E: EllipticCurve + EdwardsParameters> MachineAir<F> for Ed
             || {
                 let mut row = [F::ZERO; NUM_ED_ADD_COLS];
                 let cols: &mut EdAddAssignCols<F> = row.as_mut_slice().borrow_mut();
-                let zero = BigUint::zero();
+                let zero = BigUint::ZERO;
                 Self::populate_field_ops(
                     &mut vec![],
                     0,
@@ -158,17 +158,7 @@ impl<F: PrimeField32, E: EllipticCurve + EdwardsParameters> MachineAir<F> for Ed
         );
 
         // Convert the trace to a row major matrix.
-        let mut trace =
-            RowMajorMatrix::new(rows.into_iter().flatten().collect::<Vec<_>>(), NUM_ED_ADD_COLS);
-
-        // Write the nonces to the trace.
-        for i in 0..trace.height() {
-            let cols: &mut EdAddAssignCols<F> =
-                trace.values[i * NUM_ED_ADD_COLS..(i + 1) * NUM_ED_ADD_COLS].borrow_mut();
-            cols.nonce = F::from_canonical_usize(i);
-        }
-
-        trace
+        RowMajorMatrix::new(rows.into_iter().flatten().collect::<Vec<_>>(), NUM_ED_ADD_COLS)
     }
 
     fn generate_dependencies(&self, input: &Self::Record, output: &mut Self::Record) {
@@ -203,6 +193,10 @@ impl<F: PrimeField32, E: EllipticCurve + EdwardsParameters> MachineAir<F> for Ed
         } else {
             !shard.get_precompile_events(SyscallCode::ED_ADD).is_empty()
         }
+    }
+
+    fn local_only(&self) -> bool {
+        true
     }
 }
 
@@ -255,12 +249,6 @@ where
         let main = builder.main();
         let local = main.row_slice(0);
         let local: &EdAddAssignCols<AB::Var> = (*local).borrow();
-        let next = main.row_slice(1);
-        let next: &EdAddAssignCols<AB::Var> = (*next).borrow();
-
-        // Constrain the incrementing nonce.
-        builder.when_first_row().assert_zero(local.nonce);
-        builder.when_transition().assert_eq(local.nonce + AB::Expr::ONE, next.nonce);
 
         let x1: Limbs<AB::Var, <Ed25519BaseField as NumLimbs>::Limbs> =
             limbs_from_prev_access(&local.p_access[0..8]);
@@ -328,7 +316,6 @@ where
         builder.receive_syscall(
             local.shard,
             local.clk,
-            local.nonce,
             AB::F::from_canonical_u32(SyscallCode::ED_ADD.syscall_id()),
             local.p_ptr,
             local.q_ptr,

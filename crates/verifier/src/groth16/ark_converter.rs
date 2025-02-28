@@ -116,7 +116,7 @@ fn gnark_decompressed_g1_to_ark_decompressed_g1(
 ) -> Result<G1Affine, ArkGroth16Error> {
     let buf = convert_endianness::<32, 64>(buf);
     if buf == [0u8; 64] {
-        return Ok(G1Affine::zero());
+        return Ok(G1Affine::ZERO);
     }
     let g1 = G1Affine::deserialize_with_mode(
         &*[&buf[..], &[0u8][..]].concat(),
@@ -133,7 +133,7 @@ fn gnark_decompressed_g2_to_ark_decompressed_g2(
 ) -> Result<G2Affine, ArkGroth16Error> {
     let buf = convert_endianness::<64, 128>(buf);
     if buf == [0u8; 128] {
-        return Ok(G2Affine::zero());
+        return Ok(G2Affine::ZERO);
     }
     let g2 = G2Affine::deserialize_with_mode(
         &*[&buf[..], &[0u8][..]].concat(),

@@ -198,7 +198,7 @@ impl<T: FieldAlgebra> Mul for Polynomial<T> {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        let mut result = vec![T::zero(); self.coefficients.len() + other.coefficients.len() - 1];
+        let mut result = vec![T::ZERO; self.coefficients.len() + other.coefficients.len() - 1];
         for (i, a) in self.coefficients.into_iter().enumerate() {
             for (j, b) in other.coefficients.iter().enumerate() {
                 result[i + j] = result[i + j].clone() + a.clone() * b.clone();
@@ -212,7 +212,7 @@ impl<T: FieldAlgebra> Mul for &Polynomial<T> {
     type Output = Polynomial<T>;
 
     fn mul(self, other: Self) -> Polynomial<T> {
-        let mut result = vec![T::zero(); self.coefficients.len() + other.coefficients.len() - 1];
+        let mut result = vec![T::ZERO; self.coefficients.len() + other.coefficients.len() - 1];
         for (i, a) in self.coefficients.iter().enumerate() {
             for (j, b) in other.coefficients.iter().enumerate() {
                 result[i + j] = result[i + j].clone() + a.clone() * b.clone();
@@ -260,7 +260,7 @@ impl<T: Eq + FieldAlgebra> PartialEq<Polynomial<T>> for Polynomial<T> {
             for i in 0..longer.coefficients.len() {
                 if (i < shorter.coefficients.len()
                     && shorter.coefficients[i] != longer.coefficients[i])
-                    || (i >= shorter.coefficients.len() && longer.coefficients[i] != T::zero())
+                    || (i >= shorter.coefficients.len() && longer.coefficients[i] != T::ZERO)
                 {
                     return false;
                 }

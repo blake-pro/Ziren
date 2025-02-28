@@ -31,7 +31,7 @@ pub trait EdwardsParameters: EllipticCurveParameters {
     fn prime_group_order() -> BigUint;
 
     fn d_biguint() -> BigUint {
-        let mut modulus = BigUint::zero();
+        let mut modulus = BigUint::ZERO;
         for (i, limb) in Self::D.iter().enumerate() {
             modulus += BigUint::from(*limb) << (8 * i);
         }

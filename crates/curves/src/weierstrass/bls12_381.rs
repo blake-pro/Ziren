@@ -103,7 +103,7 @@ impl WeierstrassParameters for Bls12381Parameters {
     }
 
     fn a_int() -> BigUint {
-        BigUint::zero()
+        BigUint::ZERO
     }
 
     fn b_int() -> BigUint {

@@ -1,6 +1,8 @@
 use chips::poseidon2_skinny::WIDTH;
 use core::fmt::Debug;
-use instruction::{FieldEltType, HintBitsInstr, HintExt2FeltsInstr, HintInstr, PrintInstr};
+use instruction::{
+    FieldEltType, HintAddCurveInstr, HintBitsInstr, HintExt2FeltsInstr, HintInstr, PrintInstr,
+};
 use itertools::Itertools;
 use p3_field::{
     Field, FieldAlgebra, FieldExtensionAlgebra, PrimeField, PrimeField64, TwoAdicField,
@@ -8,6 +10,7 @@ use p3_field::{
 use std::{borrow::Borrow, collections::HashMap, iter::repeat, mem::transmute};
 use vec_map::VecMap;
 use zkm2_core_machine::utils::{zkm2_debug_mode, SpanBuilder};
+use zkm2_stark::septic_curve::SepticCurve;
 use zkm2_recursion_core::{
     air::{Block, RecursionPublicValues, RECURSIVE_PROOF_NUM_PV_ELTS},
     BaseAluInstr, BaseAluOpcode,
@@ -307,6 +310,32 @@ where
         })
     }
 
+    fn add_curve(
+        &mut self,
+        output: SepticCurve<Felt<C::F>>,
+        input1: SepticCurve<Felt<C::F>>,
+        input2: SepticCurve<Felt<C::F>>,
+    ) -> Instruction<C::F> {
+        Instruction::HintAddCurve(HintAddCurveInstr {
+            output_x_addrs_mults: output
+                .x
+                .0
+                .into_iter()
+                .map(|r| (r.write(self), C::F::ZERO))
+                .collect(),
+            output_y_addrs_mults: output
+                .y
+                .0
+                .into_iter()
+                .map(|r| (r.write(self), C::F::ZERO))
+                .collect(),
+            input1_x_addrs: input1.x.0.into_iter().map(|value| value.read_ghost(self)).collect(),
+            input1_y_addrs: input1.y.0.into_iter().map(|value| value.read_ghost(self)).collect(),
+            input2_x_addrs: input2.x.0.into_iter().map(|value| value.read_ghost(self)).collect(),
+            input2_y_addrs: input2.y.0.into_iter().map(|value| value.read_ghost(self)).collect(),
+        })
+    }
+
     fn fri_fold(
         &mut self,
         CircuitV2FriFoldOutput { alpha_pow_output, ro_output }: CircuitV2FriFoldOutput<C>,
@@ -507,6 +536,9 @@ where
             DslIr::CircuitV2CommitPublicValues(public_values) => {
                 f(self.commit_public_values(&public_values))
             }
+            DslIr::CircuitV2HintAddCurve(output, point1, point2) => {
+                f(self.add_curve(output, point1, point2))
+            }
 
             DslIr::PrintV(dst) => f(self.print_f(dst)),
             DslIr::PrintF(dst) => f(self.print_f(dst)),
@@ -656,6 +688,18 @@ where
                             .iter_mut()
                             .for_each(|(addr, mult)| backfill((mult, addr)));
                     }
+                    Instruction::HintAddCurve(HintAddCurveInstr {
+                        output_x_addrs_mults,
+                        output_y_addrs_mults,
+                        ..
+                    }) => {
+                        output_x_addrs_mults
+                            .iter_mut()
+                            .for_each(|(addr, mult)| backfill((mult, addr)));
+                        output_y_addrs_mults
+                            .iter_mut()
+                            .for_each(|(addr, mult)| backfill((mult, addr)));
+                    }
                     // Instructions that do not write to memory.
                     Instruction::Mem(MemInstr { kind: MemAccessKind::Read, .. })
                     | Instruction::CommitPublicValues(_)
@@ -708,6 +752,7 @@ const fn instr_name<F>(instr: &Instruction<F>) -> &'static str {
         Instruction::Print(_) => "Print",
         Instruction::HintExt2Felts(_) => "HintExt2Felts",
         Instruction::Hint(_) => "Hint",
+        Instruction::HintAddCurve(_) => "HintAddCurve",
         Instruction::CommitPublicValues(_) => "CommitPublicValues",
     }
 }

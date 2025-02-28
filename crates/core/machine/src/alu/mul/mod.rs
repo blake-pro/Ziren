@@ -37,7 +37,7 @@ use core::{
 
 use hashbrown::HashMap;
 use p3_air::{Air, AirBuilder, BaseAir};
-use p3_field::{FieldAlgebra, PrimeField};
+use p3_field::{FieldAlgebra, PrimeField, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator, ParallelSlice};
 use zkm2_core_executor::{
@@ -77,9 +77,6 @@ pub struct MulChip;
 pub struct MulCols<T> {
     /// The shard number, used for byte lookup table.
     pub shard: T,
-
-    /// The nonce of the operation.
-    pub nonce: T,
 
     /// The upper bits of the output operand.
     pub hi: Word<T>,
@@ -124,7 +121,7 @@ pub struct MulCols<T> {
     pub is_real: T,
 }
 
-impl<F: PrimeField> MachineAir<F> for MulChip {
+impl<F: PrimeField32> MachineAir<F> for MulChip {
     type Record = ExecutionRecord;
 
     type Program = Program;
@@ -156,7 +153,6 @@ impl<F: PrimeField> MachineAir<F> for MulChip {
                         let event = &input.mul_events[idx];
                         self.event_to_row(event, cols, &mut byte_lookup_events);
                     }
-                    cols.nonce = F::from_canonical_usize(idx);
                 });
             },
         );
@@ -192,6 +188,10 @@ impl<F: PrimeField> MachineAir<F> for MulChip {
         } else {
             !shard.mul_events.is_empty()
         }
+    }
+
+    fn local_only(&self) -> bool {
+        true
     }
 }
 
@@ -434,7 +434,6 @@ where
             local.c,
             local.hi,
             local.shard,
-            local.nonce,
             local.is_real,
         );
     }

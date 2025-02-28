@@ -13,7 +13,8 @@ use super::{
     MipsAir, MulChip, ProgramChip, ShiftLeft, ShiftRightChip, SyscallChip,
 };
 use crate::{
-    memory::{MemoryLocalChip, MemoryProgramChip, NUM_LOCAL_MEMORY_ENTRIES_PER_ROW},
+    global::GlobalChip,
+    memory::{MemoryLocalChip, NUM_LOCAL_MEMORY_ENTRIES_PER_ROW},
     mips::MemoryChipType::{Finalize, Initialize},
 };
 
@@ -203,7 +204,7 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
         air: &MipsAir<F>,
         mem_events_per_row: usize,
         allowed_log_height: usize,
-    ) -> Vec<[(String, usize); 3]> {
+    ) -> Vec<[(String, usize); 4]> {
         (1..=air.rows_per_event())
             .rev()
             .map(|rows_per_event| {
@@ -221,6 +222,14 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
                         MipsAir::<F>::MemoryLocal(MemoryLocalChip::new()).name(),
                         (((1 << allowed_log_height) * mem_events_per_row)
                             .div_ceil(NUM_LOCAL_MEMORY_ENTRIES_PER_ROW * rows_per_event)
+                            .next_power_of_two()
+                            .ilog2() as usize)
+                            .max(4),
+                    ),
+                    (
+                        MipsAir::<F>::Global(GlobalChip).name(),
+                        (((1 << allowed_log_height) * mem_events_per_row)
+                            .div_ceil(1)
                             .next_power_of_two()
                             .ilog2() as usize)
                             .max(4),
@@ -326,11 +335,11 @@ impl<F: PrimeField32> Default for CoreShapeConfig<F> {
     fn default() -> Self {
         // Preprocessed chip heights.
         let program_heights = vec![Some(19), Some(20), Some(21), Some(22)];
-        let program_memory_heights = vec![Some(19), Some(20), Some(21), Some(22)];
+        // let program_memory_heights = vec![Some(19), Some(20), Some(21), Some(22)];
 
         let allowed_preprocessed_log_heights = HashMap::from([
             (MipsAir::Program(ProgramChip::default()), program_heights),
-            (MipsAir::ProgramMemory(MemoryProgramChip::default()), program_memory_heights),
+            // (MipsAir::ProgramMemory(MemoryProgramChip::default()), program_memory_heights),
             (MipsAir::ByteLookup(ByteChip::default()), vec![Some(16)]),
         ]);
 
@@ -692,8 +701,12 @@ impl<F: PrimeField32> Default for CoreShapeConfig<F> {
                 (MipsAir::ShiftRight(ShiftRightChip::default()), spec.shift_right_height),
                 (MipsAir::ShiftLeft(ShiftLeft::default()), spec.shift_left_height),
                 (MipsAir::Lt(LtChip::default()), spec.lt_height),
+                (MipsAir::MemoryLocal(MemoryLocalChip::new()), spec.memory_local_height.clone()),
+                (
+                    MipsAir::Global(GlobalChip),
+                    spec.memory_local_height.into_iter().map(|x| x.map(|y| y + 3)).collect(),
+                ),
                 (MipsAir::CloClz(CloClzChip::default()), spec.cloclz_height),
-                (MipsAir::MemoryLocal(MemoryLocalChip::new()), spec.memory_local_height),
                 (MipsAir::SyscallCore(SyscallChip::core()), spec.syscall_core_height),
             ]);
             allowed_core_log_heights.push(short_allowed_log_heights);
@@ -705,9 +718,11 @@ impl<F: PrimeField32> Default for CoreShapeConfig<F> {
             vec![None, Some(10), Some(16), Some(18), Some(19), Some(20), Some(21)];
         let memory_finalize_heights =
             vec![None, Some(10), Some(16), Some(18), Some(19), Some(20), Some(21)];
+        let global_heights = vec![None, Some(11), Some(17), Some(19), Some(21), Some(22)];
         let memory_allowed_log_heights = HashMap::from([
             (MipsAir::MemoryGlobalInit(MemoryGlobalChip::new(Initialize)), memory_init_heights),
             (MipsAir::MemoryGlobalFinal(MemoryGlobalChip::new(Finalize)), memory_finalize_heights),
+            (MipsAir::Global(GlobalChip), global_heights),
         ]);
 
         let mut precompile_allowed_log_heights = HashMap::new();
@@ -753,23 +768,18 @@ pub mod tests {
         let (pk, _) = prover.setup(&program);
 
         // Try to generate traces.
-        let global_traces = prover.generate_traces(&record, InteractionScope::Global);
-        let local_traces = prover.generate_traces(&record, InteractionScope::Local);
+        let main_traces = prover.generate_traces(&record);
 
         // Try to commit the traces.
-        let global_data = prover.commit(&record, global_traces);
-        let local_data = prover.commit(&record, local_traces);
+        let main_data = prover.commit(&record, main_traces);
 
         let mut challenger = prover.machine().config().challenger();
-        challenger.observe(global_data.main_commit.clone());
-        challenger.observe(local_data.main_commit.clone());
 
         // Try to "open".
         prover
             .open(
                 &pk,
-                Some(global_data),
-                local_data,
+                main_data,
                 &mut challenger,
             )
             .unwrap();
@@ -799,7 +809,7 @@ pub mod tests {
 
         let preprocessed_log_heights = [
             (MipsAir::<BabyBear>::Program(ProgramChip::default()), 10),
-            (MipsAir::<BabyBear>::ProgramMemory(MemoryProgramChip::default()), 10),
+            // (MipsAir::<BabyBear>::ProgramMemory(MemoryProgramChip::default()), 10),
             (MipsAir::<BabyBear>::ByteLookup(ByteChip::default()), 16),
         ];
 
@@ -815,6 +825,7 @@ pub mod tests {
             (MipsAir::<BabyBear>::CloClz(CloClzChip::default()), 10),
             (MipsAir::<BabyBear>::MemoryLocal(MemoryLocalChip::new()), 10),
             (MipsAir::<BabyBear>::SyscallCore(SyscallChip::core()), 10),
+            (MipsAir::<BabyBear>::Global(GlobalChip), 10),
         ];
 
         let height_map = preprocessed_log_heights

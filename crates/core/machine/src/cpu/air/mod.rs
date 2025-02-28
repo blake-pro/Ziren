@@ -67,7 +67,6 @@ where
             local.op_c_val(),
             local.op_hi_val(),
             local.shard,
-            local.nonce,
             is_alu_instruction,
         );
 
@@ -196,7 +195,6 @@ impl CpuChip {
             jump_columns.next_pc,
             local.op_b_val(),
             local.shard,
-            jump_columns.jumpd_nonce,
             local.selectors.is_jumpd,
         );
     }

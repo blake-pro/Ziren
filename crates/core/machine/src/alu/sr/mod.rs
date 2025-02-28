@@ -50,7 +50,7 @@ use core::{
 use hashbrown::HashMap;
 use itertools::Itertools;
 use p3_air::{Air, AirBuilder, BaseAir};
-use p3_field::{FieldAlgebra, PrimeField};
+use p3_field::{FieldAlgebra, PrimeField, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator, ParallelSlice};
 use zkm2_core_executor::{
@@ -87,9 +87,6 @@ pub struct ShiftRightChip;
 pub struct ShiftRightCols<T> {
     /// The shard number, used for byte lookup table.
     pub shard: T,
-
-    /// The nonce of the operation.
-    pub nonce: T,
 
     /// The output operand.
     pub a: Word<T>,
@@ -134,7 +131,7 @@ pub struct ShiftRightCols<T> {
     pub is_real: T,
 }
 
-impl<F: PrimeField> MachineAir<F> for ShiftRightChip {
+impl<F: PrimeField32> MachineAir<F> for ShiftRightChip {
     type Record = ExecutionRecord;
 
     type Program = Program;
@@ -169,7 +166,6 @@ impl<F: PrimeField> MachineAir<F> for ShiftRightChip {
                         cols.shift_by_n_bits[0] = F::ONE;
                         cols.shift_by_n_bytes[0] = F::ONE;
                     }
-                    cols.nonce = F::from_canonical_usize(idx);
                 });
             },
         );
@@ -329,14 +325,8 @@ where
         let main = builder.main();
         let local = main.row_slice(0);
         let local: &ShiftRightCols<AB::Var> = (*local).borrow();
-        let next = main.row_slice(1);
-        let next: &ShiftRightCols<AB::Var> = (*next).borrow();
         let zero: AB::Expr = AB::F::ZERO.into();
         let one: AB::Expr = AB::F::ONE.into();
-
-        // Constrain the incrementing nonce.
-        builder.when_first_row().assert_zero(local.nonce);
-        builder.when_transition().assert_eq(local.nonce + AB::Expr::ONE, next.nonce);
 
         // Check that the MSB of most_significant_byte matches local.b_msb using lookup.
         {
@@ -513,7 +503,6 @@ where
             local.b,
             local.c,
             local.shard,
-            local.nonce,
             local.is_real,
         );
     }
