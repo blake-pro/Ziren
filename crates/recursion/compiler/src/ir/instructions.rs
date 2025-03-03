@@ -1,3 +1,5 @@
+#![deny(clippy::large_enum_variant)]
+
 use zkm2_recursion_core::air::RecursionPublicValues;
 use zkm2_stark::septic_curve::SepticCurve;
 

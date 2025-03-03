@@ -36,4 +36,5 @@ rand = "0.8.5"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [features]
-debug = ["zkm2-core-machine/debug"]
+default = ["debug"]
+debug = []
