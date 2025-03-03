@@ -153,11 +153,9 @@ mod tests {
         let syscall_event = SyscallEvent {
             shard: 0u32,
             clk: hi_ts,
-            lookup_id,
             syscall_id: syscall_code as u32,
             arg1: a_ptr,
             arg2: b_ptr,
-            nonce: 0u32,
         };
 
         execution_record.precompile_events.add_event(syscall_code, syscall_event, event);

@@ -13,7 +13,7 @@ use crate::{
     context::ZKMContext,
     dependencies::{emit_cloclz_dependencies, emit_cpu_dependencies, emit_divrem_dependencies},
     events::{
-        AluEvent, CpuEvent, LookupId, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
+        AluEvent, CpuEvent, MemoryAccessPosition, MemoryInitializeFinalizeEvent,
         MemoryLocalEvent, MemoryReadRecord, MemoryRecord, MemoryWriteRecord, SyscallEvent,
     },
     hook::{HookEnv, HookRegistry},
@@ -636,16 +636,7 @@ impl<'a> Executor<'a> {
         hi: Option<u32>,
         record: MemoryAccessRecord,
         exit_code: u32,
-        lookup_id: LookupId,
-        syscall_lookup_id: LookupId,
     ) {
-        let memory_add_lookup_id = self.record.create_lookup_id();
-        let memory_sub_lookup_id = self.record.create_lookup_id();
-        let branch_lt_lookup_id = self.record.create_lookup_id();
-        let branch_gt_lookup_id = self.record.create_lookup_id();
-        let branch_add_lookup_id = self.record.create_lookup_id();
-        let jump_jump_lookup_id = self.record.create_lookup_id();
-        let jump_jumpd_lookup_id = self.record.create_lookup_id();
         self.record.cpu_events.push(CpuEvent {
             clk,
             pc,
@@ -661,15 +652,6 @@ impl<'a> Executor<'a> {
             hi_record: record.hi,
             memory_record: record.memory,
             exit_code,
-            alu_lookup_id: lookup_id,
-            syscall_lookup_id,
-            memory_add_lookup_id,
-            memory_sub_lookup_id,
-            branch_lt_lookup_id,
-            branch_gt_lookup_id,
-            branch_add_lookup_id,
-            jump_jump_lookup_id,
-            jump_jumpd_lookup_id,
         });
 
         emit_cpu_dependencies(self, self.record.cpu_events.len() - 1);
@@ -684,10 +666,8 @@ impl<'a> Executor<'a> {
         a: u32,
         b: u32,
         c: u32,
-        lookup_id: LookupId,
     ) {
         let event = AluEvent {
-            lookup_id,
             shard: self.shard(),
             clk,
             opcode,
@@ -695,7 +675,6 @@ impl<'a> Executor<'a> {
             a,
             b,
             c,
-            sub_lookups: self.record.create_lookup_ids(),
         };
         match opcode {
             Opcode::ADD => {
@@ -738,7 +717,6 @@ impl<'a> Executor<'a> {
         syscall_id: u32,
         arg1: u32,
         arg2: u32,
-        lookup_id: LookupId,
     ) -> SyscallEvent {
         SyscallEvent {
             shard: self.shard(),
@@ -746,8 +724,6 @@ impl<'a> Executor<'a> {
             syscall_id,
             arg1,
             arg2,
-            lookup_id,
-            nonce: self.record.nonce_lookup[lookup_id.0 as usize],
         }
     }
 
@@ -757,9 +733,8 @@ impl<'a> Executor<'a> {
         syscall_id: u32,
         arg1: u32,
         arg2: u32,
-        lookup_id: LookupId,
     ) {
-        let syscall_event = self.syscall_event(clk, syscall_id, arg1, arg2, lookup_id);
+        let syscall_event = self.syscall_event(clk, syscall_id, arg1, arg2);
 
         self.record.syscall_events.push(syscall_event);
     }
@@ -795,7 +770,6 @@ impl<'a> Executor<'a> {
         a: u32,
         b: u32,
         c: u32,
-        lookup_id: LookupId,
     ) -> (Option<u32>, u32, u32, u32) {
         let hi = if op.opcode.is_use_lo_hi_alu() {
             self.rw(Register::LO, a, MemoryAccessPosition::A);
@@ -807,7 +781,7 @@ impl<'a> Executor<'a> {
         };
 
         if self.executor_mode == ExecutorMode::Trace {
-            self.emit_alu(self.state.clk, op.opcode, hi, a, b, c, lookup_id);
+            self.emit_alu(self.state.clk, op.opcode, hi, a, b, c);
         }
 
         (hi, a, b, c)
@@ -850,16 +824,6 @@ impl<'a> Executor<'a> {
         if self.executor_mode == ExecutorMode::Trace {
             self.memory_accesses = MemoryAccessRecord::default();
         }
-        let lookup_id = if self.executor_mode == ExecutorMode::Trace {
-            self.record.create_lookup_id()
-        } else {
-            LookupId::default()
-        };
-        let syscall_lookup_id = if self.executor_mode == ExecutorMode::Trace {
-            self.record.create_lookup_id()
-        } else {
-            LookupId::default()
-        };
 
         if !self.unconstrained {
             self.report.opcode_counts[instruction.opcode] += 1;
@@ -927,22 +891,19 @@ impl<'a> Executor<'a> {
                     .syscall_counts
                     .entry(syscall_for_count)
                     .or_insert(0);
-                let (threshold, multiplier) = match syscall_for_count {
+                let (_threshold, _multiplier) = match syscall_for_count {
                     SyscallCode::KECCAK_PERMUTE => (self.opts.split_opts.keccak, 24),
                     SyscallCode::SHA_EXTEND => (self.opts.split_opts.sha_extend, 48),
                     SyscallCode::SHA_COMPRESS => (self.opts.split_opts.sha_compress, 80),
                     _ => (self.opts.split_opts.deferred, 1),
                 };
-                let nonce = (((*syscall_count as usize) % threshold) * multiplier) as u32;
-                self.record.nonce_lookup[syscall_lookup_id.0 as usize] = nonce;
                 *syscall_count += 1;
 
                 let syscall_impl = self.get_syscall(syscall).cloned();
                 if syscall.should_send() != 0 && self.executor_mode == ExecutorMode::Trace {
-                    self.emit_syscall(clk, syscall.syscall_id(), b, c, syscall_lookup_id);
+                    self.emit_syscall(clk, syscall.syscall_id(), b, c);
                 }
                 let mut precompile_rt = SyscallContext::new(self);
-                precompile_rt.syscall_lookup_id = syscall_lookup_id;
                 let (precompile_next_pc, precompile_cycles, returned_exit_code) =
                     if let Some(syscall_impl) = syscall_impl {
                         // Executing a syscall optionally returns a value to write to the t0
@@ -1007,7 +968,7 @@ impl<'a> Executor<'a> {
             | Opcode::NOR
             | Opcode::CLZ
             | Opcode::CLO => {
-                (hi, a, b, c) = self.execute_alu(instruction, lookup_id);
+                (hi, a, b, c) = self.execute_alu(instruction);
             }
 
             // Load instructions.
@@ -1087,8 +1048,6 @@ impl<'a> Executor<'a> {
                 hi,
                 self.memory_accesses,
                 exit_code,
-                lookup_id,
-                syscall_lookup_id,
             );
         };
         Ok(())
@@ -1131,7 +1090,6 @@ impl<'a> Executor<'a> {
     fn execute_alu(
         &mut self,
         instruction: &Instruction,
-        lookup_id: LookupId,
     ) -> (Option<u32>, u32, u32, u32) {
         let (rd, b, c) = self.alu_rr(instruction);
         let (a, hi) = match instruction.opcode {
@@ -1186,7 +1144,7 @@ impl<'a> Executor<'a> {
             }
         };
 
-        self.alu_rw(instruction, rd, hi, a, b, c, lookup_id)
+        self.alu_rw(instruction, rd, hi, a, b, c)
     }
 
     fn execute_load(
@@ -1567,7 +1525,6 @@ impl<'a> Executor<'a> {
             std::mem::replace(&mut self.record, ExecutionRecord::new(self.program.clone()));
         let public_values = removed_record.public_values;
         self.record.public_values = public_values;
-        self.record.nonce_lookup = vec![0; self.opts.shard_size * 32];
         self.records.push(removed_record);
     }
 
@@ -1654,8 +1611,6 @@ impl<'a> Executor<'a> {
     }
 
     fn initialize(&mut self) {
-        self.record.nonce_lookup = vec![0; self.opts.shard_size * 32];
-
         self.state.clk = 0;
 
         tracing::debug!("loading memory image");
@@ -1698,11 +1653,6 @@ impl<'a> Executor<'a> {
     /// Executes up to `self.shard_batch_size` cycles of the program, returning whether the program
     /// has finished.
     pub fn execute(&mut self) -> Result<bool, ExecutionError> {
-        // Initialize the nonce lookup table if it's uninitialized.
-        if self.record.nonce_lookup.len() <= 2 {
-            self.record.nonce_lookup = vec![0; self.opts.shard_size * 32];
-        }
-
         // Get the program.
         let program = self.program.clone();
 

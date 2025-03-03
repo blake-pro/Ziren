@@ -1,4 +1,3 @@
-use super::{create_random_lookup_ids, LookupId};
 use crate::Opcode;
 use serde::{Deserialize, Serialize};
 
@@ -8,8 +7,6 @@ use serde::{Deserialize, Serialize};
 /// shard, opcode, operands, and other relevant information.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AluEvent {
-    /// The lookup identifier.
-    pub lookup_id: LookupId,
     /// The shard number.
     pub shard: u32,
     /// The clock cycle.
@@ -25,8 +22,6 @@ pub struct AluEvent {
     pub b: u32,
     /// The second input operand.
     pub c: u32,
-    /// The result of the operation in the format of [``LookupId``; 5]
-    pub sub_lookups: [LookupId; 5],
 }
 
 impl AluEvent {
@@ -34,7 +29,6 @@ impl AluEvent {
     #[must_use]
     pub fn new(shard: u32, clk: u32, opcode: Opcode, a: u32, b: u32, c: u32) -> Self {
         Self {
-            lookup_id: LookupId::default(),
             shard,
             clk,
             opcode,
@@ -42,7 +36,6 @@ impl AluEvent {
             b,
             c,
             hi: 0,
-            sub_lookups: create_random_lookup_ids(),
         }
     }
 
@@ -60,7 +53,6 @@ impl AluEvent {
         hi: u32,
     ) -> Self {
         Self {
-            lookup_id: LookupId::default(),
             shard,
             clk,
             opcode,
@@ -68,7 +60,6 @@ impl AluEvent {
             b,
             c,
             hi,
-            sub_lookups: create_random_lookup_ids(),
         }
     }
 }

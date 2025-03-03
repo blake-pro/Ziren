@@ -96,7 +96,6 @@ impl<P: FpOpField> Syscall for FpOpSyscall<P> {
                     syscall_code.syscall_id(),
                     arg1,
                     arg2,
-                    event.lookup_id,
                 );
                 rt.add_precompile_event(
                     syscall_code_key,
@@ -117,7 +116,6 @@ impl<P: FpOpField> Syscall for FpOpSyscall<P> {
                     syscall_code.syscall_id(),
                     arg1,
                     arg2,
-                    event.lookup_id,
                 );
                 rt.add_precompile_event(
                     syscall_code_key,

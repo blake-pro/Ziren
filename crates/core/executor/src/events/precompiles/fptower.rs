@@ -77,8 +77,6 @@ pub struct Fp2AddSubEvent {
 /// Emulated Degree 2 Field Multiplication Events.
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Fp2MulEvent {
-    /// The lookup id.
-    pub lookup_id: LookupId,
     /// The shard number.
     pub shard: u32,
     /// The clock cycle.

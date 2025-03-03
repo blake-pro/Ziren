@@ -45,7 +45,6 @@ pub struct EdAddAssignCols<T> {
     pub is_real: T,
     pub shard: T,
     pub clk: T,
-    pub nonce: T,
     pub p_ptr: T,
     pub q_ptr: T,
     pub p_access: [MemoryWriteCols<T>; WORDS_CURVE_POINT],
