@@ -248,6 +248,7 @@ where
         f(self.ext_alu(DivE, out, Imm::EF(C::EF::ONE), diff));
     }
 
+    #[inline(always)]
     fn poseidon2_permute(
         &mut self,
         dst: [impl Reg<C>; WIDTH],
@@ -262,6 +263,7 @@ where
         }))
     }
 
+    #[inline(always)]
     fn select(
         &mut self,
         bit: impl Reg<C>,
@@ -440,6 +442,7 @@ where
     ///
     /// We do not simply return a `Vec` for performance reasons --- results would be immediately fed
     /// to `flat_map`, so we employ fusion/deforestation to eliminate intermediate data structures.
+    #[inline]
     pub fn compile_one<F>(
         &mut self,
         ir_instr: DslIr<C>,
@@ -578,6 +581,7 @@ where
                             println!("instr: {:?}", instr);
                             span_builder.item(instr_name(&instr));
                             instrs.push(instr);
+                            #[cfg(feature = "debug")]
                             traces.push(trace.clone());
                         }
                         Err(CompileOneErr::CycleTrackerEnter(name)) => {

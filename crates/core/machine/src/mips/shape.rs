@@ -205,7 +205,8 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
         mem_events_per_row: usize,
         allowed_log_height: usize,
     ) -> Vec<[(String, usize); 4]> {
-        (1..=air.rows_per_event())
+        // TODO: This is a temporary fix to the shape, concretely fix this
+        (1..=4 * air.rows_per_event())
             .rev()
             .map(|rows_per_event| {
                 [
