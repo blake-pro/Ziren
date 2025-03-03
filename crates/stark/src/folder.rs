@@ -356,7 +356,6 @@ where
         + Sync,
     PubVar: Into<Expr> + Copy,
 {
-    
     type LocalSum = Var;
     type GlobalSum = PubVar;
 

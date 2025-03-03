@@ -182,9 +182,8 @@ mod tests {
         for _ in 0..5 {
             // Test with different number of leaves.
             for j in 2..20 {
-                let leaves: Vec<[F; DIGEST_SIZE]> = (0..j)
-                    .map(|_| std::array::from_fn(|_| F::rand(&mut rng)))
-                    .collect();
+                let leaves: Vec<[F; DIGEST_SIZE]> =
+                    (0..j).map(|_| std::array::from_fn(|_| F::rand(&mut rng))).collect();
                 let (root, tree) = MerkleTree::<BabyBear, HV>::commit(leaves.to_vec());
                 for (i, leaf) in leaves.iter().enumerate() {
                     let (_, proof) = MerkleTree::<BabyBear, HV>::open(&tree, i);

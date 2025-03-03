@@ -8,12 +8,12 @@ use zkm2_derive::AlignedBorrow;
 use zkm2_stark::air::BaseAirBuilder;
 use zkm2_stark::air::SepticExtensionAirBuilder;
 use zkm2_stark::septic_curve::SepticCurveComplete;
+use zkm2_stark::ZKMAirBuilder;
 use zkm2_stark::{
     septic_curve::SepticCurve,
     septic_digest::SepticDigest,
     septic_extension::{SepticBlock, SepticExtension},
 };
-use zkm2_stark::ZKMAirBuilder;
 
 /// A set of columns needed to compute the global interaction elliptic curve digest.
 /// It is critical that this struct is at the end of the main trace, as the permutation constraints will be dependent on this fact.

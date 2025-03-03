@@ -12,11 +12,11 @@ use p3_field::FieldExtensionAlgebra;
 use p3_field::PrimeField32;
 use zkm2_core_executor::ByteOpcode;
 use zkm2_derive::AlignedBorrow;
+use zkm2_stark::ZKMAirBuilder;
 use zkm2_stark::{
     septic_curve::{SepticCurve, CURVE_WITNESS_DUMMY_POINT_X, CURVE_WITNESS_DUMMY_POINT_Y},
     septic_extension::{SepticBlock, SepticExtension},
 };
-use zkm2_stark::ZKMAirBuilder;
 
 /// A set of columns needed to compute the global interaction elliptic curve digest.
 #[derive(AlignedBorrow, Clone, Copy)]

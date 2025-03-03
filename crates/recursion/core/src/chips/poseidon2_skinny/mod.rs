@@ -120,9 +120,7 @@ pub(crate) mod tests {
 
         let rng = &mut rand::thread_rng();
         let input_1: [BabyBear; WIDTH] = std::array::from_fn(|_| BabyBear::rand(rng));
-        let output_1 = inner_perm()
-            .permute(input_1)
-            .map(|x| BabyBear::as_canonical_u32(&x));
+        let output_1 = inner_perm().permute(input_1).map(|x| BabyBear::as_canonical_u32(&x));
         let input_1 = input_1.map(|x| BabyBear::as_canonical_u32(&x));
 
         let instructions =
@@ -150,10 +148,7 @@ pub(crate) mod tests {
                 }))
                 .collect::<Vec<_>>();
 
-        let program = Arc::new(RecursionProgram {
-            instructions,
-            ..Default::default()
-        });
+        let program = Arc::new(RecursionProgram { instructions, ..Default::default() });
         let mut runtime = Runtime::<F, EF, Poseidon2InternalLayerBabyBear<16>>::new(
             program.clone(),
             BabyBearPoseidon2::new().perm,

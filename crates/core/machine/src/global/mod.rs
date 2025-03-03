@@ -9,6 +9,7 @@ use rayon::iter::{
     ParallelIterator,
 };
 use rayon_scan::ScanParallelIterator;
+use std::borrow::BorrowMut;
 use zkm2_core_executor::{
     events::{ByteLookupEvent, ByteRecord, GlobalInteractionEvent},
     ExecutionRecord, Program,
@@ -18,10 +19,8 @@ use zkm2_stark::{
     septic_curve::{SepticCurve, SepticCurveComplete},
     septic_digest::SepticDigest,
     septic_extension::{SepticBlock, SepticExtension},
-    InteractionKind,
-    ZKMAirBuilder,
+    InteractionKind, ZKMAirBuilder,
 };
-use std::borrow::BorrowMut;
 
 use crate::{
     operations::{GlobalAccumulationOperation, GlobalInteractionOperation},

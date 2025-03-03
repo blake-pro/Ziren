@@ -614,8 +614,8 @@ pub mod tests {
         Instruction, Opcode, Program,
     };
     use zkm2_stark::{
-        baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, ZKMCoreOpts, StarkProvingKey,
-        StarkVerifyingKey,
+        baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, StarkProvingKey, StarkVerifyingKey,
+        ZKMCoreOpts,
     };
 
     #[test]

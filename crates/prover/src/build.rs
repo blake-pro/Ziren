@@ -133,9 +133,8 @@ pub fn build_constraints_and_witness(
 
     let pv: &RecursionPublicValues<BabyBear> = template_proof.public_values.as_slice().borrow();
     let vkey_hash = babybears_to_bn254(&pv.zkm2_vk_digest);
-    let committed_values_digest_bytes: [BabyBear; 32] = words_to_bytes(&pv.committed_value_digest)
-        .try_into()
-        .unwrap();
+    let committed_values_digest_bytes: [BabyBear; 32] =
+        words_to_bytes(&pv.committed_value_digest).try_into().unwrap();
     let committed_values_digest = babybear_bytes_to_bn254(&committed_values_digest_bytes);
 
     tracing::info!("building template witness");

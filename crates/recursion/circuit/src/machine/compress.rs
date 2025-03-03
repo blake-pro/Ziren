@@ -15,8 +15,8 @@ use p3_field::FieldAlgebra;
 use p3_matrix::dense::RowMajorMatrix;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use zkm2_recursion_compiler::ir::{Builder, Felt, SymbolicFelt};
 use zkm2_recursion_compiler::circuit::CircuitV2Builder;
+use zkm2_recursion_compiler::ir::{Builder, Felt, SymbolicFelt};
 use zkm2_recursion_core::air::{RecursionPublicValues, RECURSIVE_PROOF_NUM_PV_ELTS};
 
 use zkm2_stark::{

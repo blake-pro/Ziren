@@ -2,15 +2,15 @@
 
 use std::iter::repeat;
 
+use crate::prelude::*;
 use itertools::Itertools;
 use p3_baby_bear::BabyBear;
 use p3_field::{FieldAlgebra, FieldExtensionAlgebra};
 use zkm2_recursion_core::air::RecursionPublicValues;
+use zkm2_recursion_core::{chips::poseidon2_skinny::WIDTH, D, DIGEST_SIZE, HASH_RATE};
 use zkm2_stark::septic_curve::SepticCurve;
 use zkm2_stark::septic_digest::SepticDigest;
 use zkm2_stark::septic_extension::SepticExtension;
-use crate::prelude::*;
-use zkm2_recursion_core::{chips::poseidon2_skinny::WIDTH, D, DIGEST_SIZE, HASH_RATE};
 
 pub trait CircuitV2Builder<C: Config> {
     fn bits2num_v2_f(
@@ -143,9 +143,7 @@ impl<C: Config<F = BabyBear>> CircuitV2Builder<C> for Builder<C> {
     /// Applies the Poseidon2 permutation to the given array.
     fn poseidon2_permute_v2(&mut self, array: [Felt<C::F>; WIDTH]) -> [Felt<C::F>; WIDTH] {
         let output: [Felt<C::F>; WIDTH] = core::array::from_fn(|_| self.uninit());
-        self.push_op(DslIr::CircuitV2Poseidon2PermuteBabyBear(Box::new((
-            output, array,
-        ))));
+        self.push_op(DslIr::CircuitV2Poseidon2PermuteBabyBear(Box::new((output, array))));
         output
     }
 

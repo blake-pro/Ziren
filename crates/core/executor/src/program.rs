@@ -6,12 +6,12 @@ use alloc::collections::BTreeMap;
 use anyhow::{anyhow, bail, Context, Result};
 use elf::{endian::LittleEndian, file::Class, ElfBytes};
 
-use p3_field::FieldExtensionAlgebra;
 use p3_field::Field;
+use p3_field::FieldExtensionAlgebra;
 use p3_field::PrimeField32;
 use p3_maybe_rayon::prelude::IntoParallelIterator;
-use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
 use p3_maybe_rayon::prelude::IntoParallelRefIterator;
+use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use zkm2_stark::air::{MachineAir, MachineProgram};
 use zkm2_stark::septic_curve::{SepticCurve, SepticCurveComplete};

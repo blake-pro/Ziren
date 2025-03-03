@@ -14,8 +14,7 @@ use size::Size;
 use std::thread::ScopedJoinHandle;
 use thiserror::Error;
 use zkm2_stark::{
-    baby_bear_poseidon2::BabyBearPoseidon2, MachineProvingKey,
-    MachineVerificationError,
+    baby_bear_poseidon2::BabyBearPoseidon2, MachineProvingKey, MachineVerificationError,
 };
 
 use p3_baby_bear::BabyBear;
@@ -374,11 +373,7 @@ where
 
                                     let opening_span = tracing::debug_span!("opening").entered();
                                     let proof = prover
-                                        .open(
-                                            pk,
-                                            main_data,
-                                            &mut challenger.clone(),
-                                        )
+                                        .open(pk, main_data, &mut challenger.clone())
                                         .unwrap();
                                     opening_span.exit();
 

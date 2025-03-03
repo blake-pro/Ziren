@@ -8,20 +8,19 @@ use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use zkm2_core_executor::{ExecutionRecord, Program};
 use zkm2_core_executor::events::{GlobalInteractionEvent, MemoryInitializeFinalizeEvent};
+use zkm2_core_executor::{ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
     air::{
         AirInteraction, BaseAirBuilder, InteractionScope, MachineAir, PublicValues, ZKMAirBuilder,
         ZKM_PROOF_NUM_PV_ELTS,
     },
-    InteractionKind,
-    Word,
+    InteractionKind, Word,
 };
 
 use crate::{
-    operations::{AssertLtColsBits, IsZeroOperation, BabyBearBitDecomposition},
+    operations::{AssertLtColsBits, BabyBearBitDecomposition, IsZeroOperation},
     utils::pad_rows_fixed,
 };
 
@@ -124,7 +123,7 @@ impl<F: PrimeField32> MachineAir<F> for MemoryGlobalChip {
                 row
             })
             .collect::<Vec<_>>();
-        
+
         for i in 0..memory_events.len() {
             let addr = memory_events[i].addr;
             let cols: &mut MemoryInitCols<F> = rows[i].as_mut_slice().borrow_mut();
@@ -440,9 +439,8 @@ mod tests {
     use p3_baby_bear::BabyBear;
     use zkm2_core_executor::{programs::tests::simple_program, Executor};
     use zkm2_stark::{
-        debug_interactions_with_all_chips, baby_bear_poseidon2::BabyBearPoseidon2, StarkMachine,
-        InteractionKind,
-        ZKMCoreOpts,
+        baby_bear_poseidon2::BabyBearPoseidon2, debug_interactions_with_all_chips, InteractionKind,
+        StarkMachine, ZKMCoreOpts,
     };
 
     #[test]

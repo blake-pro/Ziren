@@ -186,12 +186,8 @@ mod tests {
     pub fn generate_trace() {
         let shard = ExecutionRecord::<BabyBear> {
             mem_var_events: vec![
-                MemEvent {
-                    inner: BabyBear::ONE.into(),
-                },
-                MemEvent {
-                    inner: BabyBear::ONE.into(),
-                },
+                MemEvent { inner: BabyBear::ONE.into() },
+                MemEvent { inner: BabyBear::ONE.into() },
             ],
             ..Default::default()
         };

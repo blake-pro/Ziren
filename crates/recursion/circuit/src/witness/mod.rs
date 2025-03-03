@@ -6,10 +6,9 @@ use zkm2_recursion_compiler::ir::{Builder, Ext, Felt};
 pub use outer::*;
 pub use stark::*;
 use zkm2_stark::{
+    septic_curve::SepticCurve, septic_digest::SepticDigest, septic_extension::SepticExtension,
     ChipOpenedValues, Com, InnerChallenge, InnerVal, OpeningProof, ShardCommitment,
     ShardOpenedValues, ShardProof,
-    septic_curve::SepticCurve, septic_digest::SepticDigest,
-    septic_extension::SepticExtension,
 };
 
 use crate::{
@@ -170,11 +169,7 @@ impl<C: CircuitConfig, T: Witnessable<C>> Witnessable<C> for ShardCommitment<T> 
         let main_commit = self.main_commit.read(builder);
         let permutation_commit = self.permutation_commit.read(builder);
         let quotient_commit = self.quotient_commit.read(builder);
-        Self::WitnessVariable {
-            main_commit,
-            permutation_commit,
-            quotient_commit,
-        }
+        Self::WitnessVariable { main_commit, permutation_commit, quotient_commit }
     }
 
     fn write(&self, witness: &mut impl WitnessWriter<C>) {

@@ -8,9 +8,7 @@ use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
-use zkm2_core_executor::{
-    events::GlobalInteractionEvent, ExecutionRecord, Program,
-};
+use zkm2_core_executor::{events::GlobalInteractionEvent, ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
     air::{

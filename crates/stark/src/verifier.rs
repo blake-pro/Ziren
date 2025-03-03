@@ -9,7 +9,7 @@ use num_traits::cast::ToPrimitive;
 use p3_air::{Air, BaseAir};
 use p3_challenger::{CanObserve, FieldChallenger};
 use p3_commit::{LagrangeSelectors, Pcs, PolynomialSpace};
-use p3_field::{FieldExtensionAlgebra, FieldAlgebra, Field};
+use p3_field::{Field, FieldAlgebra, FieldExtensionAlgebra};
 
 use super::{
     folder::VerifierConstraintFolder,

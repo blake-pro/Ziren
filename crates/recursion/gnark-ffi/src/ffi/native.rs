@@ -195,10 +195,7 @@ pub fn test_babybear_poseidon2() {
         let err_ptr = bind::TestPoseidonBabyBear2();
         if !err_ptr.is_null() {
             // Safety: The error message is returned from the go code and is guaranteed to be valid.
-            panic!(
-                "TestPoseidonBabyBear2 failed: {}",
-                ptr_to_string_freed(err_ptr)
-            );
+            panic!("TestPoseidonBabyBear2 failed: {}", ptr_to_string_freed(err_ptr));
         }
     }
 }

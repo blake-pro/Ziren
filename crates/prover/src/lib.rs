@@ -70,12 +70,12 @@ use zkm2_recursion_core::{
 };
 pub use zkm2_recursion_gnark_ffi::proof::{Groth16Bn254Proof, PlonkBn254Proof};
 use zkm2_recursion_gnark_ffi::{groth16_bn254::Groth16Bn254Prover, plonk_bn254::PlonkBn254Prover};
-use zkm2_stark::{MachineProvingKey, ProofShape};
 use zkm2_stark::{
-    air::PublicValues, baby_bear_poseidon2::BabyBearPoseidon2, Challenge,
-    MachineProver, ShardProof, StarkGenericConfig, StarkVerifyingKey, Val, Word, ZKMCoreOpts,
-    ZKMProverOpts, DIGEST_SIZE,
+    air::PublicValues, baby_bear_poseidon2::BabyBearPoseidon2, Challenge, MachineProver,
+    ShardProof, StarkGenericConfig, StarkVerifyingKey, Val, Word, ZKMCoreOpts, ZKMProverOpts,
+    DIGEST_SIZE,
 };
+use zkm2_stark::{MachineProvingKey, ProofShape};
 
 pub use types::*;
 use utils::{words_to_bytes, zkm2_committed_values_digest_bn254, zkm2_vkey_digest_bn254};
@@ -320,10 +320,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
         &self,
         input: &ZKMRecursionWitnessValues<CoreSC>,
     ) -> Arc<RecursionProgram<BabyBear>> {
-        let mut cache = self
-            .recursion_programs
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.recursion_programs.lock().unwrap_or_else(|e| e.into_inner());
         cache
             .get_or_insert(input.shape(), || {
                 let misses = self.recursion_cache_misses.fetch_add(1, Ordering::Relaxed);
@@ -355,10 +352,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
         &self,
         input: &ZKMCompressWithVKeyWitnessValues<InnerSC>,
     ) -> Arc<RecursionProgram<BabyBear>> {
-        let mut cache = self
-            .compress_programs
-            .lock()
-            .unwrap_or_else(|e| e.into_inner());
+        let mut cache = self.compress_programs.lock().unwrap_or_else(|e| e.into_inner());
         let shape = input.shape();
         cache
             .get_or_insert(shape.clone(), || {
@@ -789,13 +783,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
 
                                 // Generate the proof.
                                 let proof = tracing::debug_span!("open").in_scope(|| {
-                                    self.compress_prover
-                                        .open(
-                                            &pk,
-                                            data,
-                                            &mut challenger,
-                                        )
-                                        .unwrap()
+                                    self.compress_prover.open(&pk, data, &mut challenger).unwrap()
                                 });
 
                                 // Verify the proof.

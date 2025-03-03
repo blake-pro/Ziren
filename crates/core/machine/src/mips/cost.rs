@@ -1,9 +1,5 @@
 use p3_baby_bear::BabyBear;
-use zkm2_core_executor::{
-    syscalls::SyscallCode,
-    ExecutionReport,
-    Opcode
-};
+use zkm2_core_executor::{syscalls::SyscallCode, ExecutionReport, Opcode};
 
 use crate::mips::MipsAirDiscriminants;
 

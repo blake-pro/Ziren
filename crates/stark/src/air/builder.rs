@@ -10,7 +10,9 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
 
 use super::{interaction::AirInteraction, BinomialExtension};
-use crate::{lookup::InteractionKind, septic_digest::SepticDigest, septic_extension::SepticExtension, Word};
+use crate::{
+    lookup::InteractionKind, septic_digest::SepticDigest, septic_extension::SepticExtension, Word,
+};
 
 /// The scope of an interaction.
 #[derive(
@@ -188,15 +190,7 @@ pub trait AluAirBuilder: BaseAirBuilder {
         shard: impl Into<Self::Expr>,
         multiplicity: impl Into<Self::Expr>,
     ) {
-        self.send_alu_with_hi(
-            opcode,
-            a,
-            b,
-            c,
-            Word([Self::F::ZERO; 4]),
-            shard,
-            multiplicity,
-        );
+        self.send_alu_with_hi(opcode, a, b, c, Word([Self::F::ZERO; 4]), shard, multiplicity);
     }
 
     /// Sends an ALU operation with HI to be processed.
@@ -237,15 +231,7 @@ pub trait AluAirBuilder: BaseAirBuilder {
         shard: impl Into<Self::Expr>,
         multiplicity: impl Into<Self::Expr>,
     ) {
-        self.receive_alu_with_hi(
-            opcode,
-            a,
-            b,
-            c,
-            Word([Self::F::ZERO; 4]),
-            shard,
-            multiplicity,
-        );
+        self.receive_alu_with_hi(opcode, a, b, c, Word([Self::F::ZERO; 4]), shard, multiplicity);
     }
 
     /// Receives an ALU operation with HI to be processed.

@@ -62,13 +62,12 @@ pub fn external_linear_layer<AF: FieldAlgebra + Copy>(state: &[AF; WIDTH]) -> [A
 }
 
 pub fn internal_linear_layer_mut<F: FieldAlgebra>(state: &mut [F; WIDTH]) {
-    let matmul_constants: [<F as FieldAlgebra>::F; WIDTH] =
-        INTERNAL_DIAG_MONTY_16
-            .iter()
-            .map(|x| <F as FieldAlgebra>::F::from_wrapped_u32(x.as_canonical_u32()))
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+    let matmul_constants: [<F as FieldAlgebra>::F; WIDTH] = INTERNAL_DIAG_MONTY_16
+        .iter()
+        .map(|x| <F as FieldAlgebra>::F::from_wrapped_u32(x.as_canonical_u32()))
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
     matmul_internal(state, matmul_constants);
 }
 

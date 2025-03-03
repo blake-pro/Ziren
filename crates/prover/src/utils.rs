@@ -86,9 +86,8 @@ pub fn zkm2_committed_values_digest_bn254(
 ) -> Bn254Fr {
     let proof = &proof.proof;
     let pv: &RecursionPublicValues<BabyBear> = proof.public_values.as_slice().borrow();
-    let committed_values_digest_bytes: [BabyBear; 32] = words_to_bytes(&pv.committed_value_digest)
-        .try_into()
-        .unwrap();
+    let committed_values_digest_bytes: [BabyBear; 32] =
+        words_to_bytes(&pv.committed_value_digest).try_into().unwrap();
     babybear_bytes_to_bn254(&committed_values_digest_bytes)
 }
 

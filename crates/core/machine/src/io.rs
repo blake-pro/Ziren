@@ -9,10 +9,7 @@ pub struct ZKMStdin {
     /// a vec of bytes at a time.
     pub buffer: Vec<Vec<u8>>,
     pub ptr: usize,
-    pub proofs: Vec<(
-        ZKMReduceProof<BabyBearPoseidon2>,
-        StarkVerifyingKey<BabyBearPoseidon2>,
-    )>,
+    pub proofs: Vec<(ZKMReduceProof<BabyBearPoseidon2>, StarkVerifyingKey<BabyBearPoseidon2>)>,
 }
 
 impl ZKMStdin {

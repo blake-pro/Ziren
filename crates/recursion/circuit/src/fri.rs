@@ -12,16 +12,12 @@ use std::{
 };
 use zkm2_recursion_compiler::ir::{Builder, DslIr, Felt, SymbolicExt};
 use zkm2_recursion_core::DIGEST_SIZE;
-use zkm2_stark::{
-    InnerChallenge, InnerChallengeMmcs,
-    InnerInputProof, InnerPcsProof, InnerVal,
-};
+use zkm2_stark::{InnerChallenge, InnerChallengeMmcs, InnerInputProof, InnerPcsProof, InnerVal};
 
 use crate::{
     challenger::{CanSampleBitsVariable, FieldChallengerVariable},
     BabyBearFriConfigVariable, CanObserveVariable, CircuitConfig, Ext, FriChallenges,
-    FriCommitPhaseProofStepVariable, FriMmcs, FriProofVariable,
-    TwoAdicPcsRoundVariable,
+    FriCommitPhaseProofStepVariable, FriMmcs, FriProofVariable, TwoAdicPcsRoundVariable,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -461,18 +457,15 @@ mod tests {
     use p3_challenger::{
         CanObserve, CanSample, CanSampleBits, FieldChallenger, GrindingChallenger,
     };
-    use p3_commit::Pcs;
-    use p3_field::FieldAlgebra;
+    use p3_commit::{Pcs, Mmcs};
+    use p3_field::{Field, FieldAlgebra};
     use p3_fri::{
         verifier, FriGenericConfig, TwoAdicFriGenericConfig, TwoAdicFriGenericConfigForMmcs,
     };
     use p3_matrix::dense::RowMajorMatrix;
     use p3_matrix::Dimensions;
     use p3_util::reverse_bits_len;
-    use rand::{
-        rngs::{OsRng, StdRng},
-        SeedableRng,
-    };
+    use rand::rngs::OsRng;
     use std::collections::BTreeMap;
     use zkm2_recursion_compiler::{
         circuit::AsmBuilder,
@@ -695,7 +688,7 @@ mod tests {
 
         let log_max_height = proof.commit_phase_commits.len() + config.log_blowup;
 
-        for qp in &proof.query_proofs {
+        for _qp in &proof.query_proofs {
             let index = dummy_challenger.sample_bits(log_max_height + <TwoAdicFriGenericConfigForMmcs<InnerVal, InnerValMmcs> as FriGenericConfig<InnerVal>>::extra_query_index_bits(&g));
             query_indices_gt.push(index);
         }

@@ -18,8 +18,10 @@ use crate::{
     air::{InteractionScope, MachineAir, MachineProgram},
     lookup::{debug_interactions_with_all_chips, InteractionKind},
     record::MachineRecord,
+    septic_curve::SepticCurve,
+    septic_digest::SepticDigest,
+    septic_extension::SepticExtension,
     DebugConstraintBuilder, ShardProof, VerifierConstraintFolder,
-    septic_curve::SepticCurve, septic_digest::SepticDigest, septic_extension::SepticExtension,
 };
 
 use super::{
@@ -333,8 +335,8 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
                     let chips =
                         self.shard_chips_ordered(&shard_proof.chip_ordering).collect::<Vec<_>>();
                     let mut shard_challenger = challenger.clone();
-                        shard_challenger
-                            .observe_slice(&shard_proof.public_values[0..self.num_pv_elts()]);
+                    shard_challenger
+                        .observe_slice(&shard_proof.public_values[0..self.num_pv_elts()]);
                     Verifier::verify_shard(
                         &self.config,
                         vk,
@@ -518,7 +520,8 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
             });
             tracing::warn!(
                 "Global cumulative sum: {:?}, should be: {:?}",
-                global_cumulative_sum, SepticDigest::<Val<SC>>::zero(),
+                global_cumulative_sum,
+                SepticDigest::<Val<SC>>::zero(),
             );
             panic!("Global cumulative sum is not zero");
         }

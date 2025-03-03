@@ -153,13 +153,8 @@ impl<SC: BabyBearFriConfig + FieldHasher<BabyBear>> ZKMCompressWithVKeyWitnessVa
 impl ZKMMerkleProofWitnessValues<BabyBearPoseidon2> {
     pub fn dummy(num_proofs: usize, height: usize) -> Self {
         let dummy_digest = [BabyBear::ZERO; DIGEST_SIZE];
-        let vk_merkle_proofs = vec![
-            MerkleProof {
-                index: 0,
-                path: vec![dummy_digest; height]
-            };
-            num_proofs
-        ];
+        let vk_merkle_proofs =
+            vec![MerkleProof { index: 0, path: vec![dummy_digest; height] }; num_proofs];
         let values = vec![dummy_digest; num_proofs];
 
         Self { vk_merkle_proofs, values, root: dummy_digest }

@@ -2,14 +2,14 @@
 use num_bigint::BigUint;
 use num_traits::One;
 use p3_field::PrimeField32;
-use p3_field::{FieldAlgebra, FieldExtensionAlgebra, ExtensionField, Field, Packable};
+use p3_field::{ExtensionField, Field, FieldAlgebra, FieldExtensionAlgebra, Packable};
 use serde::{Deserialize, Serialize};
 use std::array;
 use std::fmt::Display;
 use std::iter::{Product, Sum};
 use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::air::{ZKMAirBuilder, SepticExtensionAirBuilder};
+use crate::air::{SepticExtensionAirBuilder, ZKMAirBuilder};
 
 /// A septic extension with an irreducible polynomial `z^7 - 2z - 5`.
 ///
@@ -21,45 +21,17 @@ pub struct SepticExtension<F>(pub [F; 7]);
 impl<F: FieldAlgebra> FieldAlgebra for SepticExtension<F> {
     type F = SepticExtension<F::F>;
 
-    const ZERO: Self = SepticExtension([
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-    ]);
+    const ZERO: Self =
+        SepticExtension([F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO]);
 
-    const ONE: Self = SepticExtension([
-        F::ONE,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-    ]);
+    const ONE: Self =
+        SepticExtension([F::ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO]);
 
-    const TWO: Self = SepticExtension([
-        F::TWO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-    ]);
+    const TWO: Self =
+        SepticExtension([F::TWO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO]);
 
-    const NEG_ONE: Self = SepticExtension([
-        F::NEG_ONE,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-        F::ZERO,
-    ]);
+    const NEG_ONE: Self =
+        SepticExtension([F::NEG_ONE, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO]);
 
     fn from_f(f: Self::F) -> Self {
         SepticExtension([
@@ -74,15 +46,7 @@ impl<F: FieldAlgebra> FieldAlgebra for SepticExtension<F> {
     }
 
     fn from_bool(b: bool) -> Self {
-        SepticExtension([
-            F::from_bool(b),
-            F::ZERO,
-            F::ZERO,
-            F::ZERO,
-            F::ZERO,
-            F::ZERO,
-            F::ZERO,
-        ])
+        SepticExtension([F::from_bool(b), F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO, F::ZERO])
     }
 
     fn from_canonical_u8(n: u8) -> Self {

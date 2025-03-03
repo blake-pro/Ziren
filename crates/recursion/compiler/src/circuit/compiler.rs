@@ -10,11 +10,11 @@ use p3_field::{
 use std::{borrow::Borrow, collections::HashMap, iter::repeat, mem::transmute};
 use vec_map::VecMap;
 use zkm2_core_machine::utils::{zkm2_debug_mode, SpanBuilder};
-use zkm2_stark::septic_curve::SepticCurve;
 use zkm2_recursion_core::{
     air::{Block, RecursionPublicValues, RECURSIVE_PROOF_NUM_PV_ELTS},
     BaseAluInstr, BaseAluOpcode,
 };
+use zkm2_stark::septic_curve::SepticCurve;
 
 use zkm2_recursion_core::*;
 

@@ -748,8 +748,7 @@ pub mod tests {
     use std::fmt::Debug;
 
     use super::*;
-    use p3_challenger::{CanObserve, FieldChallenger};
-    use zkm2_stark::{air::InteractionScope, Dom, MachineProver, StarkGenericConfig};
+    use zkm2_stark::{Dom, MachineProver, StarkGenericConfig};
 
     pub fn try_generate_dummy_proof<
         SC: StarkGenericConfig,
@@ -776,13 +775,7 @@ pub mod tests {
         let mut challenger = prover.machine().config().challenger();
 
         // Try to "open".
-        prover
-            .open(
-                &pk,
-                main_data,
-                &mut challenger,
-            )
-            .unwrap();
+        prover.open(&pk, main_data, &mut challenger).unwrap();
     }
 
     #[test]

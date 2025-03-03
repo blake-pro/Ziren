@@ -5,8 +5,8 @@ use crate::{
 use hashbrown::HashMap;
 use itertools::Itertools;
 use p3_air::{AirBuilder, ExtensionBuilder, PairBuilder};
-use p3_field::FieldExtensionAlgebra;
 use p3_field::FieldAlgebra;
+use p3_field::FieldExtensionAlgebra;
 use p3_field::{ExtensionField, Field, PrimeField};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::*;

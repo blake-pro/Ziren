@@ -5,7 +5,6 @@ use itertools::Itertools;
 use p3_baby_bear::BabyBear;
 use p3_field::{Field, FieldAlgebra};
 
-
 use p3_bn254_fr::Bn254Fr;
 use p3_symmetric::Permutation;
 use zkm2_recursion_compiler::{

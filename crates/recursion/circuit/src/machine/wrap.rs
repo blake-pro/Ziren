@@ -72,7 +72,7 @@ where
         challenger
             .observe_slice(builder, proof.public_values[0..machine.num_pv_elts()].iter().copied());
 
-       StarkVerifier::verify_shard(builder, &vk, machine, &mut challenger, &proof);
+        StarkVerifier::verify_shard(builder, &vk, machine, &mut challenger, &proof);
 
         // Get the public values, and assert that they are valid.
         let public_values: &RootPublicValues<Felt<C::F>> = proof.public_values.as_slice().borrow();

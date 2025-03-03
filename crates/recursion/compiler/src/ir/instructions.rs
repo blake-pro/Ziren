@@ -206,11 +206,7 @@ pub enum DslIr<C: Config> {
     /// Compresses two baby bear element arrays using Poseidon2 (output = p2_compress(array1,
     /// array2)).
     Poseidon2CompressBabyBear(
-        Box<(
-            Array<C, Felt<C::F>>,
-            Array<C, Felt<C::F>>,
-            Array<C, Felt<C::F>>,
-        )>,
+        Box<(Array<C, Felt<C::F>>, Array<C, Felt<C::F>>, Array<C, Felt<C::F>>)>,
     ),
     /// Absorb an array of baby bear elements for a specified hash instance.
     Poseidon2AbsorbBabyBear(Var<C::N>, Array<C, Felt<C::F>>),

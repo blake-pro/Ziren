@@ -15,8 +15,8 @@ use p3_maybe_rayon::prelude::ParallelIterator;
 use zkm2_core_executor::events::GlobalInteractionEvent;
 use zkm2_core_executor::{events::SyscallEvent, ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
-use zkm2_stark::air::{InteractionScope, MachineAir, ZKMAirBuilder};
 use zkm2_stark::air::AirInteraction;
+use zkm2_stark::air::{InteractionScope, MachineAir, ZKMAirBuilder};
 use zkm2_stark::InteractionKind;
 
 use crate::utils::pad_rows_fixed;
@@ -96,7 +96,7 @@ impl<F: PrimeField32> MachineAir<F> for SyscallChip {
                 .map(|(event, _)| event.to_owned())
                 .collect::<Vec<_>>(),
         };
-        
+
         let events = events
             .iter()
             .map(|event| {

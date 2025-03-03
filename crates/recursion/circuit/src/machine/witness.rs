@@ -106,7 +106,6 @@ where
         self.commit.write(witness);
         self.pc_start.write(witness);
         self.initial_global_cumulative_sum.write(witness);
-
     }
 }
 

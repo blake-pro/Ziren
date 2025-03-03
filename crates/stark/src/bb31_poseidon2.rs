@@ -263,11 +263,7 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = default_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self {
-                pcs,
-                perm,
-                config_type: BabyBearPoseidon2Type::Default,
-            }
+            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Default }
         }
 
         #[must_use]
@@ -279,11 +275,7 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = compressed_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self {
-                pcs,
-                perm,
-                config_type: BabyBearPoseidon2Type::Compressed,
-            }
+            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Compressed }
         }
 
         #[must_use]
@@ -295,11 +287,7 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = ultra_compressed_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self {
-                pcs,
-                perm,
-                config_type: BabyBearPoseidon2Type::Compressed,
-            }
+            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Compressed }
         }
     }
 

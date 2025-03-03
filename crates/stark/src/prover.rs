@@ -10,7 +10,7 @@ use crate::{air::InteractionScope, AirOpenedValues, ChipOpenedValues, ShardOpene
 use p3_air::Air;
 use p3_challenger::{CanObserve, FieldChallenger};
 use p3_commit::{Pcs, PolynomialSpace};
-use p3_field::{FieldExtensionAlgebra, FieldAlgebra, PrimeField32};
+use p3_field::{FieldAlgebra, FieldExtensionAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::*;
 use p3_util::log2_strict_usize;

@@ -15,13 +15,13 @@ use zkm2_recursion_compiler::{
     ir::{Builder, Config, DslIr, Ext, ExtConst},
     prelude::Felt,
 };
+use zkm2_stark::septic_digest::SepticDigest;
 use zkm2_stark::{
     air::InteractionScope, baby_bear_poseidon2::BabyBearPoseidon2, AirOpenedValues, Challenger,
     Chip, ChipOpenedValues, InnerChallenge, ProofShape, ShardCommitment, ShardOpenedValues,
     ShardProof, Val, PROOF_MAX_NUM_PVS,
 };
 use zkm2_stark::{air::MachineAir, StarkGenericConfig, StarkMachine, StarkVerifyingKey};
-use zkm2_stark::septic_digest::SepticDigest;
 
 use crate::{
     challenger::CanObserveVariable,
@@ -58,10 +58,7 @@ pub fn dummy_challenger(config: &BabyBearPoseidon2) -> Challenger<BabyBearPoseid
 pub fn dummy_vk_and_shard_proof<A: MachineAir<BabyBear>>(
     machine: &StarkMachine<BabyBearPoseidon2, A>,
     shape: &ProofShape,
-) -> (
-    StarkVerifyingKey<BabyBearPoseidon2>,
-    ShardProof<BabyBearPoseidon2>,
-) {
+) -> (StarkVerifyingKey<BabyBearPoseidon2>, ShardProof<BabyBearPoseidon2>) {
     // Make a dummy commitment.
     let commitment = ShardCommitment {
         main_commit: dummy_hash(),
@@ -292,11 +289,7 @@ where
             .map(|log_degree| Self::natural_domain_for_degree(machine.config(), 1 << log_degree))
             .collect::<Vec<_>>();
 
-        let ShardCommitment {
-            main_commit,
-            permutation_commit,
-            quotient_commit,
-        } = *commitment;
+        let ShardCommitment { main_commit, permutation_commit, quotient_commit } = *commitment;
 
         challenger.observe(builder, main_commit);
 
@@ -520,12 +513,12 @@ pub mod tests {
         ir::{Builder, DslIr, TracedVec},
     };
 
+    use test_artifacts::FIBONACCI_ELF;
     use zkm2_recursion_core::{air::Block, machine::RecursionAir, stark::BabyBearPoseidon2Outer};
     use zkm2_stark::{
         baby_bear_poseidon2::BabyBearPoseidon2, CpuProver, InnerVal, MachineProver, ShardProof,
         ZKMCoreOpts,
     };
-    use test_artifacts::FIBONACCI_ELF;
 
     use super::*;
     use crate::witness::*;

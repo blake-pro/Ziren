@@ -58,13 +58,7 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
                         let mut byte_lookup_events = Vec::new();
                         let event = &input.cpu_events[idx];
                         let instruction = &input.program.fetch(event.pc);
-                        self.event_to_row(
-                            event,
-                            cols,
-                            &mut byte_lookup_events,
-                            shard,
-                            instruction,
-                        );
+                        self.event_to_row(event, cols, &mut byte_lookup_events, shard, instruction);
                     }
                 });
             },
@@ -90,13 +84,7 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
                     let mut row = [F::ZERO; NUM_CPU_COLS];
                     let cols: &mut CpuCols<F> = row.as_mut_slice().borrow_mut();
                     let instruction = &input.program.fetch(op.pc);
-                    self.event_to_row::<F>(
-                        op,
-                        cols,
-                        &mut blu,
-                        shard,
-                        instruction,
-                    );
+                    self.event_to_row::<F>(op, cols, &mut blu, shard, instruction);
                 });
                 blu
             })
@@ -485,11 +473,7 @@ impl CpuChip {
     // }
 
     /// Populate columns related to syscall.
-    fn populate_syscall<F: PrimeField>(
-        &self,
-        cols: &mut CpuCols<F>,
-        event: &CpuEvent,
-    ) -> bool {
+    fn populate_syscall<F: PrimeField>(&self, cols: &mut CpuCols<F>, event: &CpuEvent) -> bool {
         let mut is_halt = false;
 
         if cols.selectors.is_syscall == F::ONE {

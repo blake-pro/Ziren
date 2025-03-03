@@ -234,11 +234,9 @@ where
                 // flag.
 
                 // Assert that the shard is boolean.
-                builder
-                    .assert_felt_eq(is_first_shard * (is_first_shard - C::F::ONE), C::F::ZERO);
+                builder.assert_felt_eq(is_first_shard * (is_first_shard - C::F::ONE), C::F::ZERO);
                 // Assert that if the flag is set to `1`, then the shard idex is `1`.
-                builder
-                    .assert_felt_eq(is_first_shard * (initial_shard - C::F::ONE), C::F::ZERO);
+                builder.assert_felt_eq(is_first_shard * (initial_shard - C::F::ONE), C::F::ZERO);
                 // Assert that if the flag is set to `0`, then the shard index is not `1`.
                 builder.assert_felt_ne(
                     (SymbolicFelt::ONE - is_first_shard) * initial_shard,

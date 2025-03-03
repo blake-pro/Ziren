@@ -13,9 +13,7 @@ use crate::{
     scoped_interactions,
 };
 
-use super::{
-    eval_permutation_constraints, generate_permutation_trace, PROOF_MAX_NUM_PVS,
-};
+use super::{eval_permutation_constraints, generate_permutation_trace, PROOF_MAX_NUM_PVS};
 
 /// An Air that encodes lookups based on interactions.
 pub struct Chip<F: Field, A> {

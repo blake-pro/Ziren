@@ -305,20 +305,14 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             public_values,
         );
 
-        if self.vk_verification
-            && !self
-                .allowed_vk_map
-                .contains_key(&compress_vk.hash_babybear())
-        {
+        if self.vk_verification && !self.allowed_vk_map.contains_key(&compress_vk.hash_babybear()) {
             return Err(MachineVerificationError::InvalidVerificationKey);
         }
 
         // `is_complete` should be 1. In the reduce program, this ensures that the proof is fully
         // reduced.
         if public_values.is_complete != BabyBear::ONE {
-            return Err(MachineVerificationError::InvalidPublicValues(
-                "is_complete is not 1",
-            ));
+            return Err(MachineVerificationError::InvalidPublicValues("is_complete is not 1"));
         }
 
         // Verify that the proof is for the sp1 vkey we are expecting.
