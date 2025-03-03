@@ -5,13 +5,6 @@ use std::fmt::Display;
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, Default, Eq, Hash, PartialEq)]
 pub struct LookupId(pub u64);
 
-/// Create a random lookup id. This is slower than `record.create_lookup_id()` but is useful for
-/// testing.
-#[must_use]
-pub(crate) fn create_random_lookup_ids() -> [LookupId; 5] {
-    std::array::from_fn(|_| LookupId(rand::random()))
-}
-
 /// Returns a tuple containing everything needed to to correctly display a table of counts
 /// (e.g. `opcode_counts`):
 ///
