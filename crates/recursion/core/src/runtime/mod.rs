@@ -28,10 +28,8 @@ use std::{
     sync::Arc,
 };
 
-use p3_baby_bear::Poseidon2ExternalLayerBabyBear;
-use p3_field::FieldAlgebra;
-use p3_field::FieldExtensionAlgebra;
-use p3_field::{ExtensionField, Field, PrimeField32};
+use p3_field::{ExtensionField, Field, FieldAlgebra, FieldExtensionAlgebra, PrimeField32};
+use p3_koala_bear::Poseidon2ExternalLayerKoalaBear;
 use p3_poseidon2::Poseidon2;
 use p3_symmetric::{CryptographicPermutation, Permutation};
 use p3_util::reverse_bits_len;
@@ -54,7 +52,7 @@ pub const MEMORY_SIZE: usize = 1 << 28;
 
 /// The width of the Poseidon2 permutation.
 pub const PERMUTATION_WIDTH: usize = 16;
-pub const POSEIDON2_SBOX_DEGREE: u64 = 7;
+pub const POSEIDON2_SBOX_DEGREE: u64 = 3;
 pub const HASH_RATE: usize = 8;
 
 /// The current verifier implementation assumes that we are using a 256-bit hash with 32-bit
@@ -130,7 +128,7 @@ pub struct Runtime<'a, F: PrimeField32, EF: ExtensionField<F>, Diffusion> {
     perm: Option<
         Poseidon2<
             <F as Field>::Packing,
-            Poseidon2ExternalLayerBabyBear<16>,
+            Poseidon2ExternalLayerKoalaBear<16>,
             Diffusion,
             PERMUTATION_WIDTH,
             POSEIDON2_SBOX_DEGREE,
@@ -176,7 +174,7 @@ impl<F: PrimeField32, EF: ExtensionField<F>, Diffusion> Runtime<'_, F, EF, Diffu
 where
     Poseidon2<
         <F as Field>::Packing,
-        Poseidon2ExternalLayerBabyBear<16>,
+        Poseidon2ExternalLayerKoalaBear<16>,
         Diffusion,
         PERMUTATION_WIDTH,
         POSEIDON2_SBOX_DEGREE,
@@ -186,7 +184,7 @@ where
         program: Arc<RecursionProgram<F>>,
         perm: Poseidon2<
             <F as Field>::Packing,
-            Poseidon2ExternalLayerBabyBear<16>,
+            Poseidon2ExternalLayerKoalaBear<16>,
             Diffusion,
             PERMUTATION_WIDTH,
             POSEIDON2_SBOX_DEGREE,

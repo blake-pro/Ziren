@@ -213,18 +213,18 @@ impl<const DEGREE: usize> Poseidon2WideChip<DEGREE> {
             // Optimization: since the linear layer that comes after the sbox is degree 1, we can
             // avoid adding columns for the result of the sbox, and instead include the x^3 -> x^7
             // part of the sbox in the constraint for the linear layer
-            let mut sbox_deg_7: [F; 16] = [F::ZERO; WIDTH];
+            // let mut sbox_deg_7: [F; 16] = [F::ZERO; WIDTH];
             let mut sbox_deg_3: [F; 16] = [F::ZERO; WIDTH];
             for i in 0..WIDTH {
                 sbox_deg_3[i] = add_rc[i] * add_rc[i] * add_rc[i];
-                sbox_deg_7[i] = sbox_deg_3[i] * sbox_deg_3[i] * add_rc[i];
+                // sbox_deg_7[i] = sbox_deg_3[i] * sbox_deg_3[i] * add_rc[i];
             }
 
             if let Some(sbox) = sbox.as_deref_mut() {
                 sbox[r] = sbox_deg_3;
             }
 
-            sbox_deg_7
+            sbox_deg_3
         };
 
         // Apply the linear layer.
@@ -251,10 +251,10 @@ impl<const DEGREE: usize> Poseidon2WideChip<DEGREE> {
             // Optimization: since the linear layer that comes after the sbox is degree 1, we can
             // avoid adding columns for the result of the sbox, just like for external rounds.
             sbox_deg_3[r] = add_rc * add_rc * add_rc;
-            let sbox_deg_7 = sbox_deg_3[r] * sbox_deg_3[r] * add_rc;
+            // let sbox_deg_7 = sbox_deg_3[r] * sbox_deg_3[r] * add_rc;
 
             // Apply the linear layer.
-            state[0] = sbox_deg_7;
+            state[0] = sbox_deg_3[r];
 
             internal_linear_layer(&mut state);
 
@@ -280,8 +280,8 @@ impl<const DEGREE: usize> Poseidon2WideChip<DEGREE> {
 
 #[cfg(test)]
 mod tests {
-    use p3_baby_bear::BabyBear;
     use p3_field::FieldAlgebra;
+    use p3_koala_bear::KoalaBear;
     use p3_matrix::dense::RowMajorMatrix;
     use p3_symmetric::Permutation;
     use zkhash::ark_ff::UniformRand;
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn generate_trace_deg_3() {
-        type F = BabyBear;
+        type F = KoalaBear;
         let input_0 = [F::ONE; WIDTH];
         let permuter = inner_perm();
         let output_0 = permuter.permute(input_0);
@@ -316,7 +316,7 @@ mod tests {
 
     #[test]
     fn generate_trace_deg_9() {
-        type F = BabyBear;
+        type F = KoalaBear;
         let input_0 = [F::ONE; WIDTH];
         let permuter = inner_perm();
         let output_0 = permuter.permute(input_0);

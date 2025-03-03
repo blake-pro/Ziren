@@ -1,12 +1,12 @@
 #![allow(missing_docs)]
 
 use crate::{Com, StarkGenericConfig, ZeroCommitment};
-use p3_baby_bear::{BabyBear, Poseidon2BabyBear};
 use p3_challenger::DuplexChallenger;
 use p3_commit::ExtensionMmcs;
 use p3_dft::Radix2DitParallel;
 use p3_field::{extension::BinomialExtensionField, Field, FieldAlgebra};
 use p3_fri::{BatchOpening, CommitPhaseProofStep, FriConfig, FriProof, QueryProof, TwoAdicFriPcs};
+use p3_koala_bear::{KoalaBear, Poseidon2KoalaBear};
 use p3_merkle_tree::MerkleTreeMmcs;
 use p3_symmetric::{Hash, PaddingFreeSponge, TruncatedPermutation};
 use serde::{Deserialize, Serialize};
@@ -15,9 +15,9 @@ use zkm2_primitives::poseidon2_init;
 pub const DIGEST_SIZE: usize = 8;
 
 /// A configuration for inner recursion.
-pub type InnerVal = BabyBear;
+pub type InnerVal = KoalaBear;
 pub type InnerChallenge = BinomialExtensionField<InnerVal, 4>;
-pub type InnerPerm = Poseidon2BabyBear<16>;
+pub type InnerPerm = Poseidon2KoalaBear<16>;
 pub type InnerHash = PaddingFreeSponge<InnerPerm, 16, 8, DIGEST_SIZE>;
 pub type InnerDigestHash = Hash<InnerVal, InnerVal, DIGEST_SIZE>;
 pub type InnerDigest = [InnerVal; DIGEST_SIZE];
@@ -80,34 +80,34 @@ pub fn inner_fri_config() -> FriConfig<InnerChallengeMmcs> {
 
 /// The recursion config used for recursive reduce circuit.
 #[derive(Deserialize)]
-#[serde(from = "std::marker::PhantomData<BabyBearPoseidon2Inner>")]
-pub struct BabyBearPoseidon2Inner {
+#[serde(from = "std::marker::PhantomData<KoalaBearPoseidon2Inner>")]
+pub struct KoalaBearPoseidon2Inner {
     pub perm: InnerPerm,
     pub pcs: InnerPcs,
 }
 
-impl Clone for BabyBearPoseidon2Inner {
+impl Clone for KoalaBearPoseidon2Inner {
     fn clone(&self) -> Self {
         Self::new()
     }
 }
 
-impl Serialize for BabyBearPoseidon2Inner {
+impl Serialize for KoalaBearPoseidon2Inner {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        std::marker::PhantomData::<BabyBearPoseidon2Inner>.serialize(serializer)
+        std::marker::PhantomData::<KoalaBearPoseidon2Inner>.serialize(serializer)
     }
 }
 
-impl From<std::marker::PhantomData<BabyBearPoseidon2Inner>> for BabyBearPoseidon2Inner {
-    fn from(_: std::marker::PhantomData<BabyBearPoseidon2Inner>) -> Self {
+impl From<std::marker::PhantomData<KoalaBearPoseidon2Inner>> for KoalaBearPoseidon2Inner {
+    fn from(_: std::marker::PhantomData<KoalaBearPoseidon2Inner>) -> Self {
         Self::new()
     }
 }
 
-impl BabyBearPoseidon2Inner {
+impl KoalaBearPoseidon2Inner {
     #[must_use]
     pub fn new() -> Self {
         let perm = inner_perm();
@@ -122,13 +122,13 @@ impl BabyBearPoseidon2Inner {
     }
 }
 
-impl Default for BabyBearPoseidon2Inner {
+impl Default for KoalaBearPoseidon2Inner {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl StarkGenericConfig for BabyBearPoseidon2Inner {
+impl StarkGenericConfig for KoalaBearPoseidon2Inner {
     type Val = InnerVal;
     type Domain = <InnerPcs as p3_commit::Pcs<InnerChallenge, InnerChallenger>>::Domain;
     type Pcs = InnerPcs;
@@ -144,20 +144,20 @@ impl StarkGenericConfig for BabyBearPoseidon2Inner {
     }
 }
 
-impl ZeroCommitment<BabyBearPoseidon2Inner> for InnerPcs {
-    fn zero_commitment(&self) -> Com<BabyBearPoseidon2Inner> {
+impl ZeroCommitment<KoalaBearPoseidon2Inner> for InnerPcs {
+    fn zero_commitment(&self) -> Com<KoalaBearPoseidon2Inner> {
         InnerDigestHash::from([InnerVal::ZERO; DIGEST_SIZE])
     }
 }
 
-pub mod baby_bear_poseidon2 {
+pub mod koala_bear_poseidon2 {
 
-    use p3_baby_bear::{BabyBear, Poseidon2BabyBear};
     use p3_challenger::DuplexChallenger;
     use p3_commit::ExtensionMmcs;
     use p3_dft::Radix2DitParallel;
     use p3_field::{extension::BinomialExtensionField, Field, FieldAlgebra};
     use p3_fri::{FriConfig, TwoAdicFriPcs};
+    use p3_koala_bear::{KoalaBear, Poseidon2KoalaBear};
     use p3_merkle_tree::MerkleTreeMmcs;
     use p3_poseidon2::ExternalLayerConstants;
     use p3_symmetric::{Hash, PaddingFreeSponge, TruncatedPermutation};
@@ -166,10 +166,10 @@ pub mod baby_bear_poseidon2 {
 
     use crate::{Com, StarkGenericConfig, ZeroCommitment, DIGEST_SIZE};
 
-    pub type Val = BabyBear;
+    pub type Val = KoalaBear;
     pub type Challenge = BinomialExtensionField<Val, 4>;
 
-    pub type Perm = Poseidon2BabyBear<16>;
+    pub type Perm = Poseidon2KoalaBear<16>;
     pub type MyHash = PaddingFreeSponge<Perm, 16, 8, DIGEST_SIZE>;
     pub type DigestHash = Hash<Val, Val, DIGEST_SIZE>;
     pub type MyCompress = TruncatedPermutation<Perm, 2, 8, 16>;
@@ -240,20 +240,20 @@ pub mod baby_bear_poseidon2 {
         FriConfig { log_blowup: 3, num_queries, proof_of_work_bits: 16, mmcs: challenge_mmcs }
     }
 
-    enum BabyBearPoseidon2Type {
+    enum KoalaBearPoseidon2Type {
         Default,
         Compressed,
     }
 
     #[derive(Deserialize)]
-    #[serde(from = "std::marker::PhantomData<BabyBearPoseidon2>")]
-    pub struct BabyBearPoseidon2 {
+    #[serde(from = "std::marker::PhantomData<KoalaBearPoseidon2>")]
+    pub struct KoalaBearPoseidon2 {
         pub perm: Perm,
         pcs: Pcs,
-        config_type: BabyBearPoseidon2Type,
+        config_type: KoalaBearPoseidon2Type,
     }
 
-    impl BabyBearPoseidon2 {
+    impl KoalaBearPoseidon2 {
         #[must_use]
         pub fn new() -> Self {
             let perm = my_perm();
@@ -263,7 +263,7 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = default_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Default }
+            Self { pcs, perm, config_type: KoalaBearPoseidon2Type::Default }
         }
 
         #[must_use]
@@ -275,7 +275,7 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = compressed_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Compressed }
+            Self { pcs, perm, config_type: KoalaBearPoseidon2Type::Compressed }
         }
 
         #[must_use]
@@ -287,43 +287,43 @@ pub mod baby_bear_poseidon2 {
             let dft = Dft::default();
             let fri_config = ultra_compressed_fri_config();
             let pcs = Pcs::new(dft, val_mmcs, fri_config);
-            Self { pcs, perm, config_type: BabyBearPoseidon2Type::Compressed }
+            Self { pcs, perm, config_type: KoalaBearPoseidon2Type::Compressed }
         }
     }
 
-    impl Clone for BabyBearPoseidon2 {
+    impl Clone for KoalaBearPoseidon2 {
         fn clone(&self) -> Self {
             match self.config_type {
-                BabyBearPoseidon2Type::Default => Self::new(),
-                BabyBearPoseidon2Type::Compressed => Self::compressed(),
+                KoalaBearPoseidon2Type::Default => Self::new(),
+                KoalaBearPoseidon2Type::Compressed => Self::compressed(),
             }
         }
     }
 
-    impl Default for BabyBearPoseidon2 {
+    impl Default for KoalaBearPoseidon2 {
         fn default() -> Self {
             Self::new()
         }
     }
 
     /// Implement serialization manually instead of using serde to avoid cloing the config.
-    impl Serialize for BabyBearPoseidon2 {
+    impl Serialize for KoalaBearPoseidon2 {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: serde::Serializer,
         {
-            std::marker::PhantomData::<BabyBearPoseidon2>.serialize(serializer)
+            std::marker::PhantomData::<KoalaBearPoseidon2>.serialize(serializer)
         }
     }
 
-    impl From<std::marker::PhantomData<BabyBearPoseidon2>> for BabyBearPoseidon2 {
-        fn from(_: std::marker::PhantomData<BabyBearPoseidon2>) -> Self {
+    impl From<std::marker::PhantomData<KoalaBearPoseidon2>> for KoalaBearPoseidon2 {
+        fn from(_: std::marker::PhantomData<KoalaBearPoseidon2>) -> Self {
             Self::new()
         }
     }
 
-    impl StarkGenericConfig for BabyBearPoseidon2 {
-        type Val = BabyBear;
+    impl StarkGenericConfig for KoalaBearPoseidon2 {
+        type Val = KoalaBear;
         type Domain = <Pcs as p3_commit::Pcs<Challenge, Challenger>>::Domain;
         type Pcs = Pcs;
         type Challenge = Challenge;
@@ -338,8 +338,8 @@ pub mod baby_bear_poseidon2 {
         }
     }
 
-    impl ZeroCommitment<BabyBearPoseidon2> for Pcs {
-        fn zero_commitment(&self) -> Com<BabyBearPoseidon2> {
+    impl ZeroCommitment<KoalaBearPoseidon2> for Pcs {
+        fn zero_commitment(&self) -> Com<KoalaBearPoseidon2> {
             DigestHash::from([Val::ZERO; DIGEST_SIZE])
         }
     }

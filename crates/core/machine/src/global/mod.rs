@@ -260,7 +260,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use p3_baby_bear::BabyBear;
+    use p3_koala_bear::KoalaBear;
     use p3_matrix::dense::RowMajorMatrix;
     use zkm2_core_executor::{programs::tests::simple_program, ExecutionRecord, Executor};
     use zkm2_stark::{air::MachineAir, ZKMCoreOpts};
@@ -274,7 +274,7 @@ mod tests {
 
         let chip: GlobalChip = GlobalChip;
 
-        let trace: RowMajorMatrix<BabyBear> =
+        let trace: RowMajorMatrix<KoalaBear> =
             chip.generate_trace(&shard, &mut ExecutionRecord::default());
         println!("{:?}", trace.values);
 

@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use p3_baby_bear::BabyBear;
+use p3_koala_bear::KoalaBear;
 use p3_field::FieldAlgebra;
 
 use zkm2_recursion_compiler::circuit::CircuitV2Builder;
@@ -10,7 +10,7 @@ use zkm2_recursion_core::air::RecursionPublicValues;
 ///
 /// The assertions consist of checking all the expected boundary conditions from a compress proof
 /// that represents the end of the recursion tower.
-pub(crate) fn assert_complete<C: Config<F = BabyBear>>(
+pub(crate) fn assert_complete<C: Config<F = KoalaBear>>(
     builder: &mut Builder<C>,
     public_values: &RecursionPublicValues<Felt<C::F>>,
     is_complete: Felt<C::F>,

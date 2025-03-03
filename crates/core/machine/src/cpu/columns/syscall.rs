@@ -2,7 +2,7 @@ use std::mem::size_of;
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{air::PV_DIGEST_NUM_WORDS, Word};
 
-use crate::operations::{BabyBearWordRangeChecker, IsZeroOperation};
+use crate::operations::{IsZeroOperation, KoalaBearWordRangeChecker};
 
 pub const NUM_SYSCALL_COLS: usize = size_of::<SyscallCols<u8>>();
 
@@ -28,9 +28,9 @@ pub struct SyscallCols<T> {
     /// should be set to 1 and everything else set to 0.
     pub index_bitmap: [T; PV_DIGEST_NUM_WORDS],
 
-    /// Columns to babybear range check the halt/commit_deferred_proofs operand.
-    pub operand_range_check_cols: BabyBearWordRangeChecker<T>,
+    /// Columns to koalabear range check the halt/commit_deferred_proofs operand.
+    pub operand_range_check_cols: KoalaBearWordRangeChecker<T>,
 
-    /// The operand value to babybear range check.
+    /// The operand value to koalabear range check.
     pub operand_to_check: Word<T>,
 }

@@ -6,9 +6,9 @@ use std::{
 };
 
 use itertools::Itertools;
-use p3_baby_bear::BabyBear;
 use p3_commit::Mmcs;
 use p3_field::FieldAlgebra;
+use p3_koala_bear::KoalaBear;
 use p3_matrix::dense::RowMajorMatrix;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -22,7 +22,7 @@ use zkm2_stark::air::InteractionScope;
 use zkm2_stark::air::MachineAir;
 use zkm2_stark::{
     air::{PublicValues, POSEIDON_NUM_WORDS},
-    baby_bear_poseidon2::BabyBearPoseidon2,
+    koala_bear_poseidon2::KoalaBearPoseidon2,
     Dom, ProofShape, StarkMachine, Word,
 };
 
@@ -42,12 +42,12 @@ use crate::{
     challenger::{CanObserveVariable, DuplexChallengerVariable},
     machine::{assert_complete, recursion_public_values_digest},
     stark::{dummy_vk_and_shard_proof, ShardProofVariable, StarkVerifier},
-    BabyBearFriConfig, BabyBearFriConfigVariable, CircuitConfig, VerifyingKeyVariable,
+    CircuitConfig, KoalaBearFriConfig, KoalaBearFriConfigVariable, VerifyingKeyVariable,
 };
 
 pub struct ZKMRecursionWitnessVariable<
-    C: CircuitConfig<F = BabyBear>,
-    SC: BabyBearFriConfigVariable<C>,
+    C: CircuitConfig<F = KoalaBear>,
+    SC: KoalaBearFriConfigVariable<C>,
 > {
     pub vk: VerifyingKeyVariable<C, SC>,
     pub shard_proofs: Vec<ShardProofVariable<C, SC>>,
@@ -75,19 +75,19 @@ pub struct ZKMRecursionShape {
 
 /// A program for recursively verifying a batch of ZKM proofs.
 #[derive(Debug, Clone, Copy)]
-pub struct ZKMRecursiveVerifier<C: Config, SC: BabyBearFriConfig> {
+pub struct ZKMRecursiveVerifier<C: Config, SC: KoalaBearFriConfig> {
     _phantom: PhantomData<(C, SC)>,
 }
 
 impl<C, SC> ZKMRecursiveVerifier<C, SC>
 where
-    SC: BabyBearFriConfigVariable<
+    SC: KoalaBearFriConfigVariable<
         C,
         FriChallengerVariable = DuplexChallengerVariable<C>,
-        DigestVariable = [Felt<BabyBear>; DIGEST_SIZE],
+        DigestVariable = [Felt<KoalaBear>; DIGEST_SIZE],
     >,
-    C: CircuitConfig<F = SC::Val, EF = SC::Challenge, Bit = Felt<BabyBear>>,
-    <SC::ValMmcs as Mmcs<BabyBear>>::ProverData<RowMajorMatrix<BabyBear>>: Clone,
+    C: CircuitConfig<F = SC::Val, EF = SC::Challenge, Bit = Felt<KoalaBear>>,
+    <SC::ValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>: Clone,
 {
     /// Verify a batch of ZKM shard proofs and aggregate their public values.
     ///
@@ -568,7 +568,7 @@ where
     }
 }
 
-impl<SC: BabyBearFriConfig> ZKMRecursionWitnessValues<SC> {
+impl<SC: KoalaBearFriConfig> ZKMRecursionWitnessValues<SC> {
     pub fn shape(&self) -> ZKMRecursionShape {
         let proof_shapes = self.shard_proofs.iter().map(|proof| proof.shape()).collect();
 
@@ -576,9 +576,9 @@ impl<SC: BabyBearFriConfig> ZKMRecursionWitnessValues<SC> {
     }
 }
 
-impl ZKMRecursionWitnessValues<BabyBearPoseidon2> {
+impl ZKMRecursionWitnessValues<KoalaBearPoseidon2> {
     pub fn dummy(
-        machine: &StarkMachine<BabyBearPoseidon2, MipsAir<BabyBear>>,
+        machine: &StarkMachine<KoalaBearPoseidon2, MipsAir<KoalaBear>>,
         shape: &ZKMRecursionShape,
     ) -> Self {
         let (mut vks, shard_proofs): (Vec<_>, Vec<_>) =
@@ -589,7 +589,7 @@ impl ZKMRecursionWitnessValues<BabyBearPoseidon2> {
             shard_proofs,
             is_complete: shape.is_complete,
             is_first_shard: false,
-            vk_root: [BabyBear::ZERO; DIGEST_SIZE],
+            vk_root: [KoalaBear::ZERO; DIGEST_SIZE],
         }
     }
 }

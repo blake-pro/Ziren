@@ -1,6 +1,6 @@
 //! Elliptic Curve `y^2 = x^3 + 2x + 26z^5` over the `F_{p^7} = F_p[z]/(z^7 - 2z - 5)` extension field.
-use crate::{baby_bear_poseidon2::BabyBearPoseidon2, septic_extension::SepticExtension};
-use p3_baby_bear::BabyBear;
+use crate::{koala_bear_poseidon2::KoalaBearPoseidon2, septic_extension::SepticExtension};
+use p3_koala_bear::KoalaBear;
 use p3_field::{Field, FieldAlgebra, FieldExtensionAlgebra, PrimeField32};
 use p3_symmetric::Permutation;
 use serde::{Deserialize, Serialize};
@@ -111,7 +111,7 @@ impl<F: PrimeField32> SepticCurve<F> {
     /// Also, we always return the curve point with y-coordinate within `[1, (p-1)/2]`, where p is the characteristic.
     /// The returned values are the curve point, the offset used, and the hash input and output.
     pub fn lift_x(m: SepticExtension<F>) -> (Self, u8, [F; 16], [F; 16]) {
-        let perm = BabyBearPoseidon2::new().perm;
+        let perm = KoalaBearPoseidon2::new().perm;
         for offset in 0..=255 {
             let m_trial = [
                 m.0[0],
@@ -133,7 +133,7 @@ impl<F: PrimeField32> SepticCurve<F> {
             ];
 
             let m_hash = perm
-                .permute(m_trial.map(|x| BabyBear::from_canonical_u32(x.as_canonical_u32())))
+                .permute(m_trial.map(|x| KoalaBear::from_canonical_u32(x.as_canonical_u32())))
                 .map(|x| F::from_canonical_u32(x.as_canonical_u32()));
             let x_trial = SepticExtension(m_hash[..7].try_into().unwrap());
 
@@ -234,7 +234,7 @@ impl<F: Field> SepticCurveComplete<F> {
 
 #[cfg(test)]
 mod tests {
-    use p3_baby_bear::BabyBear;
+    use p3_koala_bear::KoalaBear;
     use p3_maybe_rayon::prelude::ParallelIterator;
     use p3_maybe_rayon::prelude::{IndexedParallelIterator, IntoParallelIterator};
     use rayon_scan::ScanParallelIterator;
@@ -244,32 +244,32 @@ mod tests {
 
     #[test]
     fn test_lift_x() {
-        let x: SepticExtension<BabyBear> = SepticExtension::from_base_slice(&[
-            BabyBear::from_canonical_u32(0x2013),
-            BabyBear::from_canonical_u32(0x2015),
-            BabyBear::from_canonical_u32(0x2016),
-            BabyBear::from_canonical_u32(0x2023),
-            BabyBear::from_canonical_u32(0x2024),
-            BabyBear::from_canonical_u32(0x2016),
-            BabyBear::from_canonical_u32(0x2017),
+        let x: SepticExtension<KoalaBear> = SepticExtension::from_base_slice(&[
+            KoalaBear::from_canonical_u32(0x2013),
+            KoalaBear::from_canonical_u32(0x2015),
+            KoalaBear::from_canonical_u32(0x2016),
+            KoalaBear::from_canonical_u32(0x2023),
+            KoalaBear::from_canonical_u32(0x2024),
+            KoalaBear::from_canonical_u32(0x2016),
+            KoalaBear::from_canonical_u32(0x2017),
         ]);
-        let (curve_point, _, _, _) = SepticCurve::<BabyBear>::lift_x(x);
+        let (curve_point, _, _, _) = SepticCurve::<KoalaBear>::lift_x(x);
         assert!(curve_point.check_on_point());
         assert!(!curve_point.x.is_receive());
     }
 
     #[test]
     fn test_double() {
-        let x: SepticExtension<BabyBear> = SepticExtension::from_base_slice(&[
-            BabyBear::from_canonical_u32(0x2013),
-            BabyBear::from_canonical_u32(0x2015),
-            BabyBear::from_canonical_u32(0x2016),
-            BabyBear::from_canonical_u32(0x2023),
-            BabyBear::from_canonical_u32(0x2024),
-            BabyBear::from_canonical_u32(0x2016),
-            BabyBear::from_canonical_u32(0x2017),
+        let x: SepticExtension<KoalaBear> = SepticExtension::from_base_slice(&[
+            KoalaBear::from_canonical_u32(0x2013),
+            KoalaBear::from_canonical_u32(0x2015),
+            KoalaBear::from_canonical_u32(0x2016),
+            KoalaBear::from_canonical_u32(0x2023),
+            KoalaBear::from_canonical_u32(0x2024),
+            KoalaBear::from_canonical_u32(0x2016),
+            KoalaBear::from_canonical_u32(0x2017),
         ]);
-        let (curve_point, _, _, _) = SepticCurve::<BabyBear>::lift_x(x);
+        let (curve_point, _, _, _) = SepticCurve::<KoalaBear>::lift_x(x);
         let double_point = curve_point.double();
         assert!(double_point.check_on_point());
     }
@@ -282,16 +282,16 @@ mod tests {
         let mut sum = Vec::with_capacity(D as usize);
         let start = Instant::now();
         for i in 0..D {
-            let x: SepticExtension<BabyBear> = SepticExtension::from_base_slice(&[
-                BabyBear::from_canonical_u32(i + 25),
-                BabyBear::from_canonical_u32(2 * i + 376),
-                BabyBear::from_canonical_u32(4 * i + 23),
-                BabyBear::from_canonical_u32(8 * i + 531),
-                BabyBear::from_canonical_u32(16 * i + 542),
-                BabyBear::from_canonical_u32(32 * i + 196),
-                BabyBear::from_canonical_u32(64 * i + 667),
+            let x: SepticExtension<KoalaBear> = SepticExtension::from_base_slice(&[
+                KoalaBear::from_canonical_u32(i + 25),
+                KoalaBear::from_canonical_u32(2 * i + 376),
+                KoalaBear::from_canonical_u32(4 * i + 23),
+                KoalaBear::from_canonical_u32(8 * i + 531),
+                KoalaBear::from_canonical_u32(16 * i + 542),
+                KoalaBear::from_canonical_u32(32 * i + 196),
+                KoalaBear::from_canonical_u32(64 * i + 667),
             ]);
-            let (curve_point, _, _, _) = SepticCurve::<BabyBear>::lift_x(x);
+            let (curve_point, _, _, _) = SepticCurve::<KoalaBear>::lift_x(x);
             vec.push(curve_point);
         }
         println!("Time elapsed: {:?}", start.elapsed());
@@ -303,12 +303,12 @@ mod tests {
         let start = Instant::now();
         for i in 0..(D as usize) {
             assert!(
-                SepticCurve::<BabyBear>::sum_checker_x(vec[i], vec[(i + 1) % D as usize], sum[i])
-                    == SepticExtension::<BabyBear>::ZERO
+                SepticCurve::<KoalaBear>::sum_checker_x(vec[i], vec[(i + 1) % D as usize], sum[i])
+                    == SepticExtension::<KoalaBear>::ZERO
             );
             assert!(
-                SepticCurve::<BabyBear>::sum_checker_y(vec[i], vec[(i + 1) % D as usize], sum[i])
-                    == SepticExtension::<BabyBear>::ZERO
+                SepticCurve::<KoalaBear>::sum_checker_y(vec[i], vec[(i + 1) % D as usize], sum[i])
+                    == SepticExtension::<KoalaBear>::ZERO
             );
         }
         println!("Time elapsed: {:?}", start.elapsed());
@@ -321,16 +321,16 @@ mod tests {
         let mut vec = Vec::with_capacity(D as usize);
         let start = Instant::now();
         for i in 0..D {
-            let x: SepticExtension<BabyBear> = SepticExtension::from_base_slice(&[
-                BabyBear::from_canonical_u32(i + 25),
-                BabyBear::from_canonical_u32(2 * i + 376),
-                BabyBear::from_canonical_u32(4 * i + 23),
-                BabyBear::from_canonical_u32(8 * i + 531),
-                BabyBear::from_canonical_u32(16 * i + 542),
-                BabyBear::from_canonical_u32(32 * i + 196),
-                BabyBear::from_canonical_u32(64 * i + 667),
+            let x: SepticExtension<KoalaBear> = SepticExtension::from_base_slice(&[
+                KoalaBear::from_canonical_u32(i + 25),
+                KoalaBear::from_canonical_u32(2 * i + 376),
+                KoalaBear::from_canonical_u32(4 * i + 23),
+                KoalaBear::from_canonical_u32(8 * i + 531),
+                KoalaBear::from_canonical_u32(16 * i + 542),
+                KoalaBear::from_canonical_u32(32 * i + 196),
+                KoalaBear::from_canonical_u32(64 * i + 667),
             ]);
-            let (curve_point, _, _, _) = SepticCurve::<BabyBear>::lift_x(x);
+            let (curve_point, _, _, _) = SepticCurve::<KoalaBear>::lift_x(x);
             vec.push(SepticCurveComplete::Affine(curve_point));
         }
         println!("Time elapsed: {:?}", start.elapsed());
@@ -346,7 +346,7 @@ mod tests {
             .into_par_iter()
             .with_min_len(1 << 16)
             .scan(|a, b| *a + *b, SepticCurveComplete::Infinity)
-            .collect::<Vec<SepticCurveComplete<BabyBear>>>();
+            .collect::<Vec<SepticCurveComplete<KoalaBear>>>();
         println!("Time elapsed: {:?}", start.elapsed());
         assert_eq!(cum_sum, *par_sum.last().unwrap());
     }

@@ -10,8 +10,8 @@ use std::{
 use eyre::Result;
 use thiserror::Error;
 
-use p3_baby_bear::BabyBear;
 use p3_field::FieldAlgebra;
+use p3_koala_bear::KoalaBear;
 use serde::{Deserialize, Serialize};
 use zkm2_core_machine::mips::CoreShapeConfig;
 use zkm2_recursion_circuit::machine::{
@@ -61,7 +61,7 @@ pub fn build_vk_map<C: ZKMProverComponents>(
     num_compiler_workers: usize,
     num_setup_workers: usize,
     indices: Option<Vec<usize>>,
-) -> (BTreeSet<[BabyBear; DIGEST_SIZE]>, Vec<usize>, usize) {
+) -> (BTreeSet<[KoalaBear; DIGEST_SIZE]>, Vec<usize>, usize) {
     let mut prover = ZKMProver::<C>::new();
     prover.vk_verification = !dummy;
     let core_shape_config = prover.core_shape_config.as_ref().expect("core shape config not found");
@@ -147,7 +147,7 @@ pub fn build_vk_map<C: ZKMProverComponents>(
                         });
                         done += 1;
 
-                        let vk_digest = vk.hash_babybear();
+                        let vk_digest = vk.hash_koalabear();
                         tracing::info!(
                             "program {} = {:?}, {}% done",
                             i,
@@ -219,8 +219,8 @@ pub fn build_vk_map_to_file<C: ZKMProverComponents>(
 
 impl ZKMProofShape {
     pub fn generate<'a>(
-        core_shape_config: &'a CoreShapeConfig<BabyBear>,
-        recursion_shape_config: &'a RecursionShapeConfig<BabyBear, CompressAir<BabyBear>>,
+        core_shape_config: &'a CoreShapeConfig<KoalaBear>,
+        recursion_shape_config: &'a RecursionShapeConfig<KoalaBear, CompressAir<KoalaBear>>,
         reduce_batch_size: usize,
     ) -> impl Iterator<Item = Self> + 'a {
         core_shape_config
@@ -242,7 +242,7 @@ impl ZKMProofShape {
     }
 
     pub fn generate_compress_shapes(
-        recursion_shape_config: &'_ RecursionShapeConfig<BabyBear, CompressAir<BabyBear>>,
+        recursion_shape_config: &'_ RecursionShapeConfig<KoalaBear, CompressAir<KoalaBear>>,
         reduce_batch_size: usize,
     ) -> impl Iterator<Item = Self> + '_ {
         (1..=reduce_batch_size).flat_map(|batch_size| {
@@ -251,13 +251,13 @@ impl ZKMProofShape {
     }
 
     pub fn dummy_vk_map<'a>(
-        core_shape_config: &'a CoreShapeConfig<BabyBear>,
-        recursion_shape_config: &'a RecursionShapeConfig<BabyBear, CompressAir<BabyBear>>,
+        core_shape_config: &'a CoreShapeConfig<KoalaBear>,
+        recursion_shape_config: &'a RecursionShapeConfig<KoalaBear, CompressAir<KoalaBear>>,
         reduce_batch_size: usize,
-    ) -> BTreeMap<[BabyBear; DIGEST_SIZE], usize> {
+    ) -> BTreeMap<[KoalaBear; DIGEST_SIZE], usize> {
         Self::generate(core_shape_config, recursion_shape_config, reduce_batch_size)
             .enumerate()
-            .map(|(i, _)| ([BabyBear::from_canonical_usize(i); DIGEST_SIZE], i))
+            .map(|(i, _)| ([KoalaBear::from_canonical_usize(i); DIGEST_SIZE], i))
             .collect()
     }
 }
@@ -285,7 +285,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
     pub fn program_from_shape(
         &self,
         shape: ZKMCompressProgramShape,
-    ) -> Arc<RecursionProgram<BabyBear>> {
+    ) -> Arc<RecursionProgram<KoalaBear>> {
         match shape {
             ZKMCompressProgramShape::Recursion(shape) => {
                 let input = ZKMRecursionWitnessValues::dummy(self.core_prover.machine(), &shape);
