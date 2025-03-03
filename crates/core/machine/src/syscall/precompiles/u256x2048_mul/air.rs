@@ -5,7 +5,7 @@ use crate::{
     utils::{limbs_from_access, pad_rows_fixed, words_to_bytes_le},
 };
 
-use num::{BigUint, One, Zero};
+use num::{BigUint, One};
 use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::FieldAlgebra;
 use p3_field::PrimeField32;
@@ -256,8 +256,6 @@ where
         let main = builder.main();
         let local = main.row_slice(0);
         let local: &U256x2048MulCols<AB::Var> = (*local).borrow();
-        let next = main.row_slice(1);
-        let next: &U256x2048MulCols<AB::Var> = (*next).borrow();
 
         // Assert that is_real is a boolean.
         builder.assert_bool(local.is_real);

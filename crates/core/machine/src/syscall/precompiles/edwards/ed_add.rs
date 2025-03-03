@@ -6,10 +6,10 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use hashbrown::HashMap;
 use itertools::Itertools;
-use num::{BigUint, Zero};
+use num::BigUint;
 
 use crate::air::MemoryAirBuilder;
-use p3_air::{Air, AirBuilder, BaseAir};
+use p3_air::{Air, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{IntoParallelRefIterator, ParallelIterator, ParallelSlice};

@@ -1,7 +1,7 @@
 use hashbrown::HashMap;
 use itertools::Itertools;
 use p3_field::PrimeField32;
-use p3_matrix::{dense::RowMajorMatrix, Matrix};
+use p3_matrix::{dense::RowMajorMatrix};
 use p3_maybe_rayon::prelude::{ParallelIterator, ParallelSlice};
 use std::borrow::BorrowMut;
 use zkm2_core_executor::{

@@ -5,7 +5,6 @@ extern crate alloc;
 use alloc::collections::BTreeMap;
 use anyhow::{anyhow, bail, Context, Result};
 use elf::{endian::LittleEndian, file::Class, ElfBytes};
-use hashbrown::HashMap;
 
 use p3_field::FieldExtensionAlgebra;
 use p3_field::Field;

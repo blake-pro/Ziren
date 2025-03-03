@@ -70,9 +70,9 @@ use zkm2_recursion_core::{
 };
 pub use zkm2_recursion_gnark_ffi::proof::{Groth16Bn254Proof, PlonkBn254Proof};
 use zkm2_recursion_gnark_ffi::{groth16_bn254::Groth16Bn254Prover, plonk_bn254::PlonkBn254Prover};
-use zkm2_stark::{air::InteractionScope, MachineProvingKey, ProofShape};
+use zkm2_stark::{MachineProvingKey, ProofShape};
 use zkm2_stark::{
-    air::PublicValues, baby_bear_poseidon2::BabyBearPoseidon2, Challenge, Challenger,
+    air::PublicValues, baby_bear_poseidon2::BabyBearPoseidon2, Challenge,
     MachineProver, ShardProof, StarkGenericConfig, StarkVerifyingKey, Val, Word, ZKMCoreOpts,
     ZKMProverOpts, DIGEST_SIZE,
 };

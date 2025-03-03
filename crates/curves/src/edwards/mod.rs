@@ -1,7 +1,7 @@
 pub mod ed25519;
 
 use generic_array::GenericArray;
-use num::{BigUint, Zero};
+use num::BigUint;
 use serde::{Deserialize, Serialize};
 
 use super::CurveType;

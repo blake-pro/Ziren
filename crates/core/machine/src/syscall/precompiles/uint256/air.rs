@@ -14,7 +14,7 @@ use crate::{
 
 use generic_array::GenericArray;
 use num::{BigUint, One, Zero};
-use p3_air::{Air, AirBuilder, BaseAir};
+use p3_air::{Air, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use std::{

@@ -1,5 +1,4 @@
 use std::{
-    collections::VecDeque,
     fs::File,
     io::{
         Seek, {self},
@@ -9,20 +8,18 @@ use std::{
 use web_time::Instant;
 
 use crate::mips::{CoreShapeConfig, MipsAir};
-use p3_challenger::FieldChallenger;
 use p3_maybe_rayon::prelude::*;
 use serde::{de::DeserializeOwned, Serialize};
 use size::Size;
 use std::thread::ScopedJoinHandle;
 use thiserror::Error;
 use zkm2_stark::{
-    air::InteractionScope, baby_bear_poseidon2::BabyBearPoseidon2, MachineProvingKey,
+    baby_bear_poseidon2::BabyBearPoseidon2, MachineProvingKey,
     MachineVerificationError,
 };
 
 use p3_baby_bear::BabyBear;
 use p3_field::PrimeField32;
-use p3_matrix::Matrix;
 
 use crate::{
     io::ZKMStdin,

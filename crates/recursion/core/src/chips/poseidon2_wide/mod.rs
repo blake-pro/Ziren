@@ -2,10 +2,7 @@
 
 use std::{borrow::Borrow, ops::Deref};
 
-//use p3_baby_bear::{MONTY_INVERSE, POSEIDON2_INTERNAL_MATRIX_DIAG_16_BABYBEAR_MONTY};
 use p3_baby_bear::BabyBear;
-use p3_baby_bear::BabyBearParameters;
-use p3_field::Field;
 use p3_field::{FieldAlgebra, PrimeField32};
 
 pub mod air;

@@ -1,4 +1,4 @@
-use p3_baby_bear::{BabyBear, Poseidon2ExternalLayerBabyBear};
+use p3_baby_bear::BabyBear;
 use p3_bn254_fr::{Bn254Fr, Poseidon2Bn254};
 use p3_challenger::MultiField32Challenger;
 use p3_commit::ExtensionMmcs;

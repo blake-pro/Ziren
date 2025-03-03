@@ -1,5 +1,3 @@
-use std::mem::MaybeUninit;
-
 use p3_baby_bear::BabyBear;
 use p3_bn254_fr::Bn254Fr;
 use p3_field::{FieldAlgebra, PrimeField32};

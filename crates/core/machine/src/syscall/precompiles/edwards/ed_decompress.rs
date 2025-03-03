@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 use crate::air::MemoryAirBuilder;
 use generic_array::GenericArray;
-use num::{BigUint, One, Zero};
+use num::{BigUint, One};
 use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};

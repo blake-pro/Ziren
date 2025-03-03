@@ -1,7 +1,7 @@
 use itertools::{izip, Itertools};
 use p3_baby_bear::BabyBear;
-use p3_commit::{Mmcs, PolynomialSpace};
-use p3_field::{Field, FieldAlgebra, TwoAdicField};
+use p3_commit::PolynomialSpace;
+use p3_field::{FieldAlgebra, TwoAdicField};
 use p3_fri::{BatchOpening, CommitPhaseProofStep, FriConfig, FriProof, QueryProof};
 
 use p3_symmetric::Hash;
@@ -13,14 +13,14 @@ use std::{
 use zkm2_recursion_compiler::ir::{Builder, DslIr, Felt, SymbolicExt};
 use zkm2_recursion_core::DIGEST_SIZE;
 use zkm2_stark::{
-    baby_bear_poseidon2::BabyBearPoseidon2, InnerChallenge, InnerChallengeMmcs, InnerFriProof,
-    InnerInputProof, InnerPcsProof, InnerVal, InnerValMmcs, OpeningProof,
+    InnerChallenge, InnerChallengeMmcs,
+    InnerInputProof, InnerPcsProof, InnerVal,
 };
 
 use crate::{
     challenger::{CanSampleBitsVariable, FieldChallengerVariable},
     BabyBearFriConfigVariable, CanObserveVariable, CircuitConfig, Ext, FriChallenges,
-    FriCommitPhaseProofStepVariable, FriMmcs, FriProofVariable, FriQueryProofVariable,
+    FriCommitPhaseProofStepVariable, FriMmcs, FriProofVariable,
     TwoAdicPcsRoundVariable,
 };
 

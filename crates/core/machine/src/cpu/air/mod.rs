@@ -133,7 +133,7 @@ impl CpuChip {
         &self,
         builder: &mut AB,
         local: &CpuCols<AB::Var>,
-        next: &CpuCols<AB::Var>,
+        _next: &CpuCols<AB::Var>,
     ) {
         // Get the jump specific columns
         let jump_columns = local.opcode_specific_columns.jump();

@@ -15,7 +15,6 @@ use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
     septic_curve::{SepticCurve, CURVE_WITNESS_DUMMY_POINT_X, CURVE_WITNESS_DUMMY_POINT_Y},
     septic_extension::{SepticBlock, SepticExtension},
-    InteractionKind
 };
 use zkm2_stark::ZKMAirBuilder;
 

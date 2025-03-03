@@ -6,7 +6,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{air::MemoryAirBuilder, utils::zeroed_f_vec};
 use generic_array::GenericArray;
-use num::{BigUint, One, Zero};
+use num::{BigUint, One};
 use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};

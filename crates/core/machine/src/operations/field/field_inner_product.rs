@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use num::{BigUint, Zero};
+use num::BigUint;
 use p3_air::AirBuilder;
 use p3_field::{FieldAlgebra, PrimeField32};
 use zkm2_core_executor::events::ByteRecord;

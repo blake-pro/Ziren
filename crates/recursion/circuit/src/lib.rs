@@ -41,7 +41,7 @@ use p3_dft::Radix2DitParallel;
 use p3_fri::{FriConfig, TwoAdicFriPcs};
 use zkm2_recursion_core::{
     air::RecursionPublicValues,
-    stark::{outer_fri_config, BabyBearPoseidon2Outer, OuterValMmcs},
+    stark::{BabyBearPoseidon2Outer, OuterValMmcs},
     D,
 };
 

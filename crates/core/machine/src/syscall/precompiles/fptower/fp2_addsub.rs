@@ -7,8 +7,8 @@ use std::{
 use crate::{air::MemoryAirBuilder, utils::zeroed_f_vec};
 use generic_array::GenericArray;
 use itertools::Itertools;
-use num::{BigUint, Zero};
-use p3_air::{Air, AirBuilder, BaseAir};
+use num::BigUint;
+use p3_air::{Air, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use typenum::Unsigned;

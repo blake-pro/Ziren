@@ -8,7 +8,7 @@ use generic_array::GenericArray;
 use k256::{elliptic_curve::point::DecompressPoint, FieldElement};
 use num::{
     traits::{FromBytes, ToBytes},
-    BigUint, Zero,
+    BigUint,
 };
 use serde::{Deserialize, Serialize};
 use typenum::{U32, U62};

@@ -1,5 +1,5 @@
 use generic_array::GenericArray;
-use num::{BigUint, Num, Zero};
+use num::{BigUint, Num};
 use serde::{Deserialize, Serialize};
 use typenum::{U32, U62};
 

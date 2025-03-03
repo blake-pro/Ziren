@@ -8,7 +8,7 @@ use zkm2_recursion_compiler::ir::{Builder, Config, Ext, Felt};
 use zkm2_recursion_core::air::Block;
 use zkm2_stark::{
     baby_bear_poseidon2::BabyBearPoseidon2, AirOpenedValues, InnerBatchOpening, InnerChallenge,
-    InnerChallengeMmcs, InnerDigest, InnerFriProof, InnerInputProof, InnerPcsProof, InnerVal,
+    InnerChallengeMmcs, InnerDigest, InnerFriProof, InnerVal, InnerInputProof
 };
 
 use crate::{
