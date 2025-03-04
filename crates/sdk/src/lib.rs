@@ -516,6 +516,8 @@ mod tests {
     #[test]
     fn test_e2e_compressed() {
         utils::setup_logger();
+        std::env::set_var("ZKM_DEV", "true");
+        std::env::set_var("FRI_QUERIES", "1");
         let client = ProverClient::cpu();
         let elf = test_artifacts::FIBONACCI_ELF;
         let (pk, vk) = client.setup(elf);
@@ -537,6 +539,8 @@ mod tests {
     fn test_e2e_prove_plonk() {
         std::env::set_var("ZKM_DEV", "true");
         utils::setup_logger();
+        std::env::set_var("ZKM_DEV", "true");
+        std::env::set_var("FRI_QUERIES", "1");
         let client = ProverClient::cpu();
         let elf = test_artifacts::FIBONACCI_ELF;
         let (pk, vk) = client.setup(elf);
@@ -559,6 +563,8 @@ mod tests {
     fn test_e2e_prove_groth16() {
         std::env::set_var("ZKM_DEV", "true");
         utils::setup_logger();
+        std::env::set_var("ZKM_DEV", "true");
+        std::env::set_var("FRI_QUERIES", "1");
         let client = ProverClient::cpu();
         let elf = test_artifacts::HELLO_WORLD_ELF;
         let (pk, vk) = client.setup(elf);
