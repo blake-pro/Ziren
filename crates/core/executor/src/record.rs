@@ -303,6 +303,15 @@ pub struct MemoryAccessRecord {
     pub memory: Option<MemoryRecordEnum>,
 }
 
+impl ExecutionRecord {
+    pub fn print_stats(&self) {
+        println!("Type,Events");
+        for (name, events) in self.stats().iter().sorted_by_key(|(name, _)| *name) {
+            println!("{},{}", name, events);
+        }
+    }
+}
+
 impl MachineRecord for ExecutionRecord {
     type Config = ZKMCoreOpts;
 
