@@ -390,7 +390,6 @@ where
                                         trace_height,
                                         trace_width * trace_height,
                                     );
-
                                 }
 
                                 let data = prover.commit(&record, traces);

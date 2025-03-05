@@ -119,7 +119,7 @@ pub struct Executor<'a> {
 
     /// Report of the program execution.
     pub report: ExecutionReport,
-    /// Verifier used to sanity check `verify_sp1_proof` during runtime.
+    /// Verifier used to sanity check `verify_zkm2_proof` during runtime.
     pub subproof_verifier: Arc<dyn SubproofVerifier + 'a>,
 
     /// Registry of hooks, to be invoked by writing to certain file descriptors.
@@ -1801,7 +1801,7 @@ impl<'a> Executor<'a> {
         if self.state.proof_stream_ptr != self.state.proof_stream.len() {
             tracing::warn!(
                 "Not all proofs were read. Proving will fail during recursion. Did you pass too
-        many proofs in or forget to call verify_sp1_proof?"
+        many proofs in or forget to call verify_zkm2_proof?"
             );
         }
         if self.state.input_stream_ptr != self.state.input_stream.len() {

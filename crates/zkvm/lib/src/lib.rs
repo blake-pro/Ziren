@@ -86,7 +86,7 @@ extern "C" {
     /// Exits unconstrained mode.
     pub fn syscall_exit_unconstrained();
 
-    /// Defers the verification of a valid SP1 zkVM proof.
+    /// Defers the verification of a valid ZKM zkVM proof.
     pub fn syscall_verify_zkm_proof(vk_digest: &[u32; 8], pv_digest: &[u8; 32]);
 
     /// Returns the length of the next element in the hint stream.
@@ -145,5 +145,4 @@ extern "C" {
 
     /// Executes a BN254 Fp2 multiplication on the given inputs.
     pub fn syscall_bn254_fp2_mulmod(p: *mut u32, q: *const u32);
-
 }

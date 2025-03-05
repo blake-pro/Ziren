@@ -15,7 +15,7 @@ struct Args {
     dummy: bool,
     #[clap(short, long, default_value_t = REDUCE_BATCH_SIZE)]
     reduce_batch_size: usize,
-    #[clap(short, long, default_value_t = 1)]
+    #[clap(short = 'c', long, default_value_t = 1)]
     num_compiler_workers: usize,
     #[clap(short, long, default_value_t = 1)]
     num_setup_workers: usize,
