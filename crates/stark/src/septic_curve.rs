@@ -1,4 +1,4 @@
-//! Elliptic Curve `y^2 = x^3 + 2x + 26z^5` over the `F_{p^7} = F_p[z]/(z^7 - 2z - 5)` extension field.
+//! Elliptic Curve `y^2 = x^3 + 3z*x - 3` over the `F_{p^7} = F_p[z]/(z^7 + 2z - 8)` extension field.
 use crate::{koala_bear_poseidon2::KoalaBearPoseidon2, septic_extension::SepticExtension};
 use p3_koala_bear::KoalaBear;
 use p3_field::{Field, FieldAlgebra, FieldExtensionAlgebra, PrimeField32};
@@ -6,7 +6,7 @@ use p3_symmetric::Permutation;
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
 
-/// A septic elliptic curve point on y^2 = x^3 + 2x + 26z^5 over field `F_{p^7} = F_p[z]/(z^7 - 2z - 5)`.
+/// A septic elliptic curve point on y^2 = x^3 + 3z*x - 3 over field `F_{p^7} = F_p[z]/(z^7 + 2z - 8)`.
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub struct SepticCurve<F> {
@@ -18,11 +18,12 @@ pub struct SepticCurve<F> {
 
 /// The x-coordinate for a curve point used as a witness for padding interactions, derived from `e`.
 pub const CURVE_WITNESS_DUMMY_POINT_X: [u32; 7] =
-    [0x2738281, 0x8284590, 0x4523536, 0x0287471, 0x3526624, 0x9775724, 0x7093699];
+    // [0x65B0D64E, 0x4E8C0BFD, 0x8D4B5E6, 0x19A5AE9, 0x6932D4A4, 0x61F6B89C, 0x78D8D5D8];=
+    [1706420302, 1319108093, 148224806, 26874985, 1766171812, 1645633948, 2028659224];
 
 /// The y-coordinate for a curve point used as a witness for padding interactions, derived from `e`.
 pub const CURVE_WITNESS_DUMMY_POINT_Y: [u32; 7] =
-    [48041908, 550064556, 415267377, 1726976249, 1253299140, 209439863, 1302309485];
+    [942390502, 1239997438, 458866455, 1843332012, 1309764648, 572807436, 74267719];
 
 impl<F: Field> SepticCurve<F> {
     /// Returns the dummy point.
@@ -68,7 +69,15 @@ impl<F: Field> SepticCurve<F> {
     #[must_use]
     /// Double the elliptic curve point.
     pub fn double(&self) -> Self {
-        let slope = (self.x * self.x * F::from_canonical_u8(3u8) + F::TWO) / (self.y * F::TWO);
+        let slope = (self.x * self.x * F::from_canonical_u8(3u8) + SepticExtension::from_base_slice(&[
+            F::ZERO,
+            F::from_canonical_u32(3),
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+        ])) / (self.y * F::TWO);
         let result_x = slope.square() - self.x * F::TWO;
         let result_y = slope * (self.x - result_x) - self.y;
         Self { x: result_x, y: result_y }
@@ -89,19 +98,27 @@ impl<F: Field> SepticCurve<F> {
 }
 
 impl<F: FieldAlgebra> SepticCurve<F> {
-    /// Evaluates the curve formula x^3 + 2x + 26z^5
+    /// Evaluates the curve formula y^2 = x^3 + 3z*x -3
     pub fn curve_formula(x: SepticExtension<F>) -> SepticExtension<F> {
         x.cube()
-            + x * F::TWO
-            + SepticExtension::from_base_slice(&[
-                F::ZERO,
-                F::ZERO,
-                F::ZERO,
-                F::ZERO,
-                F::ZERO,
-                F::from_canonical_u32(26),
-                F::ZERO,
-            ])
+        + x * SepticExtension::from_base_slice(&[
+            F::ZERO,
+            F::from_canonical_u32(3),
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+        ])
+        - SepticExtension::from_base_slice(&[
+            F::from_canonical_u32(3),
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+            F::ZERO,
+        ])
     }
 }
 
@@ -241,6 +258,22 @@ mod tests {
     use std::time::Instant;
 
     use super::*;
+
+    #[test]
+    fn test_lift_x1() {
+        let x: SepticExtension<KoalaBear> = SepticExtension::from_base_slice(&[
+            KoalaBear::from_canonical_u32(1511106837),
+            KoalaBear::from_canonical_u32(0),
+            KoalaBear::from_canonical_u32(0),
+            KoalaBear::from_canonical_u32(0),
+            KoalaBear::from_canonical_u32(0),
+            KoalaBear::from_canonical_u32(0),
+            KoalaBear::from_canonical_u32(0),
+        ]);
+        let (curve_point, _, _, _) = SepticCurve::<KoalaBear>::lift_x(x);
+        assert!(curve_point.check_on_point());
+        println!("{:?}", curve_point);
+    }
 
     #[test]
     fn test_lift_x() {

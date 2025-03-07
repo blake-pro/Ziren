@@ -7,19 +7,19 @@ use std::iter::Sum;
 
 /// The x-coordinate for a curve point used as a starting cumulative sum for global permutation trace generation, derived from `sqrt(2)`.
 pub const CURVE_CUMULATIVE_SUM_START_X: [u32; 7] =
-    [0x1434213, 0x5623730, 0x9504880, 0x1688724, 0x2096980, 0x7856967, 0x1875376];
+    [637514027, 1595065213, 1998064738, 72333738, 1211544370, 822986770, 1518535784];
 
 /// The y-coordinate for a curve point used as a starting cumulative sum for global permutation trace generation, derived from `sqrt(2)`.
 pub const CURVE_CUMULATIVE_SUM_START_Y: [u32; 7] =
-    [885797405, 1130275556, 567836311, 52700240, 239639200, 442612155, 1839439733];
+    [1604177449, 90440090, 259343427, 140470264, 1162099742, 941559812, 1064053343];
 
 /// The x-coordinate for a curve point used as a starting random point for digest accumulation, derived from `sqrt(3)`.
 pub const DIGEST_SUM_START_X: [u32; 7] =
-    [0x1742050, 0x8075688, 0x7729352, 0x7446341, 0x5058723, 0x6694280, 0x5253810];
+    [1656788302, 897965284, 874620737, 1581672598, 655804282, 1962911564, 80580607];
 
 /// The y-coordinate for a curve point used as a starting random point for digest accumulation, derived from `sqrt(3)`.
 pub const DIGEST_SUM_START_Y: [u32; 7] =
-    [462194069, 1842131493, 281651264, 1684885851, 483907222, 1097389352, 1648978901];
+    [1024875409, 218609128, 1856341123, 583920580, 1274441611, 118766316, 81843042];
 
 /// A global cumulative sum digest, a point on the elliptic curve that `SepticCurve<F>` represents.
 /// As these digests start with the `CURVE_CUMULATIVE_SUM_START` point, they require special summing logic.
