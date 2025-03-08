@@ -1,4 +1,4 @@
-use crate::operations::GlobalInteractionOperation;
+use crate::operations::GlobalLookupOperation;
 use p3_air::AirBuilder;
 use p3_field::Field;
 use p3_field::FieldAlgebra;
@@ -42,7 +42,7 @@ impl<F: PrimeField32, const N: usize> GlobalAccumulationOperation<F, N> {
     pub fn populate(
         &mut self,
         initial_digest: &mut SepticCurve<F>,
-        global_interaction_cols: [GlobalInteractionOperation<F>; N],
+        global_interaction_cols: [GlobalLookupOperation<F>; N],
         is_real: [F; N],
     ) {
         self.initial_digest[0] = SepticBlock::from(initial_digest.x.0);
@@ -112,7 +112,7 @@ impl<F: PrimeField32, const N: usize> GlobalAccumulationOperation<F, N> {
 impl<F: Field, const N: usize> GlobalAccumulationOperation<F, N> {
     pub fn eval_accumulation<AB: ZKMAirBuilder>(
         builder: &mut AB,
-        global_interaction_cols: [GlobalInteractionOperation<AB::Var>; N],
+        global_interaction_cols: [GlobalLookupOperation<AB::Var>; N],
         local_is_real: [AB::Var; N],
         next_is_real: [AB::Var; N],
         local_accumulation: GlobalAccumulationOperation<AB::Var, N>,

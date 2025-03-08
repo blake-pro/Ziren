@@ -4,8 +4,8 @@ use p3_air::AirBuilder;
 use p3_field::FieldAlgebra;
 use zkm2_core_executor::ByteOpcode;
 use zkm2_stark::{
-    air::{AirInteraction, BaseAirBuilder, ByteAirBuilder, InteractionScope},
-    InteractionKind,
+    air::{AirLookup, BaseAirBuilder, ByteAirBuilder, LookupScope},
+    LookupKind,
 };
 
 use crate::memory::{MemoryAccessCols, MemoryCols};
@@ -50,14 +50,14 @@ pub trait MemoryAirBuilder: BaseAirBuilder {
 
         // The previous values get sent with multiplicity = 1, for "read".
         self.send(
-            AirInteraction::new(prev_values, do_check.clone(), InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(prev_values, do_check.clone(), LookupKind::Memory),
+            LookupScope::Local,
         );
 
         // The current values get "received", i.e. multiplicity = -1
         self.receive(
-            AirInteraction::new(current_values, do_check.clone(), InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(current_values, do_check.clone(), LookupKind::Memory),
+            LookupScope::Local,
         );
     }
 

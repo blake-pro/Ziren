@@ -17,7 +17,7 @@ use super::{
     Domain, OpeningError, StarkGenericConfig, StarkVerifyingKey, Val,
 };
 use crate::{
-    air::{InteractionScope, MachineAir},
+    air::{LookupScope, MachineAir},
     MachineChip,
 };
 
@@ -99,7 +99,7 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> Verifier<SC, A> {
             challenger.observe_slice(&global_sum.0.x.0);
             challenger.observe_slice(&global_sum.0.y.0);
 
-            if chip.commit_scope() == InteractionScope::Local && !global_sum.is_zero() {
+            if chip.commit_scope() == LookupScope::Local && !global_sum.is_zero() {
                 return Err(VerificationError::CumulativeSumsError(
                     "global cumulative sum is non-zero, but chip is Local",
                 ));
@@ -109,7 +109,7 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> Verifier<SC, A> {
                 .sends()
                 .iter()
                 .chain(chip.receives())
-                .any(|i| i.scope == InteractionScope::Local);
+                .any(|i| i.scope == LookupScope::Local);
             if !has_local_interactions && !local_sum.is_zero() {
                 return Err(VerificationError::CumulativeSumsError(
                     "local cumulative sum is non-zero, but no local interactions",

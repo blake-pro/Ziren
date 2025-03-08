@@ -21,7 +21,7 @@ use zkm2_stark::{
 /// A set of columns needed to compute the global interaction elliptic curve digest.
 #[derive(AlignedBorrow, Clone, Copy)]
 #[repr(C)]
-pub struct GlobalInteractionOperation<T: Copy> {
+pub struct GlobalLookupOperation<T: Copy> {
     pub offset_bits: [T; 8],
     pub x_coordinate: SepticBlock<T>,
     pub y_coordinate: SepticBlock<T>,
@@ -30,7 +30,7 @@ pub struct GlobalInteractionOperation<T: Copy> {
     pub permutation: Poseidon2Operation<T>,
 }
 
-impl<F: PrimeField32> GlobalInteractionOperation<F> {
+impl<F: PrimeField32> GlobalLookupOperation<F> {
     pub fn get_digest(
         values: SepticBlock<u32>,
         is_receive: bool,
@@ -100,12 +100,12 @@ impl<F: PrimeField32> GlobalInteractionOperation<F> {
     }
 }
 
-impl<F: Field> GlobalInteractionOperation<F> {
+impl<F: Field> GlobalLookupOperation<F> {
     /// Constrain that the elliptic curve point for the global interaction is correctly derived.
     pub fn eval_single_digest<AB: ZKMAirBuilder + p3_air::PairBuilder>(
         builder: &mut AB,
         values: [AB::Expr; 7],
-        cols: GlobalInteractionOperation<AB::Var>,
+        cols: GlobalLookupOperation<AB::Var>,
         is_receive: AB::Expr,
         is_send: AB::Expr,
         is_real: AB::Var,

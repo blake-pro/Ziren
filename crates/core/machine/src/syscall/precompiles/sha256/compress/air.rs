@@ -5,7 +5,7 @@ use p3_field::FieldAlgebra;
 use p3_matrix::Matrix;
 use zkm2_core_executor::syscalls::SyscallCode;
 use zkm2_stark::{
-    air::{InteractionScope, ZKMAirBuilder},
+    air::{LookupScope, ZKMAirBuilder},
     Word,
 };
 
@@ -55,7 +55,7 @@ where
             local.w_ptr,
             local.h_ptr,
             local.start,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

@@ -17,7 +17,7 @@ use zkm2_stark::air::{MachineAir, MachineProgram};
 use zkm2_stark::septic_curve::{SepticCurve, SepticCurveComplete};
 use zkm2_stark::septic_digest::SepticDigest;
 use zkm2_stark::septic_extension::SepticExtension;
-use zkm2_stark::InteractionKind;
+use zkm2_stark::LookupKind;
 
 use crate::{CoreShape, Instruction};
 
@@ -189,7 +189,7 @@ impl<F: PrimeField32> MachineProgram<F> for Program {
             .par_bridge()
             .map(|(&addr, &word)| {
                 let values = [
-                    (InteractionKind::Memory as u32) << 16,
+                    (LookupKind::Memory as u32) << 16,
                     0,
                     addr,
                     word & 255,

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// This event is emitted for all interactions that are sent or received across different shards.
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 #[repr(C)]
-pub struct GlobalInteractionEvent {
+pub struct GlobalLookupEvent {
     /// The message.
     pub message: [u32; 7],
     /// Whether the interaction is received or sent.

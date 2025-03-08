@@ -2,7 +2,7 @@ use p3_air::{
     AirBuilder, AirBuilderWithPublicValues, ExtensionBuilder, FilteredAirBuilder,
     PermutationAirBuilder,
 };
-use zkm2_stark::air::{InteractionScope, MessageBuilder};
+use zkm2_stark::air::{LookupScope, MessageBuilder};
 
 /// The MultiBuilder is used for the multi table.  It is used to create a virtual builder for one of
 /// the sub tables in the multi table.
@@ -85,11 +85,11 @@ impl<AB: PermutationAirBuilder> PermutationAirBuilder for MultiBuilder<'_, AB> {
 }
 
 impl<AB: AirBuilder + MessageBuilder<M>, M> MessageBuilder<M> for MultiBuilder<'_, AB> {
-    fn send(&mut self, message: M, scope: InteractionScope) {
+    fn send(&mut self, message: M, scope: LookupScope) {
         self.inner.send(message, scope);
     }
 
-    fn receive(&mut self, message: M, scope: InteractionScope) {
+    fn receive(&mut self, message: M, scope: LookupScope) {
         self.inner.receive(message, scope);
     }
 }

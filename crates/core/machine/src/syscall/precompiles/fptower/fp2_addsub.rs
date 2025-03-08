@@ -22,7 +22,7 @@ use zkm2_curves::{
     weierstrass::{FieldType, FpOpField},
 };
 use zkm2_derive::AlignedBorrow;
-use zkm2_stark::air::{BaseAirBuilder, InteractionScope, MachineAir, Polynomial, ZKMAirBuilder};
+use zkm2_stark::air::{BaseAirBuilder, LookupScope, MachineAir, Polynomial, ZKMAirBuilder};
 
 use crate::{
     memory::{value_as_limbs, MemoryReadCols, MemoryWriteCols},
@@ -311,7 +311,7 @@ where
             local.x_ptr,
             local.y_ptr,
             local.is_real,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

@@ -3,8 +3,8 @@ use std::iter::once;
 use p3_air::AirBuilderWithPublicValues;
 use p3_field::FieldAlgebra;
 use zkm2_stark::{
-    air::{AirInteraction, BaseAirBuilder, InteractionScope, MachineAirBuilder},
-    InteractionKind,
+    air::{AirLookup, BaseAirBuilder, LookupScope, MachineAirBuilder},
+    LookupKind,
 };
 
 use crate::{air::Block, Address};
@@ -34,12 +34,12 @@ pub trait RecursionAirBuilder: BaseAirBuilder {
         mult: impl Into<Self::Expr>,
     ) {
         self.send(
-            AirInteraction::new(
+            AirLookup::new(
                 once(addr.0).chain(val).map(Into::into).collect(),
                 mult.into(),
-                InteractionKind::Memory,
+                LookupKind::Memory,
             ),
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 
@@ -61,12 +61,12 @@ pub trait RecursionAirBuilder: BaseAirBuilder {
         mult: impl Into<Self::Expr>,
     ) {
         self.receive(
-            AirInteraction::new(
+            AirLookup::new(
                 once(addr.0).chain(val).map(Into::into).collect(),
                 mult.into(),
-                InteractionKind::Memory,
+                LookupKind::Memory,
             ),
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

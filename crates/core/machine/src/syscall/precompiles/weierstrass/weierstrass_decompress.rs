@@ -26,7 +26,7 @@ use zkm2_curves::{
     CurveType, EllipticCurve,
 };
 use zkm2_derive::AlignedBorrow;
-use zkm2_stark::air::{BaseAirBuilder, InteractionScope, MachineAir, Polynomial, ZKMAirBuilder};
+use zkm2_stark::air::{BaseAirBuilder, LookupScope, MachineAir, Polynomial, ZKMAirBuilder};
 
 use crate::{
     memory::{MemoryReadCols, MemoryReadWriteCols},
@@ -519,7 +519,7 @@ where
             local.ptr,
             local.sign_bit,
             local.is_real,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

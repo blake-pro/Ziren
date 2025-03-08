@@ -2,7 +2,7 @@
 
 mod builder;
 mod extension;
-mod interaction;
+mod lookup;
 mod machine;
 mod polynomial;
 mod public_values;
@@ -10,7 +10,7 @@ mod sub_builder;
 
 pub use builder::*;
 pub use extension::*;
-pub use interaction::*;
+pub use lookup::*;
 pub use machine::*;
 pub use polynomial::*;
 pub use public_values::*;

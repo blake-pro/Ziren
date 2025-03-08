@@ -3,7 +3,7 @@ use p3_field::FieldAlgebra;
 use zkm2_core_executor::syscalls::SyscallCode;
 use zkm2_stark::{
     air::{
-        BaseAirBuilder, InteractionScope, PublicValues, ZKMAirBuilder, POSEIDON_NUM_WORDS,
+        BaseAirBuilder, LookupScope, PublicValues, ZKMAirBuilder, POSEIDON_NUM_WORDS,
         PV_DIGEST_NUM_WORDS,
     },
     Word,
@@ -64,7 +64,7 @@ impl CpuChip {
             local.op_b_val().reduce::<AB>(),
             local.op_c_val().reduce::<AB>(),
             local.syscall_mul_send_to_table,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Compute whether this syscall is ENTER_UNCONSTRAINED.

@@ -7,9 +7,9 @@ use p3_uni_stark::{get_max_constraint_degree, SymbolicAirBuilder};
 use p3_util::log2_ceil_usize;
 
 use crate::{
-    air::{InteractionScope, MachineAir, MultiTableAirBuilder, ZKMAirBuilder},
+    air::{LookupScope, MachineAir, MultiTableAirBuilder, ZKMAirBuilder},
     local_permutation_trace_width,
-    lookup::{Interaction, InteractionBuilder, InteractionKind},
+    lookup::{Interaction, InteractionBuilder, LookupKind},
     scoped_interactions,
 };
 
@@ -70,8 +70,8 @@ where
         air.eval(&mut builder);
         let (sends, receives) = builder.interactions();
 
-        let nb_byte_sends = sends.iter().filter(|s| s.kind == InteractionKind::Byte).count();
-        let nb_byte_receives = receives.iter().filter(|r| r.kind == InteractionKind::Byte).count();
+        let nb_byte_sends = sends.iter().filter(|s| s.kind == LookupKind::Byte).count();
+        let nb_byte_receives = receives.iter().filter(|r| r.kind == LookupKind::Byte).count();
         tracing::debug!(
             "chip {} has {} byte interactions",
             air.name(),
@@ -98,18 +98,18 @@ where
     /// Returns the number of sent byte lookups in the chip.
     #[inline]
     pub fn num_sent_byte_lookups(&self) -> usize {
-        self.sends.iter().filter(|i| i.kind == InteractionKind::Byte).count()
+        self.sends.iter().filter(|i| i.kind == LookupKind::Byte).count()
     }
 
     /// Returns the number of sends of the given kind.
     #[inline]
-    pub fn num_sends_by_kind(&self, kind: InteractionKind) -> usize {
+    pub fn num_sends_by_kind(&self, kind: LookupKind) -> usize {
         self.sends.iter().filter(|i| i.kind == kind).count()
     }
 
     /// Returns the number of receives of the given kind.
     #[inline]
-    pub fn num_receives_by_kind(&self, kind: InteractionKind) -> usize {
+    pub fn num_receives_by_kind(&self, kind: LookupKind) -> usize {
         self.receives.iter().filter(|i| i.kind == kind).count()
     }
 
@@ -140,8 +140,8 @@ where
     pub fn permutation_width(&self) -> usize {
         let (scoped_sends, scoped_receives) = scoped_interactions(self.sends(), self.receives());
         let empty = Vec::new();
-        let local_sends = scoped_sends.get(&InteractionScope::Local).unwrap_or(&empty);
-        let local_receives = scoped_receives.get(&InteractionScope::Local).unwrap_or(&empty);
+        let local_sends = scoped_sends.get(&LookupScope::Local).unwrap_or(&empty);
+        let local_receives = scoped_receives.get(&LookupScope::Local).unwrap_or(&empty);
 
         local_permutation_trace_width(
             local_sends.len() + local_receives.len(),
@@ -215,7 +215,7 @@ where
         self.air.included(shard)
     }
 
-    fn commit_scope(&self) -> crate::air::InteractionScope {
+    fn commit_scope(&self) -> crate::air::LookupScope {
         self.air.commit_scope()
     }
 

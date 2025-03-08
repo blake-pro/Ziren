@@ -20,8 +20,8 @@ use strum_macros::{EnumDiscriminants, EnumIter};
 use tracing::instrument;
 use zkm2_curves::weierstrass::{bls12_381::Bls12381BaseField, bn254::Bn254BaseField};
 use zkm2_stark::{
-    air::{InteractionScope, MachineAir, ZKM_PROOF_NUM_PV_ELTS},
-    Chip, InteractionKind, StarkGenericConfig, StarkMachine,
+    air::{LookupScope, MachineAir, ZKM_PROOF_NUM_PV_ELTS},
+    Chip, LookupKind, StarkGenericConfig, StarkMachine,
 };
 
 pub const MAX_LOG_NUMBER_OF_SHARDS: usize = 16;
@@ -493,8 +493,8 @@ impl<F: PrimeField32> MipsAir<F> {
                     .iter()
                     .chain(chip.receives())
                     .filter(|interaction| {
-                        interaction.kind == InteractionKind::Memory
-                            && interaction.scope == InteractionScope::Local
+                        interaction.kind == LookupKind::Memory
+                            && interaction.scope == LookupScope::Local
                     })
                     .count();
 

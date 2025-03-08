@@ -4,7 +4,7 @@ use p3_matrix::dense::RowMajorMatrix;
 use p3_uni_stark::{Entry, SymbolicExpression, SymbolicVariable};
 
 use crate::{
-    air::{AirInteraction, InteractionScope, MessageBuilder},
+    air::{AirLookup, LookupScope, MessageBuilder},
     PROOF_MAX_NUM_PVS,
 };
 
@@ -92,8 +92,8 @@ impl<F: Field> PairBuilder for InteractionBuilder<F> {
     }
 }
 
-impl<F: Field> MessageBuilder<AirInteraction<SymbolicExpression<F>>> for InteractionBuilder<F> {
-    fn send(&mut self, message: AirInteraction<SymbolicExpression<F>>, scope: InteractionScope) {
+impl<F: Field> MessageBuilder<AirLookup<SymbolicExpression<F>>> for InteractionBuilder<F> {
+    fn send(&mut self, message: AirLookup<SymbolicExpression<F>>, scope: LookupScope) {
         let values =
             message.values.into_iter().map(|v| symbolic_to_virtual_pair(&v)).collect::<Vec<_>>();
 
@@ -102,7 +102,7 @@ impl<F: Field> MessageBuilder<AirInteraction<SymbolicExpression<F>>> for Interac
         self.sends.push(Interaction::new(values, multiplicity, message.kind, scope));
     }
 
-    fn receive(&mut self, message: AirInteraction<SymbolicExpression<F>>, scope: InteractionScope) {
+    fn receive(&mut self, message: AirLookup<SymbolicExpression<F>>, scope: LookupScope) {
         let values =
             message.values.into_iter().map(|v| symbolic_to_virtual_pair(&v)).collect::<Vec<_>>();
 
@@ -195,7 +195,7 @@ mod tests {
     use p3_matrix::Matrix;
 
     use super::*;
-    use crate::{air::ZKMAirBuilder, lookup::InteractionKind};
+    use crate::{air::ZKMAirBuilder, lookup::LookupKind};
 
     #[test]
     fn test_symbolic_to_virtual_pair_col() {
@@ -241,25 +241,25 @@ mod tests {
             let z = local[2];
 
             builder.send(
-                AirInteraction::new(
+                AirLookup::new(
                     vec![x.into(), y.into()],
                     AB::F::from_canonical_u32(3).into(),
-                    InteractionKind::Alu,
+                    LookupKind::Alu,
                 ),
-                InteractionScope::Local,
+                LookupScope::Local,
             );
             builder.send(
-                AirInteraction::new(
+                AirLookup::new(
                     vec![x + y, z.into()],
                     AB::F::from_canonical_u32(5).into(),
-                    InteractionKind::Alu,
+                    LookupKind::Alu,
                 ),
-                InteractionScope::Local,
+                LookupScope::Local,
             );
 
             builder.receive(
-                AirInteraction::new(vec![x.into()], y.into(), InteractionKind::Byte),
-                InteractionScope::Local,
+                AirLookup::new(vec![x.into()], y.into(), LookupKind::Byte),
+                LookupScope::Local,
             );
         }
     }

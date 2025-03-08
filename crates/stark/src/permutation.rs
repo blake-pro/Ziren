@@ -1,5 +1,5 @@
 use crate::{
-    air::{InteractionScope, MultiTableAirBuilder},
+    air::{LookupScope, MultiTableAirBuilder},
     lookup::Interaction,
 };
 use hashbrown::HashMap;
@@ -73,7 +73,7 @@ pub fn populate_local_permutation_row<F: PrimeField, EF: ExtensionField<F>>(
 pub fn scoped_interactions<F: Field>(
     sends: &[Interaction<F>],
     receives: &[Interaction<F>],
-) -> (HashMap<InteractionScope, Vec<Interaction<F>>>, HashMap<InteractionScope, Vec<Interaction<F>>>)
+) -> (HashMap<LookupScope, Vec<Interaction<F>>>, HashMap<LookupScope, Vec<Interaction<F>>>)
 {
     // Create a hashmap of scope -> vec<send interactions>.
     let mut sends = sends.to_vec();
@@ -110,8 +110,8 @@ pub fn generate_permutation_trace<F: PrimeField, EF: ExtensionField<F>>(
 ) -> (RowMajorMatrix<EF>, EF) {
     let empty = vec![];
     let (scoped_sends, scoped_receives) = scoped_interactions(sends, receives);
-    let local_sends = scoped_sends.get(&InteractionScope::Local).unwrap_or(&empty);
-    let local_receives = scoped_receives.get(&InteractionScope::Local).unwrap_or(&empty);
+    let local_sends = scoped_sends.get(&LookupScope::Local).unwrap_or(&empty);
+    let local_receives = scoped_receives.get(&LookupScope::Local).unwrap_or(&empty);
 
     let local_permutation_width =
         local_permutation_trace_width(local_sends.len() + local_receives.len(), batch_size);
@@ -207,7 +207,7 @@ pub fn eval_permutation_constraints<'a, F, AB>(
     sends: &[Interaction<F>],
     receives: &[Interaction<F>],
     batch_size: usize,
-    commit_scope: InteractionScope,
+    commit_scope: LookupScope,
     builder: &mut AB,
 ) where
     F: Field,
@@ -217,8 +217,8 @@ pub fn eval_permutation_constraints<'a, F, AB>(
 {
     let empty = vec![];
     let (scoped_sends, scoped_receives) = scoped_interactions(sends, receives);
-    let local_sends = scoped_sends.get(&InteractionScope::Local).unwrap_or(&empty);
-    let local_receives = scoped_receives.get(&InteractionScope::Local).unwrap_or(&empty);
+    let local_sends = scoped_sends.get(&LookupScope::Local).unwrap_or(&empty);
+    let local_receives = scoped_receives.get(&LookupScope::Local).unwrap_or(&empty);
 
     let local_permutation_width =
         local_permutation_trace_width(local_sends.len() + local_receives.len(), batch_size);
@@ -337,7 +337,7 @@ pub fn eval_permutation_constraints<'a, F, AB>(
 
     // Handle global permutations.
     let global_cumulative_sum = builder.global_cumulative_sum();
-    if commit_scope == InteractionScope::Global {
+    if commit_scope == LookupScope::Global {
         for i in 0..7 {
             builder
                 .when_last_row()

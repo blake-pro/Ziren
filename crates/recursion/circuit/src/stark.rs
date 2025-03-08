@@ -16,7 +16,7 @@ use zkm2_recursion_compiler::{
 };
 use zkm2_stark::septic_digest::SepticDigest;
 use zkm2_stark::{
-    air::InteractionScope, koala_bear_poseidon2::KoalaBearPoseidon2, AirOpenedValues, Challenger,
+    air::LookupScope, koala_bear_poseidon2::KoalaBearPoseidon2, AirOpenedValues, Challenger,
     Chip, ChipOpenedValues, InnerChallenge, ProofShape, ShardCommitment, ShardOpenedValues,
     ShardProof, Val, PROOF_MAX_NUM_PVS,
 };
@@ -304,7 +304,7 @@ where
             challenger.observe_slice(builder, global_sum.0.x.0);
             challenger.observe_slice(builder, global_sum.0.y.0);
 
-            if chip.commit_scope() == InteractionScope::Local {
+            if chip.commit_scope() == LookupScope::Local {
                 let is_real: Felt<C::F> = builder.uninit();
                 builder.push_op(DslIr::ImmF(is_real, C::F::ONE));
                 builder.assert_digest_zero_v2(is_real, global_sum);
@@ -314,7 +314,7 @@ where
                 .sends()
                 .iter()
                 .chain(chip.receives())
-                .any(|i| i.scope == InteractionScope::Local);
+                .any(|i| i.scope == LookupScope::Local);
             if !has_local_interactions {
                 builder.assert_ext_eq(opening.local_cumulative_sum, C::EF::ZERO.cons());
             }

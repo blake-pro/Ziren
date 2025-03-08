@@ -33,7 +33,7 @@ use zkm2_curves::{
 };
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
-    air::{BaseAirBuilder, InteractionScope, MachineAir, Polynomial, ZKMAirBuilder},
+    air::{BaseAirBuilder, LookupScope, MachineAir, Polynomial, ZKMAirBuilder},
     MachineRecord,
 };
 
@@ -319,7 +319,7 @@ where
             local.x_ptr,
             local.y_ptr,
             local.is_real,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Assert that is_real is a boolean.

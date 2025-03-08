@@ -5,52 +5,52 @@ use p3_field::Field;
 
 use crate::air::LookupScope;
 
-/// An interaction for a lookup or a permutation argument.
+/// An Lookup for a lookup or a permutation argument.
 #[derive(Clone)]
-pub struct Interaction<F: Field> {
-    /// The values of the interaction.
+pub struct Lookup<F: Field> {
+    /// The values of the Lookup.
     pub values: Vec<VirtualPairCol<F>>,
-    /// The multiplicity of the interaction.
+    /// The multiplicity of the Lookup.
     pub multiplicity: VirtualPairCol<F>,
-    /// The kind of interaction.
+    /// The kind of Lookup.
     pub kind: LookupKind,
-    /// The scope of the interaction.
+    /// The scope of the Lookup.
     pub scope: LookupScope,
 }
 
-/// The type of interaction for a lookup argument.
+/// The type of Lookup for a lookup argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LookupKind {
-    /// Interaction with the memory table, such as read and write.
+    /// Lookup with the memory table, such as read and write.
     Memory = 1,
 
-    /// Interaction with the program table, loading an instruction at a given pc address.
+    /// Lookup with the program table, loading an instruction at a given pc address.
     Program = 2,
 
-    /// Interaction with instruction oracle.
+    /// Lookup with instruction oracle.
     Instruction = 3,
 
-    /// Interaction with the ALU operations.
+    /// Lookup with the ALU operations.
     Alu = 4,
 
-    /// Interaction with the byte lookup table for byte operations.
+    /// Lookup with the byte lookup table for byte operations.
     Byte = 5,
 
     /// Requesting a range check for a given value and range.
     Range = 6,
 
-    /// Interaction with the field op table for field operations.
+    /// Lookup with the field op table for field operations.
     Field = 7,
 
-    /// Interaction with a syscall.
+    /// Lookup with a syscall.
     Syscall = 8,
 
-    /// Interaction with the global table.
+    /// Lookup with the global table.
     Global = 9,
 }
 
 impl LookupKind {
-    /// Returns all kinds of interactions.
+    /// Returns all kinds of Lookups.
     #[must_use]
     pub fn all_kinds() -> Vec<LookupKind> {
         vec![
@@ -67,8 +67,8 @@ impl LookupKind {
     }
 }
 
-impl<F: Field> Interaction<F> {
-    /// Create a new interaction.
+impl<F: Field> Lookup<F> {
+    /// Create a new Lookup.
     pub const fn new(
         values: Vec<VirtualPairCol<F>>,
         multiplicity: VirtualPairCol<F>,
@@ -84,9 +84,9 @@ impl<F: Field> Interaction<F> {
     }
 }
 
-impl<F: Field> Debug for Interaction<F> {
+impl<F: Field> Debug for Lookup<F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Interaction")
+        f.debug_struct("Lookup")
             .field("kind", &self.kind)
             .field("scope", &self.scope)
             .finish_non_exhaustive()

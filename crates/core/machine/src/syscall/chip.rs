@@ -12,12 +12,12 @@ use p3_maybe_rayon::prelude::IntoParallelRefIterator;
 use p3_maybe_rayon::prelude::ParallelBridge;
 use p3_maybe_rayon::prelude::ParallelIterator;
 
-use zkm2_core_executor::events::GlobalInteractionEvent;
+use zkm2_core_executor::events::GlobalLookupEvent;
 use zkm2_core_executor::{events::SyscallEvent, ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
-use zkm2_stark::air::AirInteraction;
-use zkm2_stark::air::{InteractionScope, MachineAir, ZKMAirBuilder};
-use zkm2_stark::InteractionKind;
+use zkm2_stark::air::AirLookup;
+use zkm2_stark::air::{LookupScope, MachineAir, ZKMAirBuilder};
+use zkm2_stark::LookupKind;
 
 use crate::utils::pad_rows_fixed;
 
@@ -97,7 +97,7 @@ impl<F: PrimeField32> MachineAir<F> for SyscallChip {
         let events = events
             .iter()
             .map(|event| {
-                GlobalInteractionEvent {
+                GlobalLookupEvent {
                     message: [
                         event.shard,
                         event.clk,
@@ -108,11 +108,11 @@ impl<F: PrimeField32> MachineAir<F> for SyscallChip {
                         0,
                     ],
                     is_receive: self.shard_kind == SyscallShardKind::Precompile,
-                    kind: InteractionKind::Syscall as u8,
+                    kind: LookupKind::Syscall as u8,
                 }
             })
             .collect_vec();
-        output.global_interaction_events.extend(events);
+        output.global_lookup_events.extend(events);
     }
 
     fn generate_trace(
@@ -175,8 +175,8 @@ impl<F: PrimeField32> MachineAir<F> for SyscallChip {
         }
     }
 
-    fn commit_scope(&self) -> InteractionScope {
-        InteractionScope::Local
+    fn commit_scope(&self) -> LookupScope {
+        LookupScope::Local
     }
 }
 
@@ -203,12 +203,12 @@ where
                     local.arg1,
                     local.arg2,
                     local.is_real,
-                    InteractionScope::Local,
+                    LookupScope::Local,
                 );
 
                 // Send the interaction to the global table.
                 builder.send(
-                    AirInteraction::new(
+                    AirLookup::new(
                         vec![
                             local.shard.into(),
                             local.clk.into(),
@@ -219,12 +219,12 @@ where
                             AB::Expr::ZERO,
                             local.is_real.into() * AB::Expr::ONE,
                             local.is_real.into() * AB::Expr::ZERO,
-                            AB::Expr::from_canonical_u8(InteractionKind::Syscall as u8),
+                            AB::Expr::from_canonical_u8(LookupKind::Syscall as u8),
                         ],
                         local.is_real.into(),
-                        InteractionKind::Global,
+                        LookupKind::Global,
                     ),
-                    InteractionScope::Local,
+                    LookupScope::Local,
                 );
             }
             SyscallShardKind::Precompile => {
@@ -235,12 +235,12 @@ where
                     local.arg1,
                     local.arg2,
                     local.is_real,
-                    InteractionScope::Local,
+                    LookupScope::Local,
                 );
 
                 // Send the interaction to the global table.
                 builder.send(
-                    AirInteraction::new(
+                    AirLookup::new(
                         vec![
                             local.shard.into(),
                             local.clk.into(),
@@ -251,12 +251,12 @@ where
                             AB::Expr::ZERO,
                             local.is_real.into() * AB::Expr::ZERO,
                             local.is_real.into() * AB::Expr::ONE,
-                            AB::Expr::from_canonical_u8(InteractionKind::Syscall as u8),
+                            AB::Expr::from_canonical_u8(LookupKind::Syscall as u8),
                         ],
                         local.is_real.into(),
-                        InteractionKind::Global,
+                        LookupKind::Global,
                     ),
-                    InteractionScope::Local,
+                    LookupScope::Local,
                 );
             }
         }

@@ -6,7 +6,7 @@ use crate::{septic_digest::SepticDigest, MachineRecord};
 
 pub use zkm2_derive::MachineAir;
 
-use super::InteractionScope;
+use super::LookupScope;
 
 /// An AIR that is part of a multi table AIR arithmetization.
 pub trait MachineAir<F: Field>: BaseAir<F> + 'static + Send + Sync {
@@ -45,8 +45,8 @@ pub trait MachineAir<F: Field>: BaseAir<F> + 'static + Send + Sync {
     }
 
     /// Specifies whether it's trace should be part of either the global or local commit.
-    fn commit_scope(&self) -> InteractionScope {
-        InteractionScope::Local
+    fn commit_scope(&self) -> LookupScope {
+        LookupScope::Local
     }
 
     /// Specifies whether the air only uses the local row, and not the next row.

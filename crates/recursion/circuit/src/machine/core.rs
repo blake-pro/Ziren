@@ -18,7 +18,7 @@ use zkm2_core_machine::{
 };
 
 use zkm2_recursion_core::air::PV_DIGEST_NUM_WORDS;
-use zkm2_stark::air::InteractionScope;
+use zkm2_stark::air::LookupScope;
 use zkm2_stark::air::MachineAir;
 use zkm2_stark::{
     air::{PublicValues, POSEIDON_NUM_WORDS},
@@ -508,7 +508,7 @@ where
 
             // Cumulative sum is updated by sums of all chips.
             for (chip, values) in chips.iter().zip(shard_proof.opened_values.chips.iter()) {
-                if chip.commit_scope() == InteractionScope::Global {
+                if chip.commit_scope() == LookupScope::Global {
                     global_cumulative_sums.push(values.global_cumulative_sum);
                 }
             }

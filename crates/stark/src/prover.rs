@@ -6,7 +6,7 @@ use itertools::Itertools;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{cmp::Reverse, error::Error, time::Instant};
 
-use crate::{air::InteractionScope, AirOpenedValues, ChipOpenedValues, ShardOpenedValues};
+use crate::{air::LookupScope, AirOpenedValues, ChipOpenedValues, ShardOpenedValues};
 use p3_air::Air;
 use p3_challenger::{CanObserve, FieldChallenger};
 use p3_commit::{Pcs, PolynomialSpace};
@@ -314,7 +314,7 @@ where
                         main_trace,
                         &local_permutation_challenges,
                     );
-                    let global_sum = if chip.commit_scope() == InteractionScope::Local {
+                    let global_sum = if chip.commit_scope() == LookupScope::Local {
                         SepticDigest::<Val<SC>>::zero()
                     } else {
                         let main_trace_size = main_trace.height() * main_trace.width();

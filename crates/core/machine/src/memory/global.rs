@@ -8,15 +8,15 @@ use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 use p3_maybe_rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
-use zkm2_core_executor::events::{GlobalInteractionEvent, MemoryInitializeFinalizeEvent};
+use zkm2_core_executor::events::{GlobalLookupEvent, MemoryInitializeFinalizeEvent};
 use zkm2_core_executor::{ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
     air::{
-        AirInteraction, BaseAirBuilder, InteractionScope, MachineAir, PublicValues, ZKMAirBuilder,
+        AirLookup, BaseAirBuilder, LookupScope, MachineAir, PublicValues, ZKMAirBuilder,
         ZKM_PROOF_NUM_PV_ELTS,
     },
-    InteractionKind, Word,
+    LookupKind, Word,
 };
 
 use crate::{
@@ -72,7 +72,7 @@ impl<F: PrimeField32> MachineAir<F> for MemoryGlobalChip {
         let events = memory_events.into_iter().map(|event| {
             let interaction_shard = if is_receive { event.shard } else { 0 };
             let interaction_clk = if is_receive { event.timestamp } else { 0 };
-            GlobalInteractionEvent {
+            GlobalLookupEvent {
                 message: [
                     interaction_shard,
                     interaction_clk,
@@ -83,10 +83,10 @@ impl<F: PrimeField32> MachineAir<F> for MemoryGlobalChip {
                     ((event.value >> 24) & 255) as u32,
                 ],
                 is_receive,
-                kind: InteractionKind::Memory as u8,
+                kind: LookupKind::Memory as u8,
             }
         });
-        output.global_interaction_events.extend(events);
+        output.global_lookup_events.extend(events);
     }
 
     fn generate_trace(
@@ -178,8 +178,8 @@ impl<F: PrimeField32> MachineAir<F> for MemoryGlobalChip {
         }
     }
 
-    fn commit_scope(&self) -> InteractionScope {
-        InteractionScope::Local
+    fn commit_scope(&self) -> LookupScope {
+        LookupScope::Local
     }
 }
 
@@ -256,7 +256,7 @@ where
 
             // Send the interaction to the global table.
             builder.send(
-                AirInteraction::new(
+                AirLookup::new(
                     vec![
                         AB::Expr::ZERO,
                         AB::Expr::ZERO,
@@ -267,12 +267,12 @@ where
                         value[3].clone(),
                         local.is_real.into() * AB::Expr::ONE,
                         local.is_real.into() * AB::Expr::ZERO,
-                        AB::Expr::from_canonical_u8(InteractionKind::Memory as u8),
+                        AB::Expr::from_canonical_u8(LookupKind::Memory as u8),
                     ],
                     local.is_real.into(),
-                    InteractionKind::Global,
+                    LookupKind::Global,
                 ),
-                InteractionScope::Local,
+                LookupScope::Local,
             );
         } else {
             let mut values = vec![local.shard.into(), local.timestamp.into(), local.addr.into()];
@@ -280,7 +280,7 @@ where
 
             // Send the interaction to the global table.
             builder.send(
-                AirInteraction::new(
+                AirLookup::new(
                     vec![
                         local.shard.into(),
                         local.timestamp.into(),
@@ -291,12 +291,12 @@ where
                         value[3].clone(),
                         local.is_real.into() * AB::Expr::ZERO,
                         local.is_real.into() * AB::Expr::ONE,
-                        AB::Expr::from_canonical_u8(InteractionKind::Memory as u8),
+                        AB::Expr::from_canonical_u8(LookupKind::Memory as u8),
                     ],
                     local.is_real.into(),
-                    InteractionKind::Global,
+                    LookupKind::Global,
                 ),
-                InteractionScope::Local,
+                LookupScope::Local,
             );
         }
 
@@ -485,16 +485,16 @@ mod tests {
                 &machine,
                 &pkey,
                 &[shard],
-                vec![InteractionKind::Memory],
-                InteractionScope::Local,
+                vec![LookupKind::Memory],
+                LookupScope::Local,
             );
         }
         debug_interactions_with_all_chips::<KoalaBearPoseidon2, MipsAir<KoalaBear>>(
             &machine,
             &pkey,
             &shards,
-            vec![InteractionKind::Memory],
-            InteractionScope::Global,
+            vec![LookupKind::Memory],
+            LookupScope::Global,
         );
     }
 
@@ -515,8 +515,8 @@ mod tests {
             &machine,
             &pkey,
             &shards,
-            vec![InteractionKind::Byte],
-            InteractionScope::Global,
+            vec![LookupKind::Byte],
+            LookupScope::Global,
         );
     }
 }

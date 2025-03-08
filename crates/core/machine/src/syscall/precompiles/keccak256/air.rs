@@ -5,7 +5,7 @@ use p3_field::FieldAlgebra;
 use p3_keccak_air::{KeccakAir, NUM_KECCAK_COLS, NUM_ROUNDS, U64_LIMBS};
 use p3_matrix::Matrix;
 use zkm2_core_executor::syscalls::SyscallCode;
-use zkm2_stark::air::{InteractionScope, SubAirBuilder, ZKMAirBuilder};
+use zkm2_stark::air::{LookupScope, SubAirBuilder, ZKMAirBuilder};
 
 use super::{
     columns::{KeccakMemCols, NUM_KECCAK_MEM_COLS},
@@ -66,7 +66,7 @@ where
             local.state_addr,
             AB::Expr::ZERO,
             local.receive_syscall,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Constrain that the inputs stay the same throughout the 24 rows of each cycle

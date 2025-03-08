@@ -8,14 +8,14 @@ use p3_field::{FieldAlgebra, PrimeField32};
 use p3_matrix::{dense::RowMajorMatrix, Matrix};
 
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
-use zkm2_core_executor::{events::GlobalInteractionEvent, ExecutionRecord, Program};
+use zkm2_core_executor::{events::GlobalLookupEvent, ExecutionRecord, Program};
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
     air::{
-        AirInteraction, InteractionScope, MachineAir, PublicValues, ZKMAirBuilder,
+        AirLookup, LookupScope, MachineAir, PublicValues, ZKMAirBuilder,
         ZKM_PROOF_NUM_PV_ELTS,
     },
-    InteractionKind, Word,
+    LookupKind, Word,
 };
 
 use crate::{
@@ -112,7 +112,7 @@ impl<F: PrimeField32> MachineAir<F> for MemoryProgramChip {
 
         let mut events = Vec::new();
         program_memory.iter().for_each(|(&addr, &word)| {
-            events.push(GlobalInteractionEvent {
+            events.push(GlobalLookupEvent {
                 message: [
                     0,
                     0,
@@ -123,11 +123,11 @@ impl<F: PrimeField32> MachineAir<F> for MemoryProgramChip {
                     (word >> 24) & 255,
                 ],
                 is_receive: false,
-                kind: InteractionKind::Memory as u8,
+                kind: LookupKind::Memory as u8,
             });
         });
 
-        output.global_interaction_events.extend(events);
+        output.global_lookup_events.extend(events);
     }
 
     fn generate_trace(
@@ -171,8 +171,8 @@ impl<F: PrimeField32> MachineAir<F> for MemoryProgramChip {
         false
     }
 
-    fn commit_scope(&self) -> InteractionScope {
-        InteractionScope::Local
+    fn commit_scope(&self) -> LookupScope {
+        LookupScope::Local
     }
 }
 
@@ -226,7 +226,7 @@ where
 
         // Send the interaction to the global table.
         builder.send(
-            AirInteraction::new(
+            AirLookup::new(
                 vec![
                     AB::Expr::ZERO,
                     AB::Expr::ZERO,
@@ -237,12 +237,12 @@ where
                     prep_local.value[3].into(),
                     prep_local.is_real.into() * AB::Expr::ZERO,
                     prep_local.is_real.into() * AB::Expr::ONE,
-                    AB::Expr::from_canonical_u8(InteractionKind::Memory as u8),
+                    AB::Expr::from_canonical_u8(LookupKind::Memory as u8),
                 ],
                 prep_local.is_real.into(),
-                InteractionKind::Global,
+                LookupKind::Global,
             ),
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

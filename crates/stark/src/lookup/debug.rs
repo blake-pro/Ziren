@@ -4,9 +4,9 @@ use p3_field::{Field, FieldAlgebra, PrimeField32, PrimeField64};
 use p3_koala_bear::KoalaBear;
 use p3_matrix::Matrix;
 
-use super::InteractionKind;
+use super::LookupKind;
 use crate::{
-    air::{InteractionScope, MachineAir},
+    air::{LookupScope, MachineAir},
     MachineChip, StarkGenericConfig, StarkMachine, StarkProvingKey, Val,
 };
 
@@ -16,7 +16,7 @@ pub struct InteractionData<F: Field> {
     /// The chip name.
     pub chip_name: String,
     /// The kind of interaction.
-    pub kind: InteractionKind,
+    pub kind: LookupKind,
     /// The row of the interaction.
     pub row: usize,
     /// The interaction number.
@@ -63,8 +63,8 @@ pub fn debug_interactions<SC: StarkGenericConfig, A: MachineAir<Val<SC>>>(
     chip: &MachineChip<SC, A>,
     pkey: &StarkProvingKey<SC>,
     record: &A::Record,
-    interaction_kinds: Vec<InteractionKind>,
-    scope: InteractionScope,
+    interaction_kinds: Vec<LookupKind>,
+    scope: LookupScope,
 ) -> (BTreeMap<String, Vec<InteractionData<Val<SC>>>>, BTreeMap<String, Val<SC>>) {
     let mut key_to_vec_data = BTreeMap::new();
     let mut key_to_count = BTreeMap::new();
@@ -135,15 +135,15 @@ pub fn debug_interactions_with_all_chips<SC, A>(
     machine: &StarkMachine<SC, A>,
     pkey: &StarkProvingKey<SC>,
     shards: &[A::Record],
-    interaction_kinds: Vec<InteractionKind>,
-    scope: InteractionScope,
+    interaction_kinds: Vec<LookupKind>,
+    scope: LookupScope,
 ) -> bool
 where
     SC: StarkGenericConfig,
     SC::Val: PrimeField32,
     A: MachineAir<SC::Val>,
 {
-    if scope == InteractionScope::Local {
+    if scope == LookupScope::Local {
         assert!(shards.len() == 1);
     }
 

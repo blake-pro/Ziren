@@ -24,7 +24,7 @@ use zkm2_curves::{
     params::{limbs_from_vec, FieldParameters, Limbs},
 };
 use zkm2_derive::AlignedBorrow;
-use zkm2_stark::air::{BaseAirBuilder, InteractionScope, MachineAir, ZKMAirBuilder};
+use zkm2_stark::air::{BaseAirBuilder, LookupScope, MachineAir, ZKMAirBuilder};
 
 use crate::{
     memory::{MemoryReadCols, MemoryWriteCols},
@@ -181,7 +181,7 @@ impl<V: Copy> EdDecompressCols<V> {
             self.ptr,
             self.sign,
             self.is_real,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
     }
 }

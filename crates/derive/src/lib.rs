@@ -257,7 +257,7 @@ pub fn machine_air_derive(input: TokenStream) -> TokenStream {
                         }
                     }
 
-                    fn commit_scope(&self) -> InteractionScope {
+                    fn commit_scope(&self) -> LookupScope {
                         match self {
                             #(#commit_scope_arms,)*
                         }

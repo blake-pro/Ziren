@@ -2,8 +2,8 @@ use std::iter::once;
 
 use p3_air::AirBuilder;
 use zkm2_stark::{
-    air::{AirInteraction, BaseAirBuilder, InteractionScope},
-    InteractionKind,
+    air::{AirLookup, BaseAirBuilder, LookupScope},
+    LookupKind,
 };
 
 use crate::cpu::columns::{InstructionCols, OpcodeSelectorCols};
@@ -27,8 +27,8 @@ pub trait ProgramAirBuilder: BaseAirBuilder {
             .collect();
 
         self.send(
-            AirInteraction::new(values, multiplicity.into(), InteractionKind::Program),
-            InteractionScope::Local,
+            AirLookup::new(values, multiplicity.into(), LookupKind::Program),
+            LookupScope::Local,
         );
     }
 
@@ -49,8 +49,8 @@ pub trait ProgramAirBuilder: BaseAirBuilder {
             .collect();
 
         self.receive(
-            AirInteraction::new(values, multiplicity.into(), InteractionKind::Program),
-            InteractionScope::Local,
+            AirLookup::new(values, multiplicity.into(), LookupKind::Program),
+            LookupScope::Local,
         );
     }
 }

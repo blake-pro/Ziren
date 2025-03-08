@@ -2,8 +2,8 @@ use core::iter::{once, repeat};
 use p3_air::{AirBuilder, AirBuilderWithPublicValues};
 use p3_field::FieldAlgebra;
 use zkm2_stark::{
-    air::{AirInteraction, BaseAirBuilder, InteractionScope, MachineAirBuilder},
-    InteractionKind,
+    air::{AirLookup, BaseAirBuilder, LookupScope, MachineAirBuilder},
+    LookupKind,
 };
 
 use super::{
@@ -49,12 +49,12 @@ pub trait RecursionMemoryAirBuilder: RecursionInteractionAirBuilder {
             .collect();
 
         self.receive(
-            AirInteraction::new(prev_values, is_real.clone(), InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(prev_values, is_real.clone(), LookupKind::Memory),
+            LookupScope::Local,
         );
         self.send(
-            AirInteraction::new(current_values, is_real, InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(current_values, is_real, LookupKind::Memory),
+            LookupScope::Local,
         );
     }
 
@@ -87,12 +87,12 @@ pub trait RecursionMemoryAirBuilder: RecursionInteractionAirBuilder {
             .collect();
 
         self.receive(
-            AirInteraction::new(prev_values, is_real.clone(), InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(prev_values, is_real.clone(), LookupKind::Memory),
+            LookupScope::Local,
         );
         self.send(
-            AirInteraction::new(current_values, is_real, InteractionKind::Memory),
-            InteractionScope::Local,
+            AirLookup::new(current_values, is_real, LookupKind::Memory),
+            LookupScope::Local,
         );
     }
 
@@ -162,12 +162,12 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
         is_real: impl Into<Self::Expr>,
     ) {
         self.send(
-            AirInteraction::new(
+            AirLookup::new(
                 vec![range_check_opcode.into(), val.into()],
                 is_real.into(),
-                InteractionKind::Range,
+                LookupKind::Range,
             ),
-            InteractionScope::Global,
+            LookupScope::Global,
         );
     }
 
@@ -179,12 +179,12 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
         is_real: impl Into<Self::Expr>,
     ) {
         self.receive(
-            AirInteraction::new(
+            AirLookup::new(
                 vec![range_check_opcode.into(), val.into()],
                 is_real.into(),
-                InteractionKind::Range,
+                LookupKind::Range,
             ),
-            InteractionScope::Global,
+            LookupScope::Global,
         );
     }
 
@@ -200,8 +200,8 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
             .chain(selectors.into_iter().map(|x| x.into()))
             .collect::<Vec<_>>();
         self.send(
-            AirInteraction::new(program_interaction_vals, is_real.into(), InteractionKind::Program),
-            InteractionScope::Global,
+            AirLookup::new(program_interaction_vals, is_real.into(), LookupKind::Program),
+            LookupScope::Global,
         );
     }
 
@@ -217,8 +217,8 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
             .chain(selectors.into_iter().map(|x| x.into()))
             .collect::<Vec<_>>();
         self.receive(
-            AirInteraction::new(program_interaction_vals, is_real.into(), InteractionKind::Program),
-            InteractionScope::Global,
+            AirLookup::new(program_interaction_vals, is_real.into(), LookupKind::Program),
+            LookupScope::Global,
         );
     }
 
@@ -231,8 +231,8 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
         let table_interaction_vals = table.iter().map(|x| x.clone().into());
         let values = once(opcode.into()).chain(table_interaction_vals).collect();
         self.send(
-            AirInteraction::new(values, is_real.into(), InteractionKind::Syscall),
-            InteractionScope::Local,
+            AirLookup::new(values, is_real.into(), LookupKind::Syscall),
+            LookupScope::Local,
         );
     }
 
@@ -245,8 +245,8 @@ pub trait RecursionInteractionAirBuilder: BaseAirBuilder {
         let table_interaction_vals = table.iter().map(|x| x.clone().into());
         let values = once(opcode.into()).chain(table_interaction_vals).collect();
         self.receive(
-            AirInteraction::new(values, is_real.into(), InteractionKind::Syscall),
-            InteractionScope::Local,
+            AirLookup::new(values, is_real.into(), LookupKind::Syscall),
+            LookupScope::Local,
         );
     }
 }

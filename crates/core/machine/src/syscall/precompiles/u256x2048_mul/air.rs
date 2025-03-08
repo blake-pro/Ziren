@@ -26,7 +26,7 @@ use zkm2_curves::{
 };
 use zkm2_derive::AlignedBorrow;
 use zkm2_stark::{
-    air::{BaseAirBuilder, InteractionScope, MachineAir, Polynomial, ZKMAirBuilder},
+    air::{BaseAirBuilder, LookupScope, MachineAir, Polynomial, ZKMAirBuilder},
     MachineRecord,
 };
 
@@ -268,7 +268,7 @@ where
             local.a_ptr,
             local.b_ptr,
             local.is_real,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Evaluate that the lo_ptr and hi_ptr are read from the correct memory locations.

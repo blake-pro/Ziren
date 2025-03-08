@@ -15,8 +15,8 @@ use tracing::instrument;
 
 use super::{debug_constraints, Dom};
 use crate::{
-    air::{InteractionScope, MachineAir, MachineProgram},
-    lookup::{debug_interactions_with_all_chips, InteractionKind},
+    air::{LookupScope, MachineAir, MachineProgram},
+    lookup::{debug_interactions_with_all_chips, LookupKind},
     record::MachineRecord,
     septic_curve::SepticCurve,
     septic_digest::SepticDigest,
@@ -361,7 +361,7 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
 
             if !sum.is_zero() {
                 return Err(MachineVerificationError::NonZeroCumulativeSum(
-                    InteractionScope::Global,
+                    LookupScope::Global,
                     0,
                 ));
             }
@@ -425,7 +425,7 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
                             main_trace,
                             &permutation_challenges,
                         );
-                        let global_sum = if chip.commit_scope() == InteractionScope::Local {
+                        let global_sum = if chip.commit_scope() == LookupScope::Local {
                             SepticDigest::<Val<SC>>::zero()
                         } else {
                             let main_trace_size = main_trace.height() * main_trace.width();
@@ -455,8 +455,8 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
                         self,
                         pk,
                         &[shard.clone()],
-                        InteractionKind::all_kinds(),
-                        InteractionScope::Local,
+                        LookupKind::all_kinds(),
+                        LookupScope::Local,
                     )
                 });
                 panic!("Local cumulative sum is not zero");
@@ -513,8 +513,8 @@ impl<SC: StarkGenericConfig, A: MachineAir<Val<SC>>> StarkMachine<SC, A> {
                     self,
                     pk,
                     &records,
-                    InteractionKind::all_kinds(),
-                    InteractionScope::Global,
+                    LookupKind::all_kinds(),
+                    LookupScope::Global,
                 )
             });
             tracing::warn!(
@@ -534,7 +534,7 @@ pub enum MachineVerificationError<SC: StarkGenericConfig> {
     /// An error occurred during the verification of a global proof.
     InvalidGlobalProof(VerificationError<SC>),
     /// The cumulative sum is non-zero.
-    NonZeroCumulativeSum(InteractionScope, usize),
+    NonZeroCumulativeSum(LookupScope, usize),
     /// The public values digest is invalid.
     InvalidPublicValuesDigest,
     /// The debug interactions failed.

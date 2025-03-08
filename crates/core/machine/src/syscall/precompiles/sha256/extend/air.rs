@@ -2,7 +2,7 @@ use p3_air::{Air, AirBuilder, BaseAir};
 use p3_field::FieldAlgebra;
 use p3_matrix::Matrix;
 use zkm2_core_executor::syscalls::SyscallCode;
-use zkm2_stark::air::{InteractionScope, ZKMAirBuilder};
+use zkm2_stark::air::{LookupScope, ZKMAirBuilder};
 
 use super::{ShaExtendChip, ShaExtendCols, NUM_SHA_EXTEND_COLS};
 use crate::{
@@ -203,7 +203,7 @@ where
             local.w_ptr,
             AB::Expr::ZERO,
             local.cycle_48_start,
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Assert that is_real is a bool.

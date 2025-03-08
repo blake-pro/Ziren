@@ -11,19 +11,19 @@ use rayon::iter::{
 use rayon_scan::ScanParallelIterator;
 use std::borrow::BorrowMut;
 use zkm2_core_executor::{
-    events::{ByteLookupEvent, ByteRecord, GlobalInteractionEvent},
+    events::{ByteLookupEvent, ByteRecord, GlobalLookupEvent},
     ExecutionRecord, Program,
 };
 use zkm2_stark::{
-    air::{AirInteraction, InteractionScope, MachineAir},
+    air::{AirLookup, LookupScope, MachineAir},
     septic_curve::{SepticCurve, SepticCurveComplete},
     septic_digest::SepticDigest,
     septic_extension::{SepticBlock, SepticExtension},
-    InteractionKind, ZKMAirBuilder,
+    LookupKind, ZKMAirBuilder,
 };
 
 use crate::{
-    operations::{GlobalAccumulationOperation, GlobalInteractionOperation},
+    operations::{GlobalAccumulationOperation, GlobalLookupOperation},
     utils::{indices_arr, next_power_of_two, zeroed_f_vec},
 };
 use zkm2_derive::AlignedBorrow;
@@ -55,7 +55,7 @@ pub struct GlobalChip;
 pub struct GlobalCols<T: Copy> {
     pub message: [T; 7],
     pub kind: T,
-    pub interaction: GlobalInteractionOperation<T>,
+    pub interaction: GlobalLookupOperation<T>,
     pub is_receive: T,
     pub is_send: T,
     pub is_real: T,
@@ -73,7 +73,7 @@ impl<F: PrimeField32> MachineAir<F> for GlobalChip {
     }
 
     fn generate_dependencies(&self, input: &Self::Record, output: &mut Self::Record) {
-        let events = &input.global_interaction_events;
+        let events = &input.global_lookup_events;
 
         let chunk_size = std::cmp::max(events.len() / num_cpus::get(), 1);
 
@@ -96,7 +96,7 @@ impl<F: PrimeField32> MachineAir<F> for GlobalChip {
     }
 
     fn generate_trace(&self, input: &Self::Record, _: &mut Self::Record) -> RowMajorMatrix<F> {
-        let events = &input.global_interaction_events;
+        let events = &input.global_lookup_events;
 
         let nb_rows = events.len();
         let size_log2 = input.fixed_log2_rows::<F, _>(self);
@@ -119,7 +119,7 @@ impl<F: PrimeField32> MachineAir<F> for GlobalChip {
                 rows.chunks_mut(NUM_GLOBAL_COLS).enumerate().for_each(|(j, row)| {
                     let idx = i * chunk_size + j;
                     let cols: &mut GlobalCols<F> = row.borrow_mut();
-                    let event: &GlobalInteractionEvent = &events[idx];
+                    let event: &GlobalLookupEvent = &events[idx];
                     cols.message = event.message.map(F::from_canonical_u32);
                     cols.kind = F::from_canonical_u8(event.kind);
                     cols.interaction.populate(
@@ -184,8 +184,8 @@ impl<F: PrimeField32> MachineAir<F> for GlobalChip {
         true
     }
 
-    fn commit_scope(&self) -> InteractionScope {
-        InteractionScope::Global
+    fn commit_scope(&self) -> LookupScope {
+        LookupScope::Global
     }
 }
 
@@ -210,12 +210,12 @@ where
         // In MemoryGlobal, MemoryLocal, Syscall chips, `is_send`, `is_receive`, `kind` are sent with correct constant values.
         // For a global send interaction, `is_send = 1` and `is_receive = 0` are used.
         // For a global receive interaction, `is_send = 0` and `is_receive = 1` are used.
-        // For a memory global interaction, `kind = InteractionKind::Memory` is used.
-        // For a syscall global interaction, `kind = InteractionKind::Syscall` is used.
+        // For a memory global interaction, `kind = LookupKind::Memory` is used.
+        // For a syscall global interaction, `kind = LookupKind::Syscall` is used.
         // Therefore, `is_send`, `is_receive` are already known to be boolean, and `kind` is also known to be a `u8` value.
         // Note that `local.is_real` is constrained to be boolean in `eval_single_digest`.
         builder.receive(
-            AirInteraction::new(
+            AirLookup::new(
                 vec![
                     local.message[0].into(),
                     local.message[1].into(),
@@ -229,13 +229,13 @@ where
                     local.kind.into(),
                 ],
                 local.is_real.into(),
-                InteractionKind::Global,
+                LookupKind::Global,
             ),
-            InteractionScope::Local,
+            LookupScope::Local,
         );
 
         // Evaluate the interaction.
-        GlobalInteractionOperation::<AB::F>::eval_single_digest(
+        GlobalLookupOperation::<AB::F>::eval_single_digest(
             builder,
             local.message.map(Into::into),
             local.interaction,
