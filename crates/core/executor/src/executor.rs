@@ -891,12 +891,6 @@ impl<'a> Executor<'a> {
                     .syscall_counts
                     .entry(syscall_for_count)
                     .or_insert(0);
-                let (_threshold, _multiplier) = match syscall_for_count {
-                    SyscallCode::KECCAK_PERMUTE => (self.opts.split_opts.keccak, 24),
-                    SyscallCode::SHA_EXTEND => (self.opts.split_opts.sha_extend, 48),
-                    SyscallCode::SHA_COMPRESS => (self.opts.split_opts.sha_compress, 80),
-                    _ => (self.opts.split_opts.deferred, 1),
-                };
                 *syscall_count += 1;
 
                 let syscall_impl = self.get_syscall(syscall).cloned();
