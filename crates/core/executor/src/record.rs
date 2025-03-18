@@ -172,6 +172,7 @@ impl ExecutionRecord {
 
         for (syscall_code, events) in precompile_events.into_iter() {
             let threshold = match syscall_code {
+                // Todo: Keccak256 Xor
                 SyscallCode::KECCAK_PERMUTE => opts.keccak,
                 SyscallCode::SHA_EXTEND => opts.sha_extend,
                 SyscallCode::SHA_COMPRESS => opts.sha_compress,

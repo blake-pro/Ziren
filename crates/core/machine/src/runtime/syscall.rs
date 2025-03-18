@@ -65,6 +65,9 @@ pub enum SyscallCode {
     /// Executes the `KECCAK_PERMUTE` precompile.
     KECCAK_PERMUTE = 0x00_01_01_09,
 
+    /// Executes the `KECCAK256_XOR` precompile.
+    KECCAK256_XOR = 0x00_00_01_2F,
+
     /// Executes the `SECP256K1_ADD` precompile.
     SECP256K1_ADD = 0x00_01_01_0A,
 
@@ -503,6 +506,9 @@ mod tests {
                 }
                 SyscallCode::KECCAK_PERMUTE => {
                     assert_eq!(code as u32, zkm2_zkvm::syscalls::KECCAK_PERMUTE)
+                }
+                SyscallCode::KECCAK256_XOR => {
+                    assert_eq!(code as u32, zkm2_zkvm::syscalls::KECCAK256_XOR)
                 }
                 SyscallCode::SECP256K1_ADD => {
                     assert_eq!(code as u32, zkm2_zkvm::syscalls::SECP256K1_ADD)

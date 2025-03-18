@@ -9,12 +9,15 @@ pub mod ed25519;
 pub mod hasher;
 pub mod io;
 pub mod keccak;
+pub mod keccak256;
+
 pub mod secp256k1;
 pub mod secp256r1;
 pub mod unconstrained;
 pub mod utils;
 #[cfg(feature = "verify")]
 pub mod verify;
+
 extern "C" {
     /// Halts the program with the given exit code.
     pub fn syscall_halt(exit_code: u8) -> !;
@@ -69,6 +72,9 @@ extern "C" {
 
     /// Executes the Keccak-256 permutation on the given state.
     pub fn syscall_keccak_permute(state: *mut [u64; 25]);
+
+    /// Executes the Keccak-256 xor operation between the given state and input block.
+    pub fn syscall_keccak256_xor(state: *mut [u64; 25], block: *mut [u32; 34]);
 
     /// Executes an uint256 multiplication on the given inputs.
     pub fn syscall_uint256_mulmod(x: *mut [u32; 8], y: *const [u32; 8]);

@@ -6,6 +6,7 @@ mod fptower;
 mod halt;
 mod io;
 mod keccak_permute;
+mod keccak256_xor;
 mod memory;
 mod secp256k1;
 mod secp256r1;
@@ -67,6 +68,9 @@ pub const ED_DECOMPRESS: u32 = 0x00_00_01_08;
 
 /// Executes `KECCAK_PERMUTE`.
 pub const KECCAK_PERMUTE: u32 = 0x00_01_01_09;
+
+/// Executes `KECCAK256_XOR`.
+pub const KECCAK256_XOR: u32 = 0x00_00_01_2F;
 
 /// Executes `SECP256K1_ADD`.
 pub const SECP256K1_ADD: u32 = 0x00_01_01_0A;

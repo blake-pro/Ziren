@@ -125,6 +125,8 @@ pub enum MipsAir<F: PrimeField32> {
     Secp256r1Double(WeierstrassDoubleAssignChip<SwCurve<Secp256r1Parameters>>),
     /// A precompile for the Keccak permutation.
     KeccakP(KeccakPermuteChip),
+    // /// A precompile for the Keccak256 XOR operation.
+    // Keccak256Xor(),
     /// A precompile for addition on the Elliptic curve bn254.
     Bn254Add(WeierstrassAddAssignChip<SwCurve<Bn254Parameters>>),
     /// A precompile for doubling a point on the Elliptic curve bn254.
@@ -251,6 +253,8 @@ impl<F: PrimeField32> MipsAir<F> {
         let keccak_permute = Chip::new(MipsAir::KeccakP(KeccakPermuteChip::new()));
         costs.insert(keccak_permute.name(), 24 * keccak_permute.cost());
         chips.push(keccak_permute);
+
+        // Todo: Keccak256 Xor
 
         let bn254_add_assign = Chip::new(MipsAir::Bn254Add(WeierstrassAddAssignChip::<
             SwCurve<Bn254Parameters>,
@@ -529,6 +533,7 @@ impl<F: PrimeField32> MipsAir<F> {
             Self::Ed25519Add(_) => SyscallCode::ED_ADD,
             Self::Ed25519Decompress(_) => SyscallCode::ED_DECOMPRESS,
             Self::KeccakP(_) => SyscallCode::KECCAK_PERMUTE,
+            // Self::Keccak256Xor() => SyscallCode::KECCAK256_XOR,
             Self::Secp256k1Add(_) => SyscallCode::SECP256K1_ADD,
             Self::Secp256k1Double(_) => SyscallCode::SECP256K1_DOUBLE,
             Self::Secp256r1Add(_) => SyscallCode::SECP256R1_ADD,
