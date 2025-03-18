@@ -13,7 +13,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
         ];
     }
 
-    //Todo:  Padding input to reach the required size.
+    // Padding input to reach the required size.
     let final_block_len = len % 136;
     let padded_len = len - final_block_len + 136;
 
@@ -29,7 +29,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
     }
 
     // covert to u32 to align the memory
-    for i in (0..len).step_by(4) {
+    for i in (0..padded_len).step_by(4) {
         let u32_value = u32::from_be_bytes([padded_data[i], padded_data[i + 1], padded_data[i + 2], padded_data[i + 3]]);
         u32_array.push(u32_value);
     }
@@ -38,6 +38,7 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
     let mut state = [0u64; 25];
 
     let mut input_blocks = u32_array.chunks_exact(34);
+    assert!(input_blocks.remainder().is_empty());
 
     for block in input_blocks.by_ref() {
         let mut block_array: [u32; 34] = [0; 34];
@@ -48,7 +49,10 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
         }
     }
 
-    // Todo: write keccak output to the result
+    // Write keccak output to the result
+    let buffer: &mut [u8; crate::hasher::WORDS * 8] =
+        unsafe { core::mem::transmute(&mut state) };
+    result.copy_from_slice(&buffer[..32]);
 
     result
 }
