@@ -101,6 +101,8 @@ pub enum MipsAirId {
     Global = 43,
     /// The byte chip.
     Byte = 44,
+    /// The Keccak256 Xor chip
+    Keccak256Xor = 45,
 }
 
 impl MipsAirId {
@@ -170,6 +172,7 @@ impl MipsAirId {
             Self::MemoryLocal => "MemoryLocal",
             Self::Global => "Global",
             Self::Byte => "Byte",
+            Self::Keccak256Xor => "Keccak256Xor",
         }
     }
 }

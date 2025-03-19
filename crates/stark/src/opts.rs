@@ -65,7 +65,8 @@ impl ZKMProverOpts {
 
         let divisor = 1 << log2_divisor;
         opts.core_opts.split_opts.deferred /= divisor;
-        opts.core_opts.split_opts.keccak /= divisor;
+        opts.core_opts.split_opts.keccak256_xor /= divisor;
+        opts.core_opts.split_opts.keccak_permute /= divisor;
         opts.core_opts.split_opts.sha_extend /= divisor;
         opts.core_opts.split_opts.sha_compress /= divisor;
         opts.core_opts.split_opts.memory /= divisor;
@@ -136,7 +137,8 @@ impl Default for ZKMCoreOpts {
 
         let divisor = 1 << default_log2_divisor;
         opts.split_opts.deferred /= divisor;
-        opts.split_opts.keccak /= divisor;
+        opts.split_opts.keccak_permute /= divisor;
+        opts.split_opts.keccak256_xor /= divisor;
         opts.split_opts.sha_extend /= divisor;
         opts.split_opts.sha_compress /= divisor;
         opts.split_opts.memory /= divisor;
@@ -197,8 +199,10 @@ impl ZKMCoreOpts {
 pub struct SplitOpts {
     /// The threshold for default events.
     pub deferred: usize,
-    /// The threshold for keccak events.
-    pub keccak: usize,
+    /// The threshold for keccak permute events.
+    pub keccak_permute: usize,
+    /// The threshold for keccak xor events.
+    pub keccak256_xor: usize,
     /// The threshold for sha extend events.
     pub sha_extend: usize,
     /// The threshold for sha compress events.
@@ -213,7 +217,8 @@ impl SplitOpts {
     pub fn new(deferred_split_threshold: usize) -> Self {
         Self {
             deferred: deferred_split_threshold,
-            keccak: 8 * deferred_split_threshold / 24,
+            keccak_permute: 8 * deferred_split_threshold / 24,
+            keccak256_xor: 1 * deferred_split_threshold,
             sha_extend: 32 * deferred_split_threshold / 48,
             sha_compress: 32 * deferred_split_threshold / 80,
             memory: 64 * deferred_split_threshold,

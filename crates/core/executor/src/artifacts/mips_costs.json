@@ -12,6 +12,7 @@
 	"ShiftLeft": 67,
 	"MemoryLocal": 100,
 	"KeccakPermute": 93720,
+	"Keccak256Xor": 1199,
 	"Program": 66,
 	"Global": 428,
 	"Secp256k1AddAssign": 4013,

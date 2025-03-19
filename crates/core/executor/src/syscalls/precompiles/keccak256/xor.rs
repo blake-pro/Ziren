@@ -43,22 +43,25 @@ impl Syscall for Keccak256XorSyscall {
         rate_write_records.extend_from_slice(&write_records);
 
         // Push the Keccak xor event.
-        // let shard = rt.current_shard();
-        // let lookup_id = rt.syscall_lookup_id;
-        // let event = PrecompileEvent::KeccakPermute(KeccakPermuteEvent {
-        //     lookup_id,
-        //     shard,
-        //     clk: start_clk,
-        //     pre_state: saved_state.as_slice().try_into().unwrap(),
-        //     post_state: state.as_slice().try_into().unwrap(),
-        //     state_read_records: rate_read_records,
-        //     state_write_records: rate_write_records,
-        //     state_addr: state_ptr,
-        //     local_mem_access: rt.postprocess(),
-        // });
-        // let syscall_event =
-        //     rt.rt.syscall_event(start_clk, syscall_code.syscall_id(), arg1, arg2);
-        // rt.add_precompile_event(syscall_code, syscall_event, event);
+        let shard = rt.current_shard();
+        let lookup_id = rt.syscall_lookup_id;
+        let event = PrecompileEvent::Keccak256Xor(Keccak256XorEvent {
+            lookup_id,
+            shard,
+            clk: start_clk,
+            original_rate,
+            block,
+            xored_rate,
+            rate_read_records,
+            block_read_records,
+            rate_write_records,
+            rate_addr: rate_ptr,
+            block_addr: block_ptr,
+            local_mem_access: rt.postprocess(),
+        });
+        let syscall_event =
+            rt.rt.syscall_event(start_clk, syscall_code.syscall_id(), arg1, arg2);
+        rt.add_precompile_event(syscall_code, syscall_event, event);
 
         None
     }

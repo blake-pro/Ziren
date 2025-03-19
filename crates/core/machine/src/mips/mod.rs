@@ -19,6 +19,7 @@ use zkm2_stark::{
     air::{LookupScope, MachineAir, ZKM_PROOF_NUM_PV_ELTS},
     Chip, LookupKind, StarkGenericConfig, StarkMachine,
 };
+use crate::syscall::precompiles::keccak256::Keccak256XorChip;
 
 /// A module for importing all the different MIPS chips.
 pub(crate) mod mips_chips {
@@ -125,8 +126,8 @@ pub enum MipsAir<F: PrimeField32> {
     Secp256r1Double(WeierstrassDoubleAssignChip<SwCurve<Secp256r1Parameters>>),
     /// A precompile for the Keccak permutation.
     KeccakP(KeccakPermuteChip),
-    // /// A precompile for the Keccak256 XOR operation.
-    // Keccak256Xor(),
+    /// A precompile for the Keccak256 XOR operation.
+    Keccak256Xor(Keccak256XorChip),
     /// A precompile for addition on the Elliptic curve bn254.
     Bn254Add(WeierstrassAddAssignChip<SwCurve<Bn254Parameters>>),
     /// A precompile for doubling a point on the Elliptic curve bn254.
@@ -254,7 +255,9 @@ impl<F: PrimeField32> MipsAir<F> {
         costs.insert(keccak_permute.name(), 24 * keccak_permute.cost());
         chips.push(keccak_permute);
 
-        // Todo: Keccak256 Xor
+        let keccak256_xor = Chip::new(MipsAir::Keccak256Xor(Keccak256XorChip::new()));
+        costs.insert(keccak256_xor.name(), keccak256_xor.cost());
+        chips.push(keccak256_xor);
 
         let bn254_add_assign = Chip::new(MipsAir::Bn254Add(WeierstrassAddAssignChip::<
             SwCurve<Bn254Parameters>,
@@ -533,7 +536,7 @@ impl<F: PrimeField32> MipsAir<F> {
             Self::Ed25519Add(_) => SyscallCode::ED_ADD,
             Self::Ed25519Decompress(_) => SyscallCode::ED_DECOMPRESS,
             Self::KeccakP(_) => SyscallCode::KECCAK_PERMUTE,
-            // Self::Keccak256Xor() => SyscallCode::KECCAK256_XOR,
+            Self::Keccak256Xor(_) => SyscallCode::KECCAK256_XOR,
             Self::Secp256k1Add(_) => SyscallCode::SECP256K1_ADD,
             Self::Secp256k1Double(_) => SyscallCode::SECP256K1_DOUBLE,
             Self::Secp256r1Add(_) => SyscallCode::SECP256R1_ADD,
