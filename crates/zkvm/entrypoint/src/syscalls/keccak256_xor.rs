@@ -26,3 +26,6 @@ pub extern "C" fn syscall_keccak256_xor(
     #[cfg(not(target_os = "zkvm"))]
     unreachable!()
 }
+
+
+

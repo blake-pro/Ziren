@@ -50,7 +50,9 @@ impl<F: PrimeField32> MachineAir<F> for Keccak256XorChip {
     fn generate_trace(&self, input: &Self::Record, _: &mut Self::Record) -> RowMajorMatrix<F> {
         let events = input.get_precompile_events(SyscallCode::KECCAK256_XOR);
         let num_events = events.len();
-        let num_rows = (num_events * NUM_KECCAK256_XOR_ROUNDS).next_power_of_two();
+        let num_rows = std::cmp::max((num_events * NUM_KECCAK256_XOR_ROUNDS).next_power_of_two(), 8);
+        tracing::info!("num rows: {:?}", num_rows);
+
         let chunk_size = 1;
         let values = vec![0u32; num_rows * NUM_KECCAK256_XOR_COLS];
         let mut values = unsafe { std::mem::transmute::<Vec<u32>, Vec<F>>(values) };

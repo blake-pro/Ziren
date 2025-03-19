@@ -521,6 +521,7 @@ impl<F: PrimeField32> MipsAir<F> {
             Self::Sha256Compress(_) => 80,
             Self::Sha256Extend(_) => 48,
             Self::KeccakP(_) => 24,
+            Self::Keccak256Xor(_) => 1,
             _ => 1,
         }
     }

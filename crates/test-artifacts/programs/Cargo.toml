@@ -44,6 +44,7 @@ members = [
   "uint256-mul",
   "verify-proof",
   "u256x2048-mul",
+  "keccak256-xor",
 ]
 resolver = "2"
 
