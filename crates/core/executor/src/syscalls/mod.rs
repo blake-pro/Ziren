@@ -48,6 +48,7 @@ use zkm2_curves::{
 };
 
 use crate::events::FieldOperation;
+use crate::syscalls::precompiles::keccak256::xor::Keccak256XorSyscall;
 
 /// A system call in the SP1 RISC-V zkVM.
 ///
@@ -95,6 +96,8 @@ pub fn default_syscall_map() -> HashMap<SyscallCode, Arc<dyn Syscall>> {
     syscall_map.insert(SyscallCode::HALT, Arc::new(HaltSyscall));
 
     syscall_map.insert(SyscallCode::KECCAK_PERMUTE, Arc::new(Keccak256PermuteSyscall));
+
+    syscall_map.insert(SyscallCode::KECCAK256_XOR, Arc::new(Keccak256XorSyscall));
 
     syscall_map.insert(
         SyscallCode::SECP256K1_ADD,

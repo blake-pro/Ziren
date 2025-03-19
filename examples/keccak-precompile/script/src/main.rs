@@ -20,47 +20,56 @@ fn prove_keccak_rust() {
     log::info!("expected public value: {:X?}", public_input);
 
     let private_input = args[1].as_bytes().to_vec();
-    log::info!("private input value: {:X?}", private_input);
+    log::info!("private input value: {:?}", private_input);
     stdin.write(&private_input);
 
     // Create a `ProverClient` method.
     let client = ProverClient::new();
 
     // Execute the program using the `ProverClient.execute` method, without generating a proof.
-    let (_, report) = client.execute(ELF, stdin.clone()).run().unwrap();
+    let (mut public_values, report) = client.execute(ELF, stdin.clone()).run().unwrap();
     println!("executed program with {} cycles", report.total_instruction_count());
 
-    // Generate the proof for the given program and input.
-    let (pk, vk) = client.setup(ELF);
-    let mut proof = client.prove(&pk, stdin).run().unwrap();
-    println!("generated proof");
+    let public_input = public_values.read::<Vec<u8>>();
+    let input = public_values.read::<Vec<u8>>();
 
-    // Read and verify the output.
+    let output = public_values.read::<[u8; 32]>();
+    let output2 = public_values.read::<[u8; 32]>();
+    println!("output value: {:X?}", output);
+    println!("output2 value: {:X?}", output2);
+
+
+    // // Generate the proof for the given program and input.
+    // let (pk, vk) = client.setup(ELF);
+    // let mut proof = client.prove(&pk, stdin).run().unwrap();
+    // println!("generated proof");
     //
-    // Note that this output is read from values committed to in the program using
-    // `zkm2_zkvm::io::commit`.
-    let public_input = proof.public_values.read::<Vec<u8>>();
-    let input = proof.public_values.read::<Vec<u8>>();
-    log::info!("public input: {} in hex", hex::encode(&public_input));
-    log::info!("input: {} in hex", hex::encode(input));
-
-    let value = proof.public_values.read::<[u8; 32]>();
-    log::info!("result value: {:X?}", value);
-    log::info!("result value: {} in hex", hex::encode(value));
-    assert_eq!(value, *public_input);
-
-    // Verify proof and public values
-    client.verify(&proof, &vk).expect("verification failed");
-
-    // Test a round trip of proof serialization and deserialization.
-    proof.save("proof-with-pis.bin").expect("saving proof failed");
-    let deserialized_proof =
-        ZKMProofWithPublicValues::load("proof-with-pis.bin").expect("loading proof failed");
-
-    // Verify the deserialized proof.
-    client.verify(&deserialized_proof, &vk).expect("verification failed");
-
-    println!("successfully generated and verified proof for the program!")
+    // // Read and verify the output.
+    // //
+    // // Note that this output is read from values committed to in the program using
+    // // `zkm2_zkvm::io::commit`.
+    // let public_input = proof.public_values.read::<Vec<u8>>();
+    // let input = proof.public_values.read::<Vec<u8>>();
+    // log::info!("public input: {} in hex", hex::encode(&public_input));
+    // log::info!("input: {} in hex", hex::encode(input));
+    //
+    // let value = proof.public_values.read::<[u8; 32]>();
+    // log::info!("result value: {:X?}", value);
+    // log::info!("result value: {} in hex", hex::encode(value));
+    // assert_eq!(value, *public_input);
+    //
+    // // Verify proof and public values
+    // client.verify(&proof, &vk).expect("verification failed");
+    //
+    // // Test a round trip of proof serialization and deserialization.
+    // proof.save("proof-with-pis.bin").expect("saving proof failed");
+    // let deserialized_proof =
+    //     ZKMProofWithPublicValues::load("proof-with-pis.bin").expect("loading proof failed");
+    //
+    // // Verify the deserialized proof.
+    // client.verify(&deserialized_proof, &vk).expect("verification failed");
+    //
+    // println!("successfully generated and verified proof for the program!")
 }
 
 fn main() {

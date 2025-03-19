@@ -30,7 +30,8 @@ pub fn keccak256(data: &[u8]) -> [u8; 32] {
 
     // covert to u32 to align the memory
     for i in (0..padded_len).step_by(4) {
-        let u32_value = u32::from_be_bytes([padded_data[i], padded_data[i + 1], padded_data[i + 2], padded_data[i + 3]]);
+        // let u32_value = u32::from_be_bytes([padded_data[i], padded_data[i + 1], padded_data[i + 2], padded_data[i + 3]]);
+        let u32_value = u32::from_be_bytes([padded_data[i + 3], padded_data[i + 2], padded_data[i + 1], padded_data[i]]);
         u32_array.push(u32_value);
     }
 

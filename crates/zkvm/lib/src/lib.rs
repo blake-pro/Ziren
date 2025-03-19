@@ -10,7 +10,6 @@ pub mod hasher;
 pub mod io;
 pub mod keccak;
 pub mod keccak256;
-
 pub mod secp256k1;
 pub mod secp256r1;
 pub mod unconstrained;

@@ -14,7 +14,11 @@ pub fn main() {
 
     let output = keccak256(&input.as_slice());
     assert_eq!(output.to_vec(), public_input);
+    let output2 = zkm2_zkvm::lib::keccak256::keccak256(&input.as_slice());
     zkm2_zkvm::io::commit::<[u8; 32]>(&output);
+    zkm2_zkvm::io::commit::<[u8; 32]>(&output2);
+    assert_eq!(output2.to_vec(), public_input);
+
 }
 
 fn keccak256<T: AsRef<[u8]>>(bytes: T) -> [u8; 32] {
