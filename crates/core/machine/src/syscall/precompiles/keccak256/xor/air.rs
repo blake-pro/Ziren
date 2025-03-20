@@ -24,9 +24,8 @@ where
 {
     fn eval(&self, builder: &mut AB) {
         let main = builder.main();
-        let (local, next) = (main.row_slice(0), main.row_slice(1));
+        let (local, _next) = (main.row_slice(0), main.row_slice(1));
         let local: &Keccak256XorCols<AB::Var> = (*local).borrow();
-        let next: &Keccak256XorCols<AB::Var> = (*next).borrow();
 
         // receive syscall
         builder.receive_syscall(

@@ -201,15 +201,6 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
             if let Some((height, num_memory_local_events, num_global_events)) =
                 air.precompile_heights(record)
             {
-                if air.syscall_code() == SyscallCode::KECCAK256_XOR {
-                    tracing::info!("sHeight: {:?}", height);
-                    tracing::info!("sNum Memory Local Events: {:?}", num_memory_local_events);
-                    tracing::info!("sNum Global Events: {:?}", num_global_events);
-                    tracing::info!("sPrecompile: {:?}", air);
-                    tracing::info!("sMemory events per row: {:?}", memory_events_per_row);
-                    tracing::info!("sPrecompile heights: {:?}", allowed_log2_heights);
-                }
-
                 for allowed_log2_height in allowed_log2_heights {
                     let allowed_height = 1 << allowed_log2_height;
                     if height <= allowed_height {

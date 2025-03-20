@@ -30,15 +30,6 @@ fn prove_keccak_rust() {
     let (mut public_values, report) = client.execute(ELF, stdin.clone()).run().unwrap();
     println!("executed program with {} cycles", report.total_instruction_count());
 
-    let public_input = public_values.read::<Vec<u8>>();
-    let input = public_values.read::<Vec<u8>>();
-
-    let output = public_values.read::<[u8; 32]>();
-    let output2 = public_values.read::<[u8; 32]>();
-    println!("output value: {:X?}", output);
-    println!("output2 value: {:X?}", output2);
-
-
     // Generate the proof for the given program and input.
     let (pk, vk) = client.setup(ELF);
     let mut proof = client.prove(&pk, stdin).run().unwrap();
