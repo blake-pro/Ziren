@@ -28,8 +28,6 @@ where
         let local: &Keccak256XorCols<AB::Var> = (*local).borrow();
         let next: &Keccak256XorCols<AB::Var> = (*next).borrow();
 
-        let nb_bytes_in_word = AB::F::from_canonical_u32(4);
-
         // receive syscall
         builder.receive_syscall(
             local.shard,
@@ -46,7 +44,7 @@ where
             builder.eval_memory_access(
                 local.shard,
                 local.clk,
-                local.rate_addr + nb_bytes_in_word,
+                local.rate_addr + AB::Expr::from_canonical_u32(i as u32 * 4),
                 &local.original_rate_mem[i as usize],
                 local.is_real,
             );
@@ -54,7 +52,7 @@ where
             builder.eval_memory_access(
                 local.shard,
                 local.clk,
-                local.block_addr + nb_bytes_in_word,
+                local.block_addr + AB::Expr::from_canonical_u32(i as u32 * 4),
                 &local.block_mem[i as usize],
                 local.is_real,
             );
@@ -62,7 +60,7 @@ where
             builder.eval_memory_access(
                 local.shard,
                 local.clk + AB::F::from_canonical_u32(1),
-                local.rate_addr + nb_bytes_in_word,
+                local.rate_addr + AB::Expr::from_canonical_u32(i as u32 * 4),
                 &local.xored_rate_mem[i as usize],
                 local.is_real,
             )
@@ -79,7 +77,7 @@ where
             );
         }
 
-        // Range check all the values in `original_rate_mem`,  to be bytes.
+        // Range check all the values in `original_rate_mem`, `block_mem`, `xored_rate_mem` to be bytes.
         for i in 0..RATE_SIZE_U32S {
             builder.slice_range_check_u8(&local.original_rate_mem[i].value().0, local.is_real);
             builder.slice_range_check_u8(&local.block_mem[i].value().0, local.is_real);

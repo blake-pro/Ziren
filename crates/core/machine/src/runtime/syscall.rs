@@ -66,7 +66,7 @@ pub enum SyscallCode {
     KECCAK_PERMUTE = 0x00_01_01_09,
 
     /// Executes the `KECCAK256_XOR` precompile.
-    KECCAK256_XOR = 0x00_00_01_2F,
+    KECCAK256_XOR = 0x00_01_01_30,
 
     /// Executes the `SECP256K1_ADD` precompile.
     SECP256K1_ADD = 0x00_01_01_0A,
@@ -172,7 +172,7 @@ impl SyscallCode {
             0x00_01_01_07 => SyscallCode::ED_ADD,
             0x00_00_01_08 => SyscallCode::ED_DECOMPRESS,
             0x00_01_01_09 => SyscallCode::KECCAK_PERMUTE,
-            0x00_00_01_2F => SyscallCode::KECCAK256_XOR,
+            0x00_01_01_30 => SyscallCode::KECCAK256_XOR,
             0x00_01_01_0A => SyscallCode::SECP256K1_ADD,
             0x00_00_01_0B => SyscallCode::SECP256K1_DOUBLE,
             0x00_00_01_0C => SyscallCode::SECP256K1_DECOMPRESS,

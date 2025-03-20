@@ -71,7 +71,7 @@ pub const ED_DECOMPRESS: u32 = 0x00_00_01_08;
 pub const KECCAK_PERMUTE: u32 = 0x00_01_01_09;
 
 /// Executes `KECCAK256_XOR`.
-pub const KECCAK256_XOR: u32 = 0x00_00_01_2F;
+pub const KECCAK256_XOR: u32 = 0x00_01_01_30;
 
 /// Executes `SECP256K1_ADD`.
 pub const SECP256K1_ADD: u32 = 0x00_01_01_0A;
