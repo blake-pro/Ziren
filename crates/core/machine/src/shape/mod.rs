@@ -10,6 +10,7 @@ use p3_util::log2_ceil_usize;
 use thiserror::Error;
 
 use zkm2_core_executor::{ExecutionRecord, Program, MipsAirId};
+use zkm2_core_executor::syscalls::SyscallCode;
 use zkm2_stark::{
     air::MachineAir,
     shape::{OrderedShape, Shape, ShapeCluster},
@@ -200,6 +201,15 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
             if let Some((height, num_memory_local_events, num_global_events)) =
                 air.precompile_heights(record)
             {
+                if air.syscall_code() == SyscallCode::KECCAK256_XOR {
+                    tracing::info!("sHeight: {:?}", height);
+                    tracing::info!("sNum Memory Local Events: {:?}", num_memory_local_events);
+                    tracing::info!("sNum Global Events: {:?}", num_global_events);
+                    tracing::info!("sPrecompile: {:?}", air);
+                    tracing::info!("sMemory events per row: {:?}", memory_events_per_row);
+                    tracing::info!("sPrecompile heights: {:?}", allowed_log2_heights);
+                }
+
                 for allowed_log2_height in allowed_log2_heights {
                     let allowed_height = 1 << allowed_log2_height;
                     if height <= allowed_height {
@@ -210,6 +220,14 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
                         ) {
                             let mem_events_height = shape[2].1;
                             let global_events_height = shape[3].1;
+
+                            // if air.syscall_code() == SyscallCode::KECCAK256_XOR {
+                            //     tracing::info!("s Mem events height: {:?}", mem_events_height);
+                            //     tracing::info!("s Global_events_height: {:?}", global_events_height);
+                            //     tracing::info!("s Lhs: {:?}", num_memory_local_events.div_ceil(NUM_LOCAL_MEMORY_ENTRIES_PER_ROW));
+                            //     tracing::info!("s Rhs: {:?}", (1 << mem_events_height));
+                            // }
+
                             if num_memory_local_events.div_ceil(NUM_LOCAL_MEMORY_ENTRIES_PER_ROW)
                                 <= (1 << mem_events_height)
                                 && num_global_events <= (1 << global_events_height)
@@ -492,6 +510,12 @@ impl<F: PrimeField32> Default for CoreShapeConfig<F> {
         for (air, memory_events_per_row) in
             MipsAir::<F>::precompile_airs_with_memory_events_per_row()
         {
+            // if air.syscall_code() ==  SyscallCode::KECCAK256_XOR {
+            //     tracing::info!("Precompile: {:?}", air);
+            //     tracing::info!("Memory events per row: {:?}", memory_events_per_row);
+            //     tracing::info!("Precompile heights: {:?}", precompile_heights);
+            // }
+
             precompile_allowed_log2_heights
                 .insert(air, (memory_events_per_row, precompile_heights.clone()));
         }

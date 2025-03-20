@@ -10,7 +10,7 @@ use crate::runtime::{Register, Runtime};
 use crate::syscall::precompiles::edwards::EdAddAssignChip;
 use crate::syscall::precompiles::edwards::EdDecompressChip;
 use crate::syscall::precompiles::fptower::{Fp2AddSubSyscall, Fp2MulAssignChip, FpOpSyscall};
-use crate::syscall::precompiles::keccak256::KeccakPermuteChip;
+use crate::syscall::precompiles::keccak256::{KeccakPermuteChip, Keccak256XorChip};
 use crate::syscall::precompiles::sha256::{ShaCompressChip, ShaExtendChip};
 use crate::syscall::precompiles::u256x2048_mul::U256x2048MulChip;
 use crate::syscall::precompiles::uint256::Uint256MulChip;
@@ -172,6 +172,7 @@ impl SyscallCode {
             0x00_01_01_07 => SyscallCode::ED_ADD,
             0x00_00_01_08 => SyscallCode::ED_DECOMPRESS,
             0x00_01_01_09 => SyscallCode::KECCAK_PERMUTE,
+            0x00_00_01_2F => SyscallCode::KECCAK256_XOR,
             0x00_01_01_0A => SyscallCode::SECP256K1_ADD,
             0x00_00_01_0B => SyscallCode::SECP256K1_DOUBLE,
             0x00_00_01_0C => SyscallCode::SECP256K1_DECOMPRESS,
@@ -360,6 +361,7 @@ pub fn default_syscall_map() -> HashMap<SyscallCode, Arc<dyn Syscall>> {
     syscall_map
         .insert(SyscallCode::ED_DECOMPRESS, Arc::new(EdDecompressChip::<Ed25519Parameters>::new()));
     syscall_map.insert(SyscallCode::KECCAK_PERMUTE, Arc::new(KeccakPermuteChip::new()));
+    syscall_map.insert(SyscallCode::KECCAK256_XOR, Arc::new(Keccak256XorChip::new()));
     syscall_map
         .insert(SyscallCode::SECP256K1_ADD, Arc::new(WeierstrassAddAssignChip::<Secp256k1>::new()));
     syscall_map.insert(

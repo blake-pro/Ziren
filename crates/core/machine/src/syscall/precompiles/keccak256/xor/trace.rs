@@ -64,11 +64,11 @@ impl<F: PrimeField32> MachineAir<F> for Keccak256XorChip {
         }
 
         values
-            .chunks_mut(chunk_size * NUM_KECCAK_MEM_COLS * NUM_KECCAK256_XOR_ROUNDS)
+            .chunks_mut(chunk_size * NUM_KECCAK256_XOR_COLS * NUM_KECCAK256_XOR_ROUNDS)
             .enumerate()
             .par_bridge()
             .for_each(|(i, rows)| {
-                rows.chunks_mut(NUM_KECCAK256_XOR_ROUNDS * NUM_KECCAK_MEM_COLS).enumerate().for_each(
+                rows.chunks_mut(NUM_KECCAK256_XOR_ROUNDS * NUM_KECCAK256_XOR_COLS).enumerate().for_each(
                     |(j, rounds)| {
                         let idx = i * chunk_size + j;
                         if idx < num_events {
@@ -122,7 +122,6 @@ impl Keccak256XorChip {
         assert_eq!(event.original_rate.len(), RATE_SIZE_U32S);
         assert_eq!(event.block.len(), RATE_SIZE_U32S);
         assert_eq!(event.xored_rate.len(), RATE_SIZE_U32S);
-
 
         for ((j, original_value), block_value) in event.original_rate.iter().enumerate().zip(event.block.iter()) {
             cols.xored_rate[j].populate(new_byte_lookup_events, shard, *original_value, *block_value);
