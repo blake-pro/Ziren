@@ -2,14 +2,275 @@
   "17": [
     {
       "inner": {
+        "Bitwise": 16,
+        "Mul": 0,
+        "Cpu": 17,
+        "Global": 8,
+        "MemoryLocal": 5,
+        "Lt": 15,
+        "AddSub": 16,
+        "ShiftLeft": 5
+      }
+    },
+    {
+      "inner": {
+        "AddSub": 17,
+        "Cpu": 17,
+        "Global": 17,
+        "Lt": 13,
+        "MemoryLocal": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 11,
+        "ShiftRight": 10,
+        "Mul": 0,
+        "Cpu": 17,
+        "Global": 17,
+        "Lt": 13,
+        "MemoryLocal": 14,
+        "AddSub": 17,
+        "ShiftLeft": 7
+      }
+    },
+    {
+      "inner": {
         "Bitwise": 15,
         "ShiftRight": 15,
-        "Mul": 1,
+        "Mul": 7,
         "Cpu": 17,
         "Global": 12,
-        "Lt": 5,
+        "Lt": 10,
+        "MemoryLocal": 9,
+        "CloClz": 4,
+        "AddSub": 16,
+        "DivRem": 0,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 6,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 10,
+        "MemoryLocal": 9,
+        "CloClz": 2,
+        "AddSub": 16,
+        "DivRem": 0,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 15,
+        "Mul": 9,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 11,
+        "MemoryLocal": 8,
+        "CloClz": 3,
+        "AddSub": 16,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 8,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 10,
+        "MemoryLocal": 9,
+        "CloClz": 0,
+        "AddSub": 16,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 6,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 10,
+        "MemoryLocal": 8,
+        "CloClz": 3,
+        "AddSub": 16,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 15,
+        "Mul": 8,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 3,
+        "AddSub": 16,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 13,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 10,
+        "Lt": 9,
+        "MemoryLocal": 7,
+        "AddSub": 16,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 11,
+        "Cpu": 17,
+        "Global": 13,
+        "Lt": 14,
+        "MemoryLocal": 10,
+        "CloClz": 4,
+        "AddSub": 16,
+        "DivRem": 4,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 12,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 15,
         "MemoryLocal": 9,
         "AddSub": 16,
+        "DivRem": 2,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 12,
+        "Mul": 12,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 15,
+        "MemoryLocal": 9,
+        "CloClz": 2,
+        "AddSub": 16,
+        "DivRem": 2,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 6,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 15,
+        "MemoryLocal": 8,
+        "CloClz": 0,
+        "AddSub": 17,
+        "ShiftLeft": 9
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 3,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 15,
+        "MemoryLocal": 8,
+        "CloClz": 2,
+        "AddSub": 17,
+        "ShiftLeft": 10
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 11,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 14,
+        "MemoryLocal": 8,
+        "CloClz": 3,
+        "AddSub": 16,
+        "DivRem": 1,
+        "ShiftLeft": 11
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 13,
+        "Mul": 8,
+        "Cpu": 17,
+        "Global": 13,
+        "Lt": 13,
+        "MemoryLocal": 10,
+        "AddSub": 16,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 13,
+        "Mul": 9,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 13,
+        "MemoryLocal": 9,
+        "AddSub": 16,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 11,
+        "Cpu": 17,
+        "Global": 14,
+        "Lt": 14,
+        "MemoryLocal": 11,
+        "AddSub": 16,
+        "DivRem": 7,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 10,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 14,
+        "Lt": 13,
+        "MemoryLocal": 11,
+        "AddSub": 17,
+        "DivRem": 2,
         "ShiftLeft": 13
       }
     },
@@ -17,13 +278,141 @@
       "inner": {
         "Bitwise": 15,
         "ShiftRight": 13,
-        "Mul": 2,
+        "Mul": 8,
         "Cpu": 17,
-        "Global": 12,
-        "Lt": 6,
-        "MemoryLocal": 9,
+        "Global": 13,
+        "Lt": 13,
+        "MemoryLocal": 10,
+        "CloClz": 1,
         "AddSub": 16,
         "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 10,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 14,
+        "Lt": 13,
+        "MemoryLocal": 11,
+        "CloClz": 1,
+        "AddSub": 17,
+        "DivRem": 2,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 9,
+        "MemoryLocal": 8,
+        "CloClz": 6,
+        "AddSub": 16,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 15,
+        "Mul": 4,
+        "Cpu": 17,
+        "Global": 13,
+        "Lt": 11,
+        "MemoryLocal": 10,
+        "CloClz": 9,
+        "AddSub": 16,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 15,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 8,
+        "AddSub": 16,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 14,
+        "Mul": 5,
+        "Cpu": 17,
+        "Global": 13,
+        "Lt": 12,
+        "MemoryLocal": 10,
+        "CloClz": 9,
+        "AddSub": 16,
+        "DivRem": 3,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 9,
+        "Mul": 9,
+        "Cpu": 17,
+        "Global": 13,
+        "Lt": 11,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 17,
+        "DivRem": 4,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 12,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 14,
+        "MemoryLocal": 9,
+        "AddSub": 17,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 12,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 14,
+        "MemoryLocal": 9,
+        "CloClz": 5,
+        "AddSub": 17,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 12,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 12,
+        "Lt": 14,
+        "MemoryLocal": 9,
+        "AddSub": 17,
+        "ShiftLeft": 12
       }
     },
     {
@@ -55,95 +444,9 @@
         "AddSub": 16,
         "ShiftLeft": 13
       }
-    },
-    {
-      "inner": {
-        "AddSub": 17,
-        "Cpu": 17,
-        "Global": 17,
-        "Lt": 13,
-        "MemoryLocal": 14
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 11,
-        "ShiftRight": 10,
-        "Mul": 0,
-        "Cpu": 17,
-        "Global": 17,
-        "Lt": 13,
-        "MemoryLocal": 14,
-        "AddSub": 17,
-        "ShiftLeft": 7
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 16,
-        "Mul": 0,
-        "Cpu": 17,
-        "Global": 8,
-        "MemoryLocal": 5,
-        "Lt": 15,
-        "AddSub": 16,
-        "ShiftLeft": 5
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 15,
-        "ShiftRight": 10,
-        "Mul": 0,
-        "Cpu": 16,
-        "Global": 9,
-        "Lt": 13,
-        "MemoryLocal": 6,
-        "AddSub": 15,
-        "ShiftLeft": 7
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 16,
-        "ShiftRight": 15,
-        "Mul": 7,
-        "Cpu": 17,
-        "Global": 10,
-        "Lt": 10,
-        "MemoryLocal": 7,
-        "AddSub": 16,
-        "ShiftLeft": 12
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 16,
-        "ShiftRight": 13,
-        "Mul": 5,
-        "Cpu": 17,
-        "Global": 10,
-        "Lt": 9,
-        "MemoryLocal": 7,
-        "AddSub": 16,
-        "ShiftLeft": 13
-      }
     }
   ],
   "18": [
-    {
-      "inner": {
-        "Bitwise": 16,
-        "ShiftRight": 15,
-        "Mul": 2,
-        "Cpu": 18,
-        "Global": 12,
-        "Lt": 8,
-        "MemoryLocal": 9,
-        "AddSub": 16,
-        "ShiftLeft": 13
-      }
-    },
     {
       "inner": {
         "Bitwise": 17,
@@ -155,74 +458,6 @@
         "MemoryLocal": 9,
         "AddSub": 17,
         "ShiftLeft": 15
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 16,
-        "ShiftRight": 14,
-        "Mul": 1,
-        "Cpu": 18,
-        "Global": 11,
-        "Lt": 8,
-        "MemoryLocal": 8,
-        "AddSub": 16,
-        "ShiftLeft": 14
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 14,
-        "ShiftRight": 10,
-        "Mul": 12,
-        "SyscallCore": 2,
-        "Cpu": 18,
-        "Global": 14,
-        "Lt": 14,
-        "MemoryLocal": 11,
-        "CloClz": 8,
-        "AddSub": 18,
-        "DivRem": 1,
-        "ShiftLeft": 15
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 13,
-        "ShiftRight": 12,
-        "Mul": 10,
-        "Cpu": 17,
-        "Global": 14,
-        "Lt": 12,
-        "MemoryLocal": 11,
-        "CloClz": 7,
-        "AddSub": 16,
-        "ShiftLeft": 13
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 17,
-        "Mul": 0,
-        "Cpu": 18,
-        "Global": 8,
-        "MemoryLocal": 5,
-        "Lt": 16,
-        "AddSub": 17,
-        "ShiftLeft": 5
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 16,
-        "ShiftRight": 10,
-        "Mul": 0,
-        "Cpu": 18,
-        "Global": 9,
-        "Lt": 15,
-        "MemoryLocal": 6,
-        "AddSub": 16,
-        "ShiftLeft": 7
       }
     },
     {
@@ -273,14 +508,202 @@
     {
       "inner": {
         "Bitwise": 17,
+        "Mul": 0,
+        "Cpu": 18,
+        "Global": 8,
+        "MemoryLocal": 5,
+        "Lt": 16,
+        "AddSub": 17,
+        "ShiftLeft": 5
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 10,
+        "Mul": 0,
+        "Cpu": 18,
+        "Global": 9,
+        "Lt": 15,
+        "MemoryLocal": 6,
+        "AddSub": 16,
+        "ShiftLeft": 7
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 10,
+        "Mul": 12,
+        "SyscallCore": 2,
+        "Cpu": 18,
+        "Global": 14,
+        "Lt": 14,
+        "MemoryLocal": 11,
+        "CloClz": 8,
+        "AddSub": 18,
+        "DivRem": 1,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 12,
+        "Mul": 10,
+        "Cpu": 17,
+        "Global": 14,
+        "Lt": 12,
+        "MemoryLocal": 11,
+        "CloClz": 7,
+        "AddSub": 16,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 16,
+        "Mul": 7,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 4,
+        "AddSub": 17,
+        "DivRem": 0,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 16,
+        "Mul": 9,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 4,
+        "AddSub": 17,
+        "DivRem": 0,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
         "ShiftRight": 16,
         "Mul": 8,
         "Cpu": 18,
-        "Global": 10,
+        "Global": 12,
         "Lt": 11,
-        "MemoryLocal": 7,
+        "MemoryLocal": 9,
+        "CloClz": 5,
         "AddSub": 17,
         "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 16,
+        "Mul": 8,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 3,
+        "AddSub": 17,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 7,
+        "Cpu": 18,
+        "Global": 11,
+        "Lt": 11,
+        "MemoryLocal": 8,
+        "CloClz": 4,
+        "AddSub": 16,
+        "DivRem": 1,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 14,
+        "Mul": 12,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 15,
+        "MemoryLocal": 10,
+        "CloClz": 4,
+        "AddSub": 17,
+        "DivRem": 4,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 12,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 16,
+        "MemoryLocal": 9,
+        "CloClz": 2,
+        "AddSub": 17,
+        "DivRem": 2,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 6,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 11,
+        "Lt": 16,
+        "MemoryLocal": 8,
+        "CloClz": 0,
+        "AddSub": 18,
+        "ShiftLeft": 10
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 4,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 11,
+        "Lt": 16,
+        "MemoryLocal": 8,
+        "CloClz": 2,
+        "AddSub": 18,
+        "ShiftLeft": 10
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 11,
+        "Mul": 13,
+        "Cpu": 17,
+        "Global": 11,
+        "Lt": 14,
+        "MemoryLocal": 8,
+        "CloClz": 3,
+        "AddSub": 16,
+        "DivRem": 1,
+        "ShiftLeft": 11
       }
     },
     {
@@ -295,63 +718,191 @@
         "AddSub": 17,
         "ShiftLeft": 14
       }
-    }
-  ],
-  "19": [
+    },
     {
       "inner": {
-        "Bitwise": 17,
-        "ShiftRight": 15,
-        "Mul": 3,
-        "Cpu": 19,
-        "Global": 12,
-        "Lt": 8,
-        "MemoryLocal": 9,
-        "AddSub": 18,
+        "Bitwise": 16,
+        "ShiftRight": 14,
+        "Mul": 10,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 14,
+        "MemoryLocal": 10,
+        "AddSub": 17,
         "ShiftLeft": 15
       }
     },
     {
       "inner": {
         "Bitwise": 15,
-        "ShiftRight": 12,
+        "ShiftRight": 14,
         "Mul": 12,
-        "SyscallCore": 2,
-        "Cpu": 19,
+        "Cpu": 18,
         "Global": 15,
         "Lt": 14,
         "MemoryLocal": 12,
-        "CloClz": 8,
-        "AddSub": 18,
-        "DivRem": 1,
+        "AddSub": 17,
+        "DivRem": 8,
         "ShiftLeft": 15
       }
     },
     {
       "inner": {
-        "Bitwise": 18,
-        "Mul": 0,
-        "Cpu": 19,
-        "Global": 8,
-        "MemoryLocal": 5,
-        "Lt": 17,
+        "Bitwise": 15,
+        "ShiftRight": 13,
+        "Mul": 6,
+        "Cpu": 18,
+        "Global": 15,
+        "Lt": 14,
+        "MemoryLocal": 12,
+        "CloClz": 1,
         "AddSub": 18,
-        "ShiftLeft": 5
+        "DivRem": 2,
+        "ShiftLeft": 15
       }
     },
     {
       "inner": {
-        "Bitwise": 18,
-        "ShiftRight": 10,
-        "Mul": 0,
-        "Cpu": 19,
-        "Global": 9,
-        "Lt": 16,
-        "MemoryLocal": 6,
+        "Bitwise": 15,
+        "ShiftRight": 13,
+        "Mul": 6,
+        "Cpu": 18,
+        "Global": 15,
+        "Lt": 14,
+        "MemoryLocal": 12,
         "AddSub": 18,
-        "ShiftLeft": 7
+        "DivRem": 2,
+        "ShiftLeft": 15
       }
     },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 14,
+        "Mul": 9,
+        "Cpu": 18,
+        "Global": 14,
+        "Lt": 14,
+        "MemoryLocal": 11,
+        "CloClz": 1,
+        "AddSub": 17,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 16,
+        "Mul": 6,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 12,
+        "MemoryLocal": 10,
+        "CloClz": 10,
+        "AddSub": 17,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 16,
+        "Mul": 6,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 12,
+        "MemoryLocal": 10,
+        "CloClz": 10,
+        "AddSub": 17,
+        "DivRem": 3,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 16,
+        "Mul": 6,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 10,
+        "MemoryLocal": 9,
+        "CloClz": 7,
+        "AddSub": 17,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 13,
+        "Mul": 9,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 11,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 17,
+        "DivRem": 4,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 13,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 15,
+        "MemoryLocal": 9,
+        "AddSub": 18,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 15,
+        "MemoryLocal": 9,
+        "AddSub": 18,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 13,
+        "ShiftRight": 12,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 13,
+        "Lt": 15,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 18,
+        "ShiftLeft": 13
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 13,
+        "Mul": 14,
+        "Cpu": 18,
+        "Global": 12,
+        "Lt": 15,
+        "MemoryLocal": 9,
+        "CloClz": 5,
+        "AddSub": 18,
+        "ShiftLeft": 13
+      }
+    }
+  ],
+  "19": [
     {
       "inner": {
         "Bitwise": 5,
@@ -391,42 +942,26 @@
     {
       "inner": {
         "Bitwise": 18,
-        "ShiftRight": 17,
-        "Mul": 9,
+        "Mul": 0,
         "Cpu": 19,
-        "Global": 10,
-        "Lt": 12,
-        "MemoryLocal": 7,
+        "Global": 8,
+        "MemoryLocal": 5,
+        "Lt": 17,
         "AddSub": 18,
-        "ShiftLeft": 14
+        "ShiftLeft": 5
       }
     },
     {
       "inner": {
         "Bitwise": 18,
-        "ShiftRight": 15,
-        "Mul": 7,
+        "ShiftRight": 10,
+        "Mul": 0,
         "Cpu": 19,
-        "Global": 10,
-        "Lt": 11,
-        "MemoryLocal": 7,
+        "Global": 9,
+        "Lt": 16,
+        "MemoryLocal": 6,
         "AddSub": 18,
-        "ShiftLeft": 15
-      }
-    }
-  ],
-  "20": [
-    {
-      "inner": {
-        "Bitwise": 17,
-        "ShiftRight": 15,
-        "Mul": 3,
-        "Cpu": 19,
-        "Global": 12,
-        "Lt": 8,
-        "MemoryLocal": 9,
-        "AddSub": 18,
-        "ShiftLeft": 15
+        "ShiftLeft": 7
       }
     },
     {
@@ -445,6 +980,264 @@
         "ShiftLeft": 15
       }
     },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 17,
+        "Mul": 9,
+        "Cpu": 19,
+        "Global": 13,
+        "Lt": 12,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 18,
+        "DivRem": 1,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 17,
+        "Mul": 10,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 12,
+        "MemoryLocal": 9,
+        "CloClz": 4,
+        "AddSub": 18,
+        "DivRem": 0,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 17,
+        "Mul": 9,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 12,
+        "MemoryLocal": 9,
+        "CloClz": 6,
+        "AddSub": 18,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 17,
+        "Mul": 9,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 12,
+        "MemoryLocal": 9,
+        "CloClz": 5,
+        "AddSub": 18,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 15,
+        "Mul": 7,
+        "Cpu": 19,
+        "Global": 10,
+        "Lt": 11,
+        "MemoryLocal": 7,
+        "AddSub": 18,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 14,
+        "Mul": 14,
+        "Cpu": 19,
+        "Global": 14,
+        "Lt": 17,
+        "MemoryLocal": 11,
+        "CloClz": 4,
+        "AddSub": 18,
+        "DivRem": 5,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 6,
+        "Mul": 15,
+        "Cpu": 19,
+        "Global": 11,
+        "Lt": 17,
+        "MemoryLocal": 8,
+        "CloClz": 2,
+        "AddSub": 19,
+        "ShiftLeft": 11
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 11,
+        "Mul": 15,
+        "Cpu": 19,
+        "Global": 11,
+        "Lt": 16,
+        "MemoryLocal": 8,
+        "CloClz": 3,
+        "AddSub": 18,
+        "DivRem": 1,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 15,
+        "Mul": 11,
+        "Cpu": 19,
+        "Global": 14,
+        "Lt": 15,
+        "MemoryLocal": 11,
+        "AddSub": 18,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 12,
+        "Cpu": 19,
+        "Global": 15,
+        "Lt": 15,
+        "MemoryLocal": 12,
+        "AddSub": 18,
+        "DivRem": 8,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 14,
+        "Mul": 9,
+        "Cpu": 19,
+        "Global": 15,
+        "Lt": 15,
+        "MemoryLocal": 12,
+        "CloClz": 1,
+        "AddSub": 18,
+        "DivRem": 2,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 17,
+        "Mul": 7,
+        "Cpu": 19,
+        "Global": 14,
+        "Lt": 12,
+        "MemoryLocal": 11,
+        "CloClz": 10,
+        "AddSub": 18,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 17,
+        "Mul": 7,
+        "Cpu": 19,
+        "Global": 14,
+        "Lt": 12,
+        "MemoryLocal": 11,
+        "CloClz": 10,
+        "AddSub": 18,
+        "DivRem": 3,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 17,
+        "Mul": 7,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 11,
+        "MemoryLocal": 9,
+        "CloClz": 7,
+        "AddSub": 18,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 14,
+        "Mul": 14,
+        "Cpu": 19,
+        "Global": 14,
+        "Lt": 15,
+        "MemoryLocal": 11,
+        "CloClz": 5,
+        "AddSub": 19,
+        "DivRem": 4,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 14,
+        "Mul": 15,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 16,
+        "MemoryLocal": 9,
+        "AddSub": 19,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 14,
+        "ShiftRight": 14,
+        "Mul": 15,
+        "Cpu": 19,
+        "Global": 13,
+        "Lt": 16,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 19,
+        "ShiftLeft": 14
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 15,
+        "ShiftRight": 14,
+        "Mul": 15,
+        "Cpu": 19,
+        "Global": 12,
+        "Lt": 16,
+        "MemoryLocal": 9,
+        "CloClz": 5,
+        "AddSub": 19,
+        "ShiftLeft": 14
+      }
+    }
+  ],
+  "20": [
     {
       "inner": {
         "Bitwise": 5,
@@ -484,27 +1277,61 @@
     },
     {
       "inner": {
-        "Bitwise": 18,
-        "ShiftRight": 10,
-        "Mul": 0,
+        "Bitwise": 15,
+        "ShiftRight": 12,
+        "Mul": 12,
+        "SyscallCore": 2,
         "Cpu": 19,
-        "Global": 9,
-        "Lt": 16,
-        "MemoryLocal": 6,
+        "Global": 15,
+        "Lt": 14,
+        "MemoryLocal": 12,
+        "CloClz": 8,
         "AddSub": 18,
-        "ShiftLeft": 7
+        "DivRem": 1,
+        "ShiftLeft": 15
       }
     },
     {
       "inner": {
         "Bitwise": 19,
         "ShiftRight": 18,
-        "Mul": 9,
+        "Mul": 10,
         "Cpu": 20,
-        "Global": 10,
+        "Global": 13,
         "Lt": 13,
-        "MemoryLocal": 7,
+        "MemoryLocal": 10,
+        "CloClz": 5,
         "AddSub": 19,
+        "DivRem": 2,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 18,
+        "Mul": 10,
+        "Cpu": 20,
+        "Global": 13,
+        "Lt": 13,
+        "MemoryLocal": 10,
+        "CloClz": 6,
+        "AddSub": 19,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 18,
+        "Mul": 10,
+        "Cpu": 20,
+        "Global": 13,
+        "Lt": 13,
+        "MemoryLocal": 10,
+        "CloClz": 7,
+        "AddSub": 19,
+        "DivRem": 1,
         "ShiftLeft": 15
       }
     },
@@ -520,20 +1347,189 @@
         "AddSub": 19,
         "ShiftLeft": 16
       }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 14,
+        "Mul": 16,
+        "Cpu": 20,
+        "Global": 14,
+        "Lt": 18,
+        "MemoryLocal": 11,
+        "CloClz": 5,
+        "AddSub": 19,
+        "DivRem": 5,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 6,
+        "Mul": 16,
+        "Cpu": 20,
+        "Global": 12,
+        "Lt": 18,
+        "MemoryLocal": 9,
+        "CloClz": 3,
+        "AddSub": 20,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 7,
+        "Mul": 16,
+        "Cpu": 20,
+        "Global": 10,
+        "Lt": 18,
+        "MemoryLocal": 7,
+        "AddSub": 20,
+        "ShiftLeft": 12
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 16,
+        "Mul": 12,
+        "Cpu": 20,
+        "Global": 15,
+        "Lt": 16,
+        "MemoryLocal": 12,
+        "AddSub": 19,
+        "DivRem": 8,
+        "ShiftLeft": 17
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 15,
+        "Mul": 10,
+        "Cpu": 20,
+        "Global": 15,
+        "Lt": 16,
+        "MemoryLocal": 12,
+        "CloClz": 1,
+        "AddSub": 19,
+        "DivRem": 2,
+        "ShiftLeft": 17
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 16,
+        "Mul": 12,
+        "Cpu": 20,
+        "Global": 15,
+        "Lt": 16,
+        "MemoryLocal": 12,
+        "AddSub": 19,
+        "ShiftLeft": 17
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 17,
+        "Mul": 8,
+        "Cpu": 20,
+        "Global": 15,
+        "Lt": 15,
+        "MemoryLocal": 12,
+        "CloClz": 10,
+        "AddSub": 19,
+        "DivRem": 2,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 18,
+        "Mul": 8,
+        "Cpu": 20,
+        "Global": 14,
+        "Lt": 12,
+        "MemoryLocal": 11,
+        "CloClz": 10,
+        "AddSub": 19,
+        "DivRem": 3,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 17,
+        "Mul": 14,
+        "Cpu": 20,
+        "Global": 14,
+        "Lt": 15,
+        "MemoryLocal": 11,
+        "CloClz": 7,
+        "AddSub": 19,
+        "DivRem": 4,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 16,
+        "Cpu": 20,
+        "Global": 13,
+        "Lt": 17,
+        "MemoryLocal": 10,
+        "AddSub": 20,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 16,
+        "ShiftRight": 15,
+        "Mul": 16,
+        "Cpu": 20,
+        "Global": 13,
+        "Lt": 17,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 20,
+        "ShiftLeft": 15
+      }
     }
   ],
   "21": [
     {
       "inner": {
-        "Bitwise": 17,
-        "ShiftRight": 15,
-        "Mul": 3,
-        "Cpu": 19,
-        "Global": 12,
-        "Lt": 8,
-        "MemoryLocal": 9,
-        "AddSub": 18,
-        "ShiftLeft": 15
+        "Bitwise": 11,
+        "ShiftRight": 10,
+        "Mul": 1,
+        "Cpu": 20,
+        "Global": 19,
+        "Lt": 15,
+        "MemoryLocal": 16,
+        "AddSub": 20,
+        "ShiftLeft": 8
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 10,
+        "Mul": 1,
+        "Cpu": 21,
+        "Global": 9,
+        "Lt": 18,
+        "MemoryLocal": 6,
+        "AddSub": 19,
+        "ShiftLeft": 7
       }
     },
     {
@@ -554,41 +1550,17 @@
     },
     {
       "inner": {
-        "Bitwise": 19,
+        "Bitwise": 20,
         "ShiftRight": 19,
-        "Mul": 10,
+        "Mul": 11,
         "Cpu": 21,
-        "Global": 10,
+        "Global": 14,
         "Lt": 14,
-        "MemoryLocal": 7,
+        "MemoryLocal": 11,
+        "CloClz": 6,
         "AddSub": 20,
+        "DivRem": 2,
         "ShiftLeft": 16
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 19,
-        "ShiftRight": 10,
-        "Mul": 1,
-        "Cpu": 21,
-        "Global": 9,
-        "Lt": 18,
-        "MemoryLocal": 6,
-        "AddSub": 19,
-        "ShiftLeft": 7
-      }
-    },
-    {
-      "inner": {
-        "Bitwise": 11,
-        "ShiftRight": 10,
-        "Mul": 1,
-        "Cpu": 20,
-        "Global": 19,
-        "Lt": 15,
-        "MemoryLocal": 16,
-        "AddSub": 20,
-        "ShiftLeft": 8
       }
     },
     {
@@ -602,6 +1574,109 @@
         "MemoryLocal": 7,
         "AddSub": 20,
         "ShiftLeft": 17
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 14,
+        "Mul": 17,
+        "Cpu": 21,
+        "Global": 14,
+        "Lt": 19,
+        "MemoryLocal": 11,
+        "CloClz": 5,
+        "AddSub": 21,
+        "DivRem": 5,
+        "ShiftLeft": 15
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 17,
+        "Mul": 13,
+        "Cpu": 21,
+        "Global": 16,
+        "Lt": 17,
+        "MemoryLocal": 13,
+        "AddSub": 20,
+        "DivRem": 8,
+        "ShiftLeft": 18
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 18,
+        "ShiftRight": 16,
+        "Mul": 10,
+        "Cpu": 21,
+        "Global": 16,
+        "Lt": 17,
+        "MemoryLocal": 13,
+        "CloClz": 2,
+        "AddSub": 20,
+        "DivRem": 3,
+        "ShiftLeft": 18
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 17,
+        "Mul": 9,
+        "Cpu": 21,
+        "Global": 16,
+        "Lt": 17,
+        "MemoryLocal": 13,
+        "CloClz": 10,
+        "AddSub": 20,
+        "DivRem": 3,
+        "ShiftLeft": 18
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 20,
+        "ShiftRight": 19,
+        "Mul": 9,
+        "Cpu": 21,
+        "Global": 14,
+        "Lt": 13,
+        "MemoryLocal": 11,
+        "CloClz": 10,
+        "AddSub": 20,
+        "DivRem": 3,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 19,
+        "ShiftRight": 19,
+        "Mul": 14,
+        "Cpu": 21,
+        "Global": 14,
+        "Lt": 15,
+        "MemoryLocal": 11,
+        "CloClz": 10,
+        "AddSub": 20,
+        "DivRem": 4,
+        "ShiftLeft": 16
+      }
+    },
+    {
+      "inner": {
+        "Bitwise": 17,
+        "ShiftRight": 16,
+        "Mul": 17,
+        "Cpu": 21,
+        "Global": 13,
+        "Lt": 18,
+        "MemoryLocal": 10,
+        "CloClz": 5,
+        "AddSub": 21,
+        "ShiftLeft": 16
       }
     }
   ]

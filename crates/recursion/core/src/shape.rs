@@ -139,7 +139,7 @@ impl<F: PrimeField32 + BinomiallyExtendable<D>, const DEGREE: usize> Default
                 (mem_const.clone(), 16),
                 (batch_fri.clone(), 17),
                 (base_alu.clone(), 15),
-                (ext_alu.clone(), 19),
+                (ext_alu.clone(), 15),
                 (exp_reverse_bits_len.clone(), 17),
                 (poseidon2_wide.clone(), 16),
                 (public_values.clone(), PUB_VALUES_LOG_HEIGHT),
