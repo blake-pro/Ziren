@@ -5,6 +5,7 @@ use std::{
 
 use enum_map::{EnumArray, EnumMap};
 use hashbrown::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{events::generate_execution_report, syscalls::SyscallCode, Opcode};
 
@@ -19,6 +20,8 @@ pub struct ExecutionReport {
     pub cycle_tracker: HashMap<String, u64>,
     /// The unique memory address counts.
     pub touched_memory_addresses: u64,
+    /// The cycle tracker counts.
+    pub pc_counts: BTreeMap<u32, u64>,
 }
 
 impl ExecutionReport {
@@ -50,6 +53,9 @@ impl AddAssign for ExecutionReport {
     fn add_assign(&mut self, rhs: Self) {
         counts_add_assign(&mut self.opcode_counts, *rhs.opcode_counts);
         counts_add_assign(&mut self.syscall_counts, *rhs.syscall_counts);
+        for (pc, counts) in rhs.pc_counts {
+            *self.pc_counts.entry(pc).or_insert(0) += counts;
+        }
         self.touched_memory_addresses += rhs.touched_memory_addresses;
     }
 }
@@ -73,6 +79,13 @@ impl Display for ExecutionReport {
         writeln!(f, "syscall counts ({} total syscall instructions):", self.total_syscall_count())?;
         for line in generate_execution_report(self.syscall_counts.as_ref()) {
             writeln!(f, "  {line}")?;
+        }
+
+        writeln!(f, "instructions pc counts:")?;
+        for (pc, count) in self.pc_counts.clone() {
+            if count > 10 {
+                writeln!(f, "pc '{:X}: {}", pc, count)?;
+            }
         }
         Ok(())
     }

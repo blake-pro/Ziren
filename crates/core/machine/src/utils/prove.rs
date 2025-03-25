@@ -447,6 +447,15 @@ where
             }
         }
 
+        tracing::info!("execution report (pc counts):");
+        for (pc, count) in report_aggregate.pc_counts.clone() {
+            if count > 1000 {
+                tracing::info!(" {:X} :  {}", pc, count);
+            } else {
+                tracing::debug!(" {:X} :  {}", pc, count);
+            }
+        }
+    
         let proof = MachineProof::<SC> { shard_proofs };
         let cycles = report_aggregate.total_instruction_count();
 

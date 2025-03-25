@@ -1033,6 +1033,7 @@ impl<'a> Executor<'a> {
 
         if !self.unconstrained {
             self.report.opcode_counts[instruction.opcode] += 1;
+            *self.report.pc_counts.entry(pc).or_insert(0) += 1;
             self.local_counts.event_counts[instruction.opcode] += 1;
             match instruction.opcode {
                 Opcode::LB
