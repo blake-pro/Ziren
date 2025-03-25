@@ -1,6 +1,5 @@
 use k256::ecdsa::SigningKey;
 use revm::primitives::Address;
-use zkm2_zkvm::lib::hasher::Hasher;
 
 /// Recover the address from a private key (SigningKey).
 pub fn recover_address(private_key: &[u8]) -> Option<Address> {
