@@ -601,7 +601,7 @@ where
     run_test_machine_with_prover::<SC, A, CpuProver<_, _>>(&prover, records, pk, vk)
 }
 
-fn trace_checkpoint<SC: StarkGenericConfig>(
+pub fn trace_checkpoint<SC: StarkGenericConfig>(
     program: Program,
     file: &File,
     opts: ZKMCoreOpts,

@@ -445,9 +445,18 @@ impl<F: PrimeField32> CoreShapeConfig<F> {
 impl<F: PrimeField32> Default for CoreShapeConfig<F> {
     fn default() -> Self {
         // Load the maximal shapes.
+        let maximal_shapes = std::env::var("MAXIMAL_SHAPES_FILE")
+            .ok()
+            .map(|file| std::fs::read(file).expect("Failed to read MAXIMAL_SHAPES_FILE"))
+            .unwrap_or_else(|| MAXIMAL_SHAPES.to_vec());
         let maximal_shapes: BTreeMap<usize, Vec<Shape<MipsAirId>>> =
-            serde_json::from_slice(MAXIMAL_SHAPES).unwrap();
-        let small_shapes: Vec<Shape<MipsAirId>> = serde_json::from_slice(SMALL_SHAPES).unwrap();
+            serde_json::from_slice(&maximal_shapes).unwrap();
+
+        let small_shapes = std::env::var("SMALL_SHAPES_FILE")
+            .ok()
+            .map(|file| std::fs::read(file).expect("Failed to read SMALL_SHAPES_FILE"))
+            .unwrap_or_else(|| SMALL_SHAPES.to_vec());
+        let small_shapes: Vec<Shape<MipsAirId>> = serde_json::from_slice(&small_shapes).unwrap();
 
         // Set the allowed preprocessed log2 heights.
         let allowed_preprocessed_log2_heights = HashMap::from([

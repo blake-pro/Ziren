@@ -32,6 +32,11 @@ pub(crate) fn get_program_build_args(args: &BuildArgs) -> Vec<String> {
         build_args.push(b.to_string());
     }
 
+    if !args.features.is_empty() {
+        build_args.push("--features".to_string());
+        build_args.push(args.features.join(","));
+    }
+
     if args.no_default_features {
         build_args.push("--no-default-features".to_string());
     }
