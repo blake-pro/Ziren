@@ -48,7 +48,7 @@ Within the Prover, zkMIPS employs multiple stages to efficiently process and pro
    - Cross-Chip Communication - The chip needs to send the logic which itself cannot verify to other chips for verification.
    - Consistency of memory access (the data read by the memory is the data written before) - Proving that the read and write data are “permuted”.
 
-   Currently zkMIPS uses [LogUp](../design/lookup-arguments.md) and [multiset hashing](../design/memory-checking.md) to implement the Lookup argument. 
+   zkMIPS implements these two lookup arguments through [LogUp](../design/lookup-arguments.md) and [multiset hashing](../design/memory-checking.md) hashing respectively.
 
 4. **Core Proof**  
    The core proof includes a set of shard proofs.
