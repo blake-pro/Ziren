@@ -47,7 +47,8 @@ Within the Prover, zkMIPS employs multiple stages to efficiently process and pro
    Lookup serves two key purposes:
    - Cross-Chip Communication - The chip needs to send the logic which itself cannot verify to other chips for verification.
    - Consistency of memory access (the data read by the memory is the data written before) - Proving that the read and write data are “permuted”.
-   Currently zkMIPS uses [multiset hashing](/design/lookup-arguments.md) to implement the Lookup argument. 
+
+   Currently zkMIPS uses [LogUp](../design/lookup-arguments.md) and [multiset hashing](../design/memory-checking.md) to implement the Lookup argument. 
 
 4. **Core Proof**  
    The core proof includes a set of shard proofs.
