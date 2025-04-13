@@ -4,7 +4,6 @@
     - [Installation](./introducation/installation.md)
     - [Performance](./introducation/performance.md)
 - [MIPS VM](./mips-vm/mips-vm.md)
-    - [Execution Trace](./mips-vm/execution-trace.md)
     - [MIPS ISA](./mips-vm/mips-isa.md)
 - [Developer Tutorial](./dev/overview.md)
     - [Program](./dev/program.md)
