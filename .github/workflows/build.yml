@@ -2,9 +2,9 @@ name: Mdbook build
 
 on:
   push:
-    branches: ["update-doc"]
+    branches: ["main"]
   pull_request:
-    branches: [ update-doc ]
+    branches: [ main ]
 
 jobs:
   build:
