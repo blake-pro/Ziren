@@ -430,14 +430,14 @@ where
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use crate::programs::simple_program;
     use crate::{
         mips::MipsAir, syscall::precompiles::sha256::extend_tests::sha_extend_program,
         utils::setup_logger,
     };
     use p3_koala_bear::KoalaBear;
-    use zkm_core_executor::{programs::tests::simple_program, Executor};
+    use zkm_core_executor::Executor;
     use zkm_stark::{
         debug_lookups_with_all_chips, koala_bear_poseidon2::KoalaBearPoseidon2, StarkMachine,
         ZKMCoreOpts,

@@ -262,7 +262,7 @@ where
 mod tests {
     use p3_koala_bear::KoalaBear;
     use p3_matrix::dense::RowMajorMatrix;
-    use zkm_core_executor::{programs::tests::simple_program, ExecutionRecord, Executor};
+    use zkm_core_executor::{ExecutionRecord, Executor};
     use zkm_stark::{
         air::{LookupScope, MachineAir},
         debug_lookups_with_all_chips,
@@ -271,7 +271,7 @@ mod tests {
     };
 
     use crate::{
-        memory::MemoryLocalChip, mips::MipsAir,
+        memory::MemoryLocalChip, mips::MipsAir, programs::simple_program,
         syscall::precompiles::sha256::extend_tests::sha_extend_program, utils::setup_logger,
     };
 
