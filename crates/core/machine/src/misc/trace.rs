@@ -159,24 +159,22 @@ impl MiscInstrsChip {
             return;
         }
         let maddsub_cols = cols.misc_specific_columns.maddsub_mut();
-        maddsub_cols.op_a_access.populate(MemoryRecordEnum::Write(event.a_record), &mut Vec::new());
-        maddsub_cols
-            .op_hi_access
-            .populate(MemoryRecordEnum::Write(event.hi_record), &mut Vec::new());
         let multiply = event.b as u64 * event.c as u64;
         let mul_hi = (multiply >> 32) as u32;
         let mul_lo = multiply as u32;
         maddsub_cols.mul_hi = Word::from(mul_hi);
         maddsub_cols.mul_lo = Word::from(mul_lo);
-        maddsub_cols.carry = F::ZERO;
 
         let is_add = event.opcode == Opcode::MADDU;
         let src2_lo = if is_add { event.a_record.prev_value } else { event.a_record.value };
         let src2_hi = if is_add { event.hi_record.prev_value } else { event.hi_record.value };
         maddsub_cols.src2_lo = Word::from(src2_lo);
         maddsub_cols.src2_hi = Word::from(src2_hi);
-        let (_, carry) = maddsub_cols.low_add_operation.populate(blu, mul_lo, src2_lo, 0);
-        maddsub_cols.hi_add_operation.populate(blu, mul_hi, src2_hi, carry);
+        let _ = maddsub_cols.add_operation.populate(
+            blu,
+            multiply,
+            ((src2_hi as u64) << 32) + (src2_lo as u64),
+        );
     }
 
     fn populate_ext<F: PrimeField32>(
@@ -209,7 +207,7 @@ impl MiscInstrsChip {
         let ins_cols = cols.misc_specific_columns.ins_mut();
         let lsb = event.c & 0x1f;
         let msb = event.c >> 5;
-        ins_cols.op_a_access.populate(MemoryRecordEnum::Write(event.a_record), &mut Vec::new());
+        ins_cols.prev_a_value = Word::from(event.a_record.prev_value);
         let ror_val = event.a_record.prev_value.rotate_right(lsb);
         let srl_val = ror_val >> (msb - lsb + 1);
         let sll_val = event.b << (31 - msb + lsb);

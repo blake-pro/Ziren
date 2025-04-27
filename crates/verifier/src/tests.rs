@@ -7,7 +7,6 @@ use zkm_sdk::{HashableKey, ProverClient, ZKMStdin};
 
 // RUST_LOG=debug cargo test -r test_verify_groth16 --features ark
 #[test]
-#[ignore]
 fn test_verify_groth16() {
     // Set up the pk and vk.
     let client = ProverClient::cpu();
@@ -39,7 +38,6 @@ fn test_verify_groth16() {
 }
 
 #[test]
-#[ignore]
 fn test_verify_plonk() {
     // Set up the pk and vk.
     let client = ProverClient::cpu();
@@ -80,7 +78,7 @@ fn test_e2e_verify_groth16() {
 
     // Get the vkey hash.
     let vkey_hash = vk.bytes32();
-    println!("vk hash: {:?}", vkey_hash);
+    println!("vk hash: {vkey_hash:?}");
 
     let mut groth16_vk_bytes = Vec::new();
     let groth16_vk_path =

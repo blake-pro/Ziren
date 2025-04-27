@@ -1,18 +1,30 @@
 # MIPS VM
-zkMIPS is a verifiable computation infrastructure based on the MIPS32, specifically designed to provide zero-knowledge proof generation for programs written in Rust and Golang. This enhances project auditing and the efficiency of security verification. Focusing on the extensive design experience of MIPS, zkMIPS adopts the MIPS32r2 instruction set as it offers significant hardware advantages. Compared to the RISC-V architecture, MIPS32r2 excels in several key features. Its J/JAL instructions support jump ranges of up to 256MiB, offering greater flexibility for large-scale data processing and complex control flow scenarios. Moreover, the rich set of bit manipulation instructions and additional conditional move instructions (such as MOVZ and MOVN) ensure precise data handling, while the inclusion of the MADDU instruction further improves arithmetic computation efficiency. Overall, by integrating mature MIPS design with zero-knowledge proof, zkMIPS provides an efficient and stable foundational platform for secure computing and decentralized applications.
+zkMIPS is a verifiable computation infrastructure based on the MIPS32, specifically designed to provide zero-knowledge proof generation for programs written in Rust. This enhances project auditing and the efficiency of security verification. Focusing on the extensive design experience of MIPS, zkMIPS adopts the MIPS32r2 instruction set. MIPS VM, one of the core components of zkMIPS, is the execution framework of MIPS32r2 instructions. Below we will briefly introduce the advantages of MIPS32r2 over RV32IM and the execution flow of MIPS VM.
 
-**Execution Flow of zkMIPS**  
-In the execution process of zkMIPS, a Rust program written by the developer is first transformed by a dedicated compiler into the MIPS instruction set, generating a corresponding ELF binary file. This process accurately maps the high-level logic of the program to low-level instructions, laying a solid foundation for subsequent verification. Next, the system employs a specially designed executor to simulate the execution of the ELF file, recording all state changes and computational steps to form a complete execution record with different type of [events](https://github.com/zkMIPS/zkm/tree/dev/init/crates/core/executor/src/events). The events will then be used to generate different traces for different chips. This traces serve as the core data for generating the zero-knowledge proof, ensuring that the proof accurately reflects the real execution of the compiled program. Subsequently, the zkMIPS prover efficiently processes and compresses the generated trace to produce a zero-knowledge proof. This proof not only validates the correctness of the program execution but also significantly reduces the data volume, facilitating rapid verification and storage. Finally, the generated proof is jointly verified by multiple participants and ultimately recorded on-chain, ensuring that the entire computational process is transparent, secure, and trustworthy. With the nice property of zkSNARK, the proof is short and fast to verify.
 
-**Circuit Module of zkMIPS**  
-In terms of circuit design, zkMIPS adopts a highly modular strategy, breaking the entire MIPS program into multiple submodules with clearly defined functions to meticulously manage and verify the execution state of each part. The system can be divided into several modules: CPU, memory, byte processing,  and instructions. 
+## Advantages of MIPS32r2 over RV32IM
 
-***The CPU module*** focuses on common operation for all instructions， such as register read/write， pc and shard processing, .etc. 
+**1. MIPS32r2 is more consistent and offers more complex opcodes**
+  - The J/JAL instructions support jump ranges of up to 256MiB, offering greater flexibility for large-scale data processing and complex control flow scenarios.
+  - MIPS32r2 has rich set of bit manipulation instructions and additional conditional move instructions (such as MOVZ and MOVN) that ensure precise data handling.
+  - MIPS32r2 has integer multiply-add/sub instructions, which can improve arithmetic computation efficiency.
+  - MIPS32r2 has SEH and SEB sign extension instructions, which make it very convenient to perform sign extension operations on char and short type data.
+   
+**2. MIPS32r2 has a more established ecosystem**
+  - All instructions in MIPS32r2, as a whole, have been very mature and widely used for more than 20 years. There will be no compatibility issues between ISA modules. And there will be no turmoil caused by manufacturer disputes.
+  - MIPS has been successfully applied to Optimism's Fraud Proof VM
 
-***The memory module*** clearly distinguishes between global and local memory, establishing defined boundaries for data access and state transfer. 
 
-***byte processing modules*** are employed to manage byte data validation and processing.
+## Execution Flow of MIPS VM
 
-***instructions modules*** focuses on computation for different type of instructions. It can be divided into different type of sub-chips (ALU, Branch, Jump, Memory, Syscall, Misc). Each chip focuses on one kind or type of instructions. Such as ALU chip focuses on arithmetic and logical computations, supporting various specific operations including instructions like CLO/Z. Branch chip focuses on conditional branch.
+The execution flow of MIPS VM is as follows:
+![zkMIPS MIPS VM execution flow](mips_vm_execution.png)
+Before the execution process of MIPS VM, a Rust program written by the developer is first transformed by a dedicated compiler into the MIPS instruction set, generating a corresponding ELF binary file. This process accurately maps the high-level logic of the program to low-level instructions, laying a solid foundation for subsequent verification. 
 
-Through this detailed division of circuit modules, zkMIPS can accurately capture the behavior and state of each submodule during the generation of the zero-knowledge proof, to improve the overall security of the system.
+MIPS VM employs a specially designed executor to simulate the execution of the ELF file:
+1. First，the ELF code is loaded into [Program](https://github.com/zkMIPS/zkMIPS/tree/main/crates/core/executor/src/program.rs), where all data is loaded into the memory image, and all the code is decoded and added into the [Instruction](https://github.com/zkMIPS/zkMIPS/tree/main/crates/core/executor/src/instruction.rs) List. 
+2. Then, MIPS VM executes the Instruction and update the ISA states step by step, which is started from the entry point of the ELF and ended with exit condition is triggered. A complete execution record with different type of [events](https://github.com/zkMIPS/zkMIPS/tree/main/crates/core/executor/src/events) is recorded in this process. The whole program will be divided into several shards based on the shape of the execution record.
+
+After the execution process of MIPS VM, the execution record will be used by the prover to generate zero-knowledge proof:
+  - The events recorded in execution record will be used to generate different traces by different chips. 
+  - This traces serve as the core data for generating the zero-knowledge proof, ensuring that the proof accurately reflects the real execution of the compiled program. 

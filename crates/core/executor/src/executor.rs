@@ -696,7 +696,7 @@ impl<'a> Executor<'a> {
         } else if instruction.is_branch_instruction() {
             self.emit_branch_event(instruction.opcode, a, b, c, op_a_0, next_pc, next_next_pc);
         } else if instruction.is_jump_instruction() {
-            self.emit_jump_event(instruction.opcode, a, b, c, op_a_0, next_pc);
+            self.emit_jump_event(instruction.opcode, a, b, c, op_a_0, next_pc, next_next_pc);
         } else if instruction.is_syscall_instruction() {
             self.emit_syscall_event(clk, record.a, op_a_0, syscall_code, b, c, next_pc);
         } else if instruction.is_misc_instruction() {
@@ -850,6 +850,7 @@ impl<'a> Executor<'a> {
 
     /// Emit a jump event.
     #[inline]
+    #[allow(clippy::too_many_arguments)]
     fn emit_jump_event(
         &mut self,
         opcode: Opcode,
@@ -858,8 +859,9 @@ impl<'a> Executor<'a> {
         c: u32,
         op_a_0: bool,
         next_pc: u32,
+        next_next_pc: u32,
     ) {
-        let event = JumpEvent::new(self.state.pc, next_pc, opcode, a, b, c, op_a_0);
+        let event = JumpEvent::new(self.state.pc, next_pc, next_next_pc, opcode, a, b, c, op_a_0);
         self.record.jump_events.push(event);
         emit_jump_dependencies(self, event);
     }
@@ -1084,8 +1086,10 @@ impl<'a> Executor<'a> {
             };
         }
 
+        // Delay slot is the instruction after a branch or jump instruction.
+        let mut next_is_delay_slot = false;
         match instruction.opcode {
-            // syscall
+            // syscall.
             Opcode::SYSCALL => {
                 let syscall_id = self.register(Register::V0);
                 c = self.rr(Register::A1, MemoryAccessPosition::C);
@@ -1157,9 +1161,6 @@ impl<'a> Executor<'a> {
                 self.state.clk += precompile_cycles;
                 exit_code = returned_exit_code;
             }
-            Opcode::MEQ | Opcode::MNE => {
-                (a, b, c) = self.execute_condmov(instruction);
-            }
 
             // Arithmetic instructions
             Opcode::ADD
@@ -1182,14 +1183,6 @@ impl<'a> Executor<'a> {
             | Opcode::CLZ
             | Opcode::CLO => {
                 (hi, a, b, c) = self.execute_alu(instruction);
-            }
-
-            Opcode::MADDU => {
-                (hi, a, b, c) = self.execute_maddu(instruction);
-            }
-
-            Opcode::MSUBU => {
-                (hi, a, b, c) = self.execute_msubu(instruction);
             }
 
             // Load instructions.
@@ -1217,35 +1210,45 @@ impl<'a> Executor<'a> {
             | Opcode::BGTZ
             | Opcode::BLTZ => {
                 (a, b, c, next_next_pc) = self.execute_branch(instruction, next_pc, next_next_pc);
+                next_is_delay_slot = true;
             }
 
             // Jump instructions.
             Opcode::Jump => {
                 (a, b, c, next_next_pc) = self.execute_jump(instruction);
+                next_is_delay_slot = true;
             }
             Opcode::Jumpi => {
                 (a, b, c, next_next_pc) = self.execute_jumpi(instruction);
+                next_is_delay_slot = true;
             }
             Opcode::JumpDirect => {
                 (a, b, c, next_next_pc) = self.execute_jump_direct(instruction);
+                next_is_delay_slot = true;
             }
 
+            // Misc instructions.
+            Opcode::MEQ | Opcode::MNE => {
+                (a, b, c) = self.execute_condmov(instruction);
+            }
+            Opcode::MADDU => {
+                (hi, a, b, c) = self.execute_maddu(instruction);
+            }
+            Opcode::MSUBU => {
+                (hi, a, b, c) = self.execute_msubu(instruction);
+            }
             Opcode::TEQ => {
                 (a, b, c) = self.execute_teq(instruction);
             }
-
             Opcode::SEXT => {
                 (a, b, c) = self.execute_sext(instruction);
             }
-
             Opcode::WSBH => {
                 (a, b, c) = self.execute_wsbh(instruction);
             }
-
             Opcode::EXT => {
                 (a, b, c) = self.execute_ext(instruction);
             }
-
             Opcode::INS => {
                 (a, b, c) = self.execute_ins(instruction);
             }
@@ -1279,6 +1282,12 @@ impl<'a> Executor<'a> {
         // Update the program counter.
         self.state.pc = next_pc;
         self.state.next_pc = next_next_pc;
+
+        // Skip the delay slot if it's nop instruction.
+        if next_is_delay_slot && instruction.raw == 0 {
+            self.state.pc = self.state.next_pc;
+            self.state.next_pc = self.state.next_pc.wrapping_add(4);
+        }
 
         // Update the clk to the next cycle.
         self.state.clk += 5;

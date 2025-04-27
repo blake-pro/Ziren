@@ -136,7 +136,7 @@ impl<F: PrimeField32> MachineAir<F> for MemoryGlobalChip {
                 cols.is_prev_addr_zero.populate(prev_addr);
                 cols.is_first_comp = F::from_bool(prev_addr != 0);
                 if prev_addr != 0 {
-                    debug_assert!(prev_addr < addr, "prev_addr {} < addr {}", prev_addr, addr);
+                    debug_assert!(prev_addr < addr, "prev_addr {prev_addr} < addr {addr}");
                     let addr_bits: [_; 32] = array::from_fn(|i| (addr >> i) & 1);
                     cols.lt_cols.populate(&previous_addr_bits, &addr_bits);
                 }
@@ -392,7 +392,7 @@ where
 
         // Register %x0 should always be 0. See 2.6 Load and Store Instruction on
         // P.18 of the MIPS spec.  To ensure that, we will constrain that the value is zero
-        // whenever the `is_first_comp` flag is set to to zero as well. This guarantees that the
+        // whenever the `is_first_comp` flag is set to zero as well. This guarantees that the
         // presence of this flag asserts the initialization/finalization of %x0 to zero.
         //
         // **Remark**: it is up to the verifier to ensure that this flag is set to zero exactly
@@ -462,7 +462,7 @@ mod tests {
         println!("{:?}", trace.values);
 
         for mem_event in shard.global_memory_finalize_events {
-            println!("{:?}", mem_event);
+            println!("{mem_event:?}");
         }
     }
 

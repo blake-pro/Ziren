@@ -16,11 +16,11 @@
 	"Global": 428,
 	"Secp256k1AddAssign": 4013,
 	"AddSub": 48,
-	"Jump": 83,
+	"Jump": 87,
 	"Branch": 99,
 	"MemoryInstrs": 120,
 	"SyscallInstrs": 89,
-	"MiscInstrs": 143,
+	"MiscInstrs": 115,
 	"Bn254FpOpAssign": 704,
 	"Mul": 87,
 	"ShaExtend": 15936,
@@ -42,7 +42,7 @@
 	"SyscallCore": 22,
 	"Bn254Fp2AddSubAssign": 1382,
 	"Bls12381FpOpAssign": 1048,
-	"Cpu": 143,
+	"Cpu": 145,
 	"ShaCompress": 40480,
 	"Secp256k1DoubleAssign": 4492
 }

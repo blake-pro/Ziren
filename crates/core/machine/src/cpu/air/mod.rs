@@ -72,6 +72,7 @@ where
             local.is_memory,
             local.is_syscall,
             local.is_halt,
+            local.is_sequential,
             local.is_real,
         );
 
@@ -88,6 +89,15 @@ where
         builder.when(not_real.clone()).assert_zero(AB::Expr::ONE - local.instruction.imm_b);
         builder.when(not_real.clone()).assert_zero(AB::Expr::ONE - local.instruction.imm_c);
         builder.when(not_real.clone()).assert_zero(AB::Expr::ONE - local.is_syscall);
+
+        // Check that the skip_next_nop_slot, is_halt and is_sequential flags are correct.
+        // skip_next_nop_slot is only set when the next instruction of a branch or jump instruction is nop.
+        // is_sequential is only set when the instruction is not halt syscall or branch/jump instruction.
+        builder
+            .when(local.is_real)
+            .when(local.skip_next_nop_slot)
+            .assert_zero(local.is_halt + local.is_sequential);
+        builder.when(local.is_real).when(local.is_halt).assert_zero(local.is_sequential);
     }
 }
 
@@ -153,7 +163,35 @@ impl CpuChip {
         // Verify the public value's start pc.
         builder.when_first_row().assert_eq(public_values.start_pc, local.pc);
 
-        builder.when_transition().when(next.is_real).assert_eq(local.next_pc, next.pc);
+        // Verify the pc, next_pc, and next_next_pc
+        // next.pc is always equal to local.next_pc ifif the next instruction is not skipped.
+        // Otherwise，it's equal to local.next_next_pc.
+        builder
+            .when_transition()
+            .when(next.is_real)
+            .when_not(local.skip_next_nop_slot)
+            .assert_eq(local.next_pc, next.pc);
+
+        builder
+            .when_transition()
+            .when(next.is_real)
+            .when(local.skip_next_nop_slot)
+            .assert_eq(local.next_next_pc, next.pc);
+
+        // next.next_pc is equal to local.next_next_pc when the current instruction is not halt,
+        // and the next instruction is not skipped.
+        builder
+            .when_transition()
+            .when(next.is_real)
+            .when_not(next.is_halt + local.skip_next_nop_slot)
+            .assert_eq(local.next_next_pc, next.next_pc);
+
+        // next_next_pc is equal to next_pc + 4 If the current instruction is not halt or jump/branch instruction.
+        builder
+            .when_transition()
+            .when(local.is_real)
+            .when(local.is_sequential)
+            .assert_eq(local.next_next_pc, local.next_pc + AB::Expr::from_canonical_u32(4));
 
         // Verify the public value's next pc.  We need to handle two cases:
         // 1. The last real row is a transition row.

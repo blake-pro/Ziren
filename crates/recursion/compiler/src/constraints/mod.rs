@@ -30,7 +30,7 @@ impl<C: Config + Debug> ConstraintCompiler<C> {
     pub fn alloc_id(&mut self) -> String {
         let id = self.allocator;
         self.allocator += 1;
-        format!("backend{}", id)
+        format!("backend{id}")
     }
 
     /// Allocates a variable in the constraint system.
@@ -378,7 +378,7 @@ impl<C: Config + Debug> ConstraintCompiler<C> {
                     args: vec![vec![a.id()]],
                 }),
                 DslIr::CircuitCommitCommittedValuesDigest(a) => constraints.push(Constraint {
-                    opcode: ConstraintOpcode::CommitCommitedValuesDigest,
+                    opcode: ConstraintOpcode::CommitCommittedValuesDigest,
                     args: vec![vec![a.id()]],
                 }),
                 DslIr::CircuitFelts2Ext(a, b) => constraints.push(Constraint {
@@ -407,7 +407,7 @@ impl<C: Config + Debug> ConstraintCompiler<C> {
 
                 // Version 2 instructions
                 DslIr::CircuitV2CommitPublicValues(_) => {}
-                _ => panic!("unsupported {:?}", instruction),
+                _ => panic!("unsupported {instruction:?}"),
             };
         }
         constraints

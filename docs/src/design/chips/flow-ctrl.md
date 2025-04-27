@@ -1,13 +1,13 @@
 # Flow Control
 
-zkMIPS enforces MIPS32r2 control flow verification via dedicated Branch and Jump Chips, ensuring precise execution of program control instructions.
+zkMIPS enforces MIPS32r2 control flow verification via dedicated Branch and Jump chips, ensuring precise execution of program control instructions.
 
  ## Branch Chip
 
 MIPS branch instructions execute conditional jumps through register comparisons (BEQ/BNE for equality, BGTZ/BLEZ etc. for sign checks). They calculate targets using 16-bit offsets shifted left twice (enabling ±128KB jumps) and feature a mandatory branch delay slot that always executes the next instruction—simplifying pipelining by allowing compiler-controlled optimizations. 
 
 ### Structure Description
-Branch Chip uses columns to record the following information.
+Branch chip uses columns to record the following information.
 - ​Control Flow Management​​
   - Tracks current and future program counter states across sequential and branching execution paths (`pc, next_pc,target_pc,next_next_pc`).
   - Implements 32-bit address validation through dedicated range-checking components(`next_pc_range_checker, target_pc_range_checker, next_next_pc_range_checker`).
@@ -16,7 +16,7 @@ Branch Chip uses columns to record the following information.
   - Contains special flag detection for zero-register operand scenarios (`op_a_0`).
 - ​​Instruction Semantics Encoding​​
 
-  Embeds six mutually exclusive flags corresponding to MIPS branch opcodes (`is_beq, is_bltz, is_blez, is_bgtz, is_bgez`).
+  Embeds five mutually exclusive flags corresponding to MIPS branch opcodes (`is_beq, is_bltz, is_blez, is_bgtz, is_bgez`).
 - ​Execution State Tracking​​
 
   Maintains dual execution path indicators for taken/not-taken branch conditions(`is_branching, not_branching`). 
@@ -48,7 +48,7 @@ We use the following key constraints to validate the branch chip:
 MIPS jump instructions force unconditional PC changes via absolute or register-based targets. They calculate 256MB-range addresses by combining PC's upper bits with 26-bit immediates or use full 32-bit register values. All jumps enforce a ​mandatory delay slot executing the next instruction—enabling compiler-driven pipeline optimizations without speculative execution. 
 
 ### Structure Description
-Jump Chip uses columns to record the following information:
+Jump chip uses columns to record the following information:
 
 - ​Control Flow Management​​
 
@@ -56,14 +56,14 @@ Jump Chip uses columns to record the following information:
   - Implements 32-bit address validation via dedicated range checkers (`next_pc_range_checker, target_pc_range_checker, op_a_range_checker`).
 - ​​Operand System​​
   - Stores three operands for jump address calculation (`op_a_value, op_b_value, op_c_value`).
-  - Contains zero-register flag detection for first oprand register (`op_a_0`).
+  - Contains zero-register flag detection for first operand register (`op_a_0`).
 - ​​Instruction Semantics​​
   
   Embeds three mutually exclusive jump-type flags (`is_jump, is_jumpi, is_jumpdirect`).
 
 ### Major Constraints
 
-We use the fllowing key constraints to valid the jump chip:
+We use the fllowing key constraints to validate the jump chip:
 
 - Instruction Validity
   - Exactly one jump instruction flag must be active per row:

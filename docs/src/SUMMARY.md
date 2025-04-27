@@ -1,11 +1,10 @@
 # Summary
 
-- [Introducation](./introducation/overview.md)
-    - [Installation](./introducation/installation.md)
-    - [Performance](./introducation/performance.md)
-- [MIPS VM](./mips-vm/overview)
-    - [Execution Trace](./mips-vm/execution_trace.md)
-    - [MIPS ISA](./mips-vm/mips_isa.md)
+- [Introduction](./introduction/overview.md)
+    - [Installation](./introduction/installation.md)
+    - [Performance](./introduction/performance.md)
+- [MIPS VM](./mips-vm/mips-vm.md)
+    - [MIPS ISA](./mips-vm/mips-isa.md)
 - [Developer Tutorial](./dev/overview.md)
     - [Program](./dev/program.md)
         - [Host Program](./dev/host-program.md)

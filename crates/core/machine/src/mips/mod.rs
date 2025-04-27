@@ -384,6 +384,15 @@ impl<F: PrimeField32> MipsAir<F> {
         costs.insert(syscall_instrs.name(), syscall_instrs.cost());
         chips.push(syscall_instrs);
 
+        let memory_instructions =
+            Chip::new(MipsAir::MemoryInstrs(MemoryInstructionsChip::default()));
+        costs.insert(memory_instructions.name(), memory_instructions.cost());
+        chips.push(memory_instructions);
+
+        let misc_instrs = Chip::new(MipsAir::MiscInstrs(MiscInstrsChip::default()));
+        costs.insert(misc_instrs.name(), misc_instrs.cost());
+        chips.push(misc_instrs);
+
         let memory_global_init =
             Chip::new(MipsAir::MemoryGlobalInit(MemoryGlobalChip::new(MemoryChipType::Initialize)));
         costs.insert(memory_global_init.name(), memory_global_init.cost());
@@ -405,15 +414,6 @@ impl<F: PrimeField32> MipsAir<F> {
         let byte = Chip::new(MipsAir::ByteLookup(ByteChip::default()));
         costs.insert(byte.name(), byte.cost());
         chips.push(byte);
-
-        let memory_instructions =
-            Chip::new(MipsAir::MemoryInstrs(MemoryInstructionsChip::default()));
-        costs.insert(memory_instructions.name(), memory_instructions.cost());
-        chips.push(memory_instructions);
-
-        let misc_instrs = Chip::new(MipsAir::MiscInstrs(MiscInstrsChip::default()));
-        costs.insert(misc_instrs.name(), misc_instrs.cost());
-        chips.push(misc_instrs);
 
         (chips, costs)
     }
@@ -685,7 +685,7 @@ pub mod tests {
         let costs: HashMap<String, u64> = serde_json::from_reader(file).unwrap();
         // Compare with costs computed by machine
         let machine_costs = MipsAir::<KoalaBear>::costs();
-        log::info!("{:?}", machine_costs);
+        log::info!("{machine_costs:?}");
         assert_eq!(costs, machine_costs);
     }
 
@@ -693,7 +693,7 @@ pub mod tests {
     #[ignore]
     fn write_core_air_costs() {
         let costs = MipsAir::<KoalaBear>::costs();
-        println!("{:?}", costs);
+        println!("{costs:?}");
         // write to file
         // Create directory if it doesn't exist
         let dir = std::path::Path::new("../executor/src/artifacts");
@@ -753,7 +753,10 @@ pub mod tests {
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 0, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 0, false, true),
-            Instruction::new(Opcode::BNE, 29, 30, 100, false, true),
+            Instruction::new_with_raw(Opcode::BNE, 29, 30, 100, false, true, 0),
+            Instruction::new_with_raw(Opcode::SLL, 0, 0, 0, false, true, 0),
+            Instruction::new_with_raw(Opcode::BNE, 29, 30, 100, false, true, 1),
+            Instruction::new(Opcode::ADD, 29, 0, 0, false, true),
         ];
         let program = Program::new(instructions, 0, 0);
         run_test::<CpuProver<_, _>>(program).unwrap();

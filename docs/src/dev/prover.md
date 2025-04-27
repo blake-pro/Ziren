@@ -1,14 +1,16 @@
 # Prover
 
 The zkm_sdk crate provides all the necessary tools for proof generation. Key features include the `ProverClient`, enabling you to:
-- Initialize proving/verifying keys via `setup()`. 
+- Initialize proving/verifying keys via `setup()`.
 - Execute your program via `execute()`.
 - Generate proofs with `prove()`.
 - Verify proofs through `verify()`.
 
-## Example: [Fibonacci](https://github.com/zkMIPS/zkm/blob/dev/init/examples/fibonacci/host/src/main.rs)
+When generating Groth16 or PLONK proofs, the `ProverClient` automatically downloads the pre-generated proving key (pk) from a trusted setup by calling `try_install_circuit_artifacts()`.
 
-The following code is a example of using zkm_sdk in host.
+## Example: [Fibonacci](https://github.com/zkMIPS/zkMIPS/blob/main/examples/fibonacci/host/src/main.rs)
+
+The following code is an example of using zkm_sdk in host.
 
 ```rust
 use zkm_sdk::{include_elf, utils, ProverClient, ZKMProofWithPublicValues, ZKMStdin};
@@ -79,7 +81,7 @@ pub enum ZKMProof {
 }
 ```
 
-### [Core Proof (Default)](https://github.com/zkMIPS/zkm/blob/dev/init/examples/fibonacci/host/src/main.rs)
+### [Core Proof (Default)](https://github.com/zkMIPS/zkMIPS/blob/main/examples/fibonacci/host/src/main.rs)
 
 The default prover mode generates a sequence of STARK proofs whose cumulative proof size scales linearly with the execution trace length.
 
@@ -88,7 +90,7 @@ let client = ProverClient::new();
 client.prove(&pk, stdin).run().unwrap();
 ```
 
-### [Compressed Proof](https://github.com/zkMIPS/zkm/blob/dev/init/examples/fibonacci/host/bin/compressed.rs)
+### [Compressed Proof](https://github.com/zkMIPS/zkMIPS/blob/main/examples/fibonacci/host/bin/compressed.rs)
 
 The compressed proving mode generates constant-sized STARK proofs, but not suitable for on-chain verification.
 
@@ -97,7 +99,7 @@ let client = ProverClient::new();
 client.prove(&pk, stdin).compressed().run().unwrap();
 ```
 
-### [Groth16 Proof (Recommended)](https://github.com/zkMIPS/zkm/blob/dev/init/examples/fibonacci/host/bin/groth16_bn254.rs)
+### [Groth16 Proof (Recommended)](https://github.com/zkMIPS/zkMIPS/blob/main/examples/fibonacci/host/bin/groth16_bn254.rs)
 
 The Groth16 proving mode ​generates succinct SNARK proofs with a compact size of approximately 260 bytes, ​and features on-chain verification.
 
@@ -106,7 +108,7 @@ let client = ProverClient::new();
 client.prove(&pk, stdin).groth16().run().unwrap();
 ```
 
-### [PLONK Proof](https://github.com/zkMIPS/zkm/blob/dev/init/examples/fibonacci/host/bin/plonk_bn254.rs)
+### [PLONK Proof](https://github.com/zkMIPS/zkMIPS/blob/main/examples/fibonacci/host/bin/plonk_bn254.rs)
 
 The PLONK proving mode generates succinct SNARK proofs with a compact size of approximately 868 bytes, while maintaining on-chain verifiability. In contrast to Groth16, PLONK removes the dependency on trusted setup ceremonies.
 
@@ -138,3 +140,154 @@ To activate **AVX512** optimization, add these flags to your RUSTFLAGS environme
 ```shell
 RUSTFLAGS="-C target-cpu=native -C target-feature=+avx512f" cargo run --release
 ```
+## Network Prover
+We support the use of a network prover via the ZKM proof network, accessible through our RESTful API.
+By default, it uses the Groth16 proving mode.
+>The proving process consists of several stages: queuing, splitting, proving, aggregating and finalizing.
+Each stage involves a varying duration.
+
+### Requirements
+
+- CA certificate: `ca.pem`, `ca.key`.
+- [Register](https://www.zkm.io/apply) your address to gain access.
+- Use zkm_sdk from our [project template](https://github.com/zkMIPS/zkm-project-template):
+```toml
+zkm-sdk = { git = "https://github.com/zkMIPS/zkm-project-template", branch = "main", features = ["snark"] }
+```
+### Environment Variable Setup
+Before running your application, make sure to export the required environment variable to enable the network prover.
+Here's an example:
+
+```bash
+export ZKM_PROVER=${ZKM_PROVER-"network"}
+export RUST_LOG=${RUST_LOG-info}
+export SEG_SIZE=${SEG_SIZE-65536}
+export OUTPUT_DIR=${BASEDIR}/output
+export EXECUTE_ONLY=false
+
+##network proving
+export CA_CERT_PATH=${BASEDIR}/tool/ca.pem
+export CERT_PATH=${BASEDIR}/tool/cert.pem
+export KEY_PATH=${BASEDIR}/tool/key.pem
+##The private key corresponding to the public key when registering in the https://www.zkm.io/apply
+export PROOF_NETWORK_PRVKEY=
+export ENDPOINT=https://152.32.186.45:20002    ##the test entry of zkm proof network
+export DOMAIN_NAME=stage
+```
+
+### Example
+
+The following is an example of using the network prover on the host:
+
+```rust
+const ELF: &[u8] = include_bytes!(env!("ZKM_ELF_bitvm2-covenant"));
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    env_logger::try_init().unwrap_or_default();
+
+    //  Directory for output files
+    let output_dir = env::var("OUTPUT_DIR").unwrap_or(String::from("./output"));
+    let seg_size = env::var("SEG_SIZE").unwrap_or("262144".to_string());
+    let seg_size = seg_size.parse::<_>().unwrap_or(262144);
+    let execute_only = env::var("EXECUTE_ONLY").unwrap_or("false".to_string());
+    let execute_only = execute_only.parse::<bool>().unwrap_or(false);
+
+    // Network endpoint, should be: https://152.32.186.45:20002
+    let endpoint = env::var("ENDPOINT").map_or(None, |endpoint| Some(endpoint.to_string()));
+    let ca_cert_path = env::var("CA_CERT_PATH").map_or(None, |path| Some(path.to_string()));
+    let cert_path = env::var("CERT_PATH").map_or(None, |x| Some(x.to_string()));
+    // The private key path of the certificate
+    let key_path = env::var("KEY_PATH").map_or(None, |x| Some(x.to_string()));
+    let domain_name = Some(env::var("DOMAIN_NAME").unwrap_or("stage".to_string()));
+    // The private key of the proof network, which is used to sign the proof.
+    let proof_network_privkey =
+        env::var("PROOF_NETWORK_PRVKEY").map_or(None, |x| Some(x.to_string()));
+
+    // Create configuration for the prover client
+    let prover_cfg = ClientCfg {
+        zkm_prover_type: "network".to_string(),
+        endpoint,
+        ca_cert_path,
+        cert_path,
+        key_path,
+        domain_name,
+        proof_network_privkey,
+    };
+    let prover_client = ProverClient::new(&prover_cfg).await;
+
+    let mut prover_input = ProverInput {
+        elf: Vec::from(ELF),
+        seg_size,
+        execute_only,
+        ..Default::default()
+    };
+    // If the guest program doesn't have inputs, it doesn't need the setting.
+    set_guest_input(&mut prover_input);
+    
+    // Proving
+    let proving_result = prover_client.prover.prove(&prover_input, None).await;
+    
+    // Write the proof to the output directory
+    match proving_result {
+        Ok(Some(prover_result)) => {
+            if !execute_only {
+                if prover_result.proof_with_public_inputs.is_empty() {
+                    log::info!(
+                        "Fail: snark_proof_with_public_inputs.len() is : {}.Please try setting SEG_SIZE={}",
+                        prover_result.proof_with_public_inputs.len(), seg_size/2
+                    );
+                }
+                let output_path = Path::new(&output_dir);
+                let proof_result_path =
+                    output_path.join("snark_proof_with_public_inputs.json");
+                let mut f = file::new(&proof_result_path.to_string_lossy());
+                match f.write(prover_result.proof_with_public_inputs.as_slice()) {
+                    Ok(bytes_written) => {
+                        log::info!("Proof: successfully written {} bytes.", bytes_written);
+                    }
+                    Err(e) => {
+                        log::info!("Proof: failed to write to file: {}", e);
+                    }
+                }
+                log::info!("Generating proof successfully.");
+            } else {
+                log::info!("Generating proof successfully .The proof is not saved.");
+            }
+        }
+        Ok(None) => {
+            log::info!("Failed to generate proof.The result is None.");
+        }
+        Err(e) => {
+            log::info!("Failed to generate proof. error: {}", e);
+        }
+    }
+    Ok(())
+}
+
+fn set_guest_input(prover_input: &mut ProverInput) {
+    // Combine all the inputs into a two-dimensional array
+    let mut private_input: Vec<Vec<u8>> = vec![];
+
+    let goat_withdraw_txid: Vec<u8> =
+        hex::decode(std::env::var("GOAT_WITHDRAW_TXID").unwrap_or("32bc8a6c5b3649f92812c461083bab5e8f3fe4516d792bb9a67054ba040b7988".to_string())).unwrap();
+    write_to_guest_private_input(&mut private_input, &goat_withdraw_txid);
+    
+    // Encode private input into a one-dimensional array and pass it to the proof network.
+    let mut pri_buf = Vec::new();
+    bincode::serialize_into(&mut pri_buf, &private_input).expect("private_input serialization failed");
+    prover_input.private_inputstream = pri_buf;
+}
+```
+
+> [!NOTE]
+> The proof network uses `stdin.write_vec()` to write private input data to the guest program.
+> If your guest program uses `zkm_zkvm::io::read();` to read this input, you must serialize
+> it before pushing to the private input:
+```rust
+fn write_to_guest_private_input(private_input: &mut Vec<Vec<u8>>, data: &[u8]) {
+    let mut tmp = Vec::new();
+    bincode::serialize_into(&mut tmp, data).expect("serialization failed");
+    private_input.push(tmp);
+}
+```
+

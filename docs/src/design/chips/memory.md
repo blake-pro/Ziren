@@ -1,13 +1,13 @@
 # Memory
 
-The Memory Chip family manages memory operations in the MIPS execution environment through specialized column-based constraints. It covers five core subsystems: MemoryGlobal, MemoryLocal, MemoryProgram, MemoryAccess, and MemoryInstructions. Together, they enforce the correct execution of MIPS memory operations..
+The Memory chip family manages memory operations in the MIPS execution environment through specialized column-based constraints. It covers five core subsystems: MemoryGlobal, MemoryLocal, MemoryProgram, MemoryAccess, and MemoryInstructions. Together, they enforce the correct execution of MIPS memory operations.
 
 ## MemoryGlobal 
 Handles cross-shard memory management, initialization/finalization of global memory blocks, enforcement of address continuity, and verification of zero-register protection
 
 Major Columns:
 
-- ​Address Tracking: Monitors shard ID and 32-bit memory addresses, while enforceing sequential order.
+- ​Address Tracking: Monitors shard ID and 32-bit memory addresses, while enforcing sequential order.
 - ​Value Validation: Stores 4-byte memory values with byte-level decomposition.
 - ​Control Flags: Identify valid operations and mark terminal addresses in access sequences.
 - ​Zero-Register Protection: Flags operations targeting protected memory regions.
@@ -16,7 +16,7 @@ Key Constraints:
 
 - Addresses must follow strict ascending order verified via 32-bit comparator checks.
 - Memory at address 0 remains immutable after initialization.
-- Cross-shard finalization requires consistency with Global Chip.
+- Cross-shard finalization requires consistency with Global chip.
 
 ## MemoryLocal
 
