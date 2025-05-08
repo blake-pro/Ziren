@@ -11,6 +11,7 @@ use p3_field::Field;
 use p3_field::FieldExtensionAlgebra;
 use p3_field::PrimeField32;
 use p3_maybe_rayon::prelude::IntoParallelIterator;
+use p3_maybe_rayon::prelude::IntoParallelRefIterator;
 use p3_maybe_rayon::prelude::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use zkm_stark::air::{MachineAir, MachineProgram};
@@ -143,10 +144,8 @@ impl Program {
         }
 
         // decode each instruction
-        let instructions: Vec<_> = instructions
-            .windows(2)
-            .map(|window| Instruction::decode_from(window[0], window[1]).unwrap())
-            .collect();
+        let instructions: Vec<_> =
+            instructions.par_iter().map(|inst| Instruction::decode_from(*inst).unwrap()).collect();
 
         Ok(Program {
             instructions,

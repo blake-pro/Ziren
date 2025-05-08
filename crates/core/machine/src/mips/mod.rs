@@ -718,7 +718,7 @@ pub mod tests {
         let costs: HashMap<String, u64> = serde_json::from_reader(file).unwrap();
         // Compare with costs computed by machine
         let machine_costs = MipsAir::<KoalaBear>::costs();
-        log::info!("{machine_costs:?}");
+        log::info!("{:?}", machine_costs);
         assert_eq!(costs, machine_costs);
     }
 
@@ -726,7 +726,7 @@ pub mod tests {
     #[ignore]
     fn write_core_air_costs() {
         let costs = MipsAir::<KoalaBear>::costs();
-        println!("{costs:?}");
+        println!("{:?}", costs);
         // write to file
         // Create directory if it doesn't exist
         let dir = std::path::Path::new("../executor/src/artifacts");
@@ -786,10 +786,7 @@ pub mod tests {
         let instructions = vec![
             Instruction::new(Opcode::ADD, 29, 0, 0, false, true),
             Instruction::new(Opcode::ADD, 30, 0, 0, false, true),
-            Instruction::new_with_raw(Opcode::BNE, 29, 30, 100, false, true, 0),
-            Instruction::new_with_raw(Opcode::SLL, 0, 0, 0, false, true, 0),
-            Instruction::new_with_raw(Opcode::BNE, 29, 30, 100, false, true, 1),
-            Instruction::new(Opcode::ADD, 29, 0, 0, false, true),
+            Instruction::new(Opcode::BNE, 29, 30, 100, false, true),
         ];
         let program = Program::new(instructions, 0, 0);
         run_test::<CpuProver<_, _>>(program).unwrap();
