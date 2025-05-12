@@ -245,7 +245,7 @@ impl Prover<DefaultProverComponents> for NetworkProver {
         self.local_prover.setup(elf)
     }
 
-    /// The proof network only generates the Groth16 proof.
+    /// The proof network can generate Compressed or Groth16 proof.
     fn prove<'a>(
         &'a self,
         pk: &ZKMProvingKey,
