@@ -120,14 +120,25 @@ impl NetworkProver {
             .expect("connect: {self.endpoint:?}")
     }
 
-    async fn request_proof(&self, input: &ProverInput) -> Result<String> {
+    async fn request_proof(&self, input: &ProverInput, kind: ZKMProofKind) -> Result<String> {
+        let seg_size =
+            env::var("SHARD_SIZE").ok().and_then(|s| s.parse::<u32>().ok()).unwrap_or_default();
+        let target_step = if kind == ZKMProofKind::Compressed {
+            Step::InAgg
+        } else if kind == ZKMProofKind::Groth16 {
+            Step::InSnark
+        } else {
+            unimplemented!("unsupported ZKMProofKind")
+        };
+
         let proof_id = uuid::Uuid::new_v4().to_string();
         let mut request = GenerateProofRequest {
             proof_id: proof_id.clone(),
             elf_data: input.elf.clone(),
             // public_input_stream: input.public_inputstream.clone(),
             private_input_stream: input.private_inputstream.clone(),
-            // execute_only: input.execute_only,
+            seg_size,
+            target_step: Some(target_step.into()),
             ..Default::default()
         };
         for receipt_input in input.receipts.iter() {
@@ -163,7 +174,7 @@ impl NetworkProver {
                         Some(step) => log::info!("Generate_proof: {step}"),
                         None => todo!(),
                     }
-                    sleep(Duration::from_secs(30)).await;
+                    sleep(Duration::from_secs(5)).await;
                 }
                 Some(Status::Success) => {
                     let public_values_bytes =
@@ -189,6 +200,7 @@ impl NetworkProver {
         &self,
         elf: &[u8],
         stdin: ZKMStdin,
+        kind: ZKMProofKind,
         timeout: Option<Duration>,
     ) -> Result<ZKMProofWithPublicValues> {
         let private_input = stdin.buffer.clone();
@@ -206,7 +218,7 @@ impl NetworkProver {
             ProverInput { elf: elf.to_vec(), private_inputstream: pri_buf, receipts };
 
         log::info!("calling request_proof.");
-        let proof_id = self.request_proof(&prover_input).await?;
+        let proof_id = self.request_proof(&prover_input, kind).await?;
 
         log::info!("calling wait_proof, proof_id={proof_id}");
         let (proof, public_values) = self.wait_proof(&proof_id, timeout).await?;
@@ -240,9 +252,9 @@ impl Prover<DefaultProverComponents> for NetworkProver {
         stdin: ZKMStdin,
         _opts: ProofOpts,
         _context: ZKMContext<'a>,
-        _kind: ZKMProofKind,
+        kind: ZKMProofKind,
     ) -> Result<ZKMProofWithPublicValues> {
-        block_on(self.prove(&pk.elf, stdin, None))
+        block_on(self.prove(&pk.elf, stdin, kind, None))
     }
 }
 
