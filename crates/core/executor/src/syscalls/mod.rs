@@ -6,7 +6,7 @@ mod context;
 mod deferred;
 mod halt;
 mod hint;
-mod precompiles;
+pub(crate) mod precompiles;
 mod unconstrained;
 mod verify;
 mod write;
