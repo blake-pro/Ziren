@@ -27,6 +27,7 @@ members = [
     "crates/build",
     "crates/sdk",
     "crates/verifier",
+    #        "crates/cuda-adaptor"
 ]
 exclude = ["examples/target"]
 resolver = "2"
@@ -53,7 +54,7 @@ p3-matrix = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-maybe-rayon = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-util = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-fri = { git = "https://github.com/zkMIPS/Plonky3" }
-p3-koala-bear  = { git = "https://github.com/zkMIPS/Plonky3" }
+p3-koala-bear = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-circle = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-keccak = { git = "https://github.com/zkMIPS/Plonky3" }
 p3-keccak-air = { git = "https://github.com/zkMIPS/Plonky3" }
@@ -117,6 +118,7 @@ zkm-verifier = { path = "crates/verifier" }
 zkm-lib = { path = "crates/zkvm/lib", default-features = false }
 zkm-zkvm = { path = "crates/zkvm/entrypoint", default-features = false }
 zkm-curves = { path = "crates/curves" }
+#zkm-cuda-adaptor = { path = "crates/cuda-adaptor" }
 
 # For testing.
 test-artifacts = { path = "crates/test-artifacts" }

@@ -155,7 +155,7 @@ impl NetworkProver {
         &self,
         proof_id: &str,
         timeout: Option<Duration>,
-    ) -> Result<(ZKMProof, ZKMPublicValues)> {
+    ) -> Result<(ZKMProof, ZKMPublicValues, u64)> {
         let start_time = Instant::now();
         let mut client = self.connect().await;
         loop {
@@ -186,7 +186,7 @@ impl NetworkProver {
                     let proof: ZKMProof =
                         serde_json::from_slice(&get_status_response.proof_with_public_inputs)
                             .expect("Failed to deserialize proof");
-                    return Ok((proof, public_values));
+                    return Ok((proof, public_values, get_status_response.total_steps));
                 }
                 _ => {
                     log::error!("generate_proof failed status: {}", get_status_response.status);
@@ -196,13 +196,13 @@ impl NetworkProver {
         }
     }
 
-    pub(crate) async fn prove(
+    pub(crate) async fn prove_with_cycles(
         &self,
         elf: &[u8],
         stdin: ZKMStdin,
         kind: ZKMProofKind,
         timeout: Option<Duration>,
-    ) -> Result<ZKMProofWithPublicValues> {
+    ) -> Result<(ZKMProofWithPublicValues, u64)> {
         let private_input = stdin.buffer.clone();
         let mut pri_buf = Vec::new();
         bincode::serialize_into(&mut pri_buf, &private_input)?;
@@ -221,13 +221,13 @@ impl NetworkProver {
         let proof_id = self.request_proof(&prover_input, kind).await?;
 
         log::info!("calling wait_proof, proof_id={proof_id}");
-        let (proof, public_values) = self.wait_proof(&proof_id, timeout).await?;
-        Ok(ZKMProofWithPublicValues {
+        let (proof, public_values, cycles) = self.wait_proof(&proof_id, timeout).await?;
+        Ok((ZKMProofWithPublicValues {
             proof,
             public_values,
             stdin,
             zkm_version: ZKM_CIRCUIT_VERSION.to_string(),
-        })
+        }, cycles))
     }
 }
 
@@ -254,7 +254,8 @@ impl Prover<DefaultProverComponents> for NetworkProver {
         _context: ZKMContext<'a>,
         kind: ZKMProofKind,
     ) -> Result<ZKMProofWithPublicValues> {
-        block_on(self.prove(&pk.elf, stdin, kind, None))
+        block_on(self.prove_with_cycles(&pk.elf, stdin, kind, None))
+            .map(|(proof, _)| proof)
     }
 }
 
