@@ -196,7 +196,7 @@ impl NetworkProver {
         }
     }
 
-    pub(crate) async fn prove_with_cycles(
+    pub async fn prove_with_cycles(
         &self,
         elf: &[u8],
         stdin: ZKMStdin,
