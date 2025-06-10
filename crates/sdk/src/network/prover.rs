@@ -40,6 +40,9 @@ pub struct NetworkProver {
     pub endpoint: Endpoint,
     pub wallet: LocalWallet,
     pub local_prover: CpuProver,
+    // Polling interval (seconds) for checking proof status,
+    // default is 5 seconds
+    pub poll_interval: u64,
 }
 
 impl NetworkProver {
@@ -91,7 +94,11 @@ impl NetworkProver {
         }
         let wallet = private_key.parse::<LocalWallet>()?;
         let local_prover = CpuProver::new();
-        Ok(NetworkProver { endpoint, wallet, local_prover })
+        let poll_interval = env::var("ZKM_PROOF_POLL_INTERVAL")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(5);
+        Ok(NetworkProver { endpoint, wallet, local_prover, poll_interval })
     }
 
     pub async fn sign_ecdsa(&self, request: &mut GenerateProofRequest) -> Result<()> {
@@ -174,7 +181,7 @@ impl NetworkProver {
                         Some(step) => log::info!("Generate_proof: {step}"),
                         None => todo!(),
                     }
-                    sleep(Duration::from_secs(5)).await;
+                    sleep(Duration::from_secs(self.poll_interval)).await;
                 }
                 Some(Status::Success) => {
                     let public_values_bytes =
