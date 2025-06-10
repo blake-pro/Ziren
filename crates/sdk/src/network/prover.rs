@@ -186,7 +186,11 @@ impl NetworkProver {
                     let proof: ZKMProof =
                         serde_json::from_slice(&get_status_response.proof_with_public_inputs)
                             .expect("Failed to deserialize proof");
-                    return Ok((proof, public_values, get_status_response.total_steps));
+                    let cycles = get_status_response.total_steps;
+                    tracing::info!(
+                        "Proof generation completed successfully, proof_id: {proof_id}, cycles: {cycles}"
+                    );
+                    return Ok((proof, public_values, cycles));
                 }
                 _ => {
                     log::error!("generate_proof failed status: {}", get_status_response.status);
@@ -222,12 +226,15 @@ impl NetworkProver {
 
         log::info!("calling wait_proof, proof_id={proof_id}");
         let (proof, public_values, cycles) = self.wait_proof(&proof_id, timeout).await?;
-        Ok((ZKMProofWithPublicValues {
-            proof,
-            public_values,
-            stdin,
-            zkm_version: ZKM_CIRCUIT_VERSION.to_string(),
-        }, cycles))
+        Ok((
+            ZKMProofWithPublicValues {
+                proof,
+                public_values,
+                stdin,
+                zkm_version: ZKM_CIRCUIT_VERSION.to_string(),
+            },
+            cycles,
+        ))
     }
 }
 
@@ -254,8 +261,7 @@ impl Prover<DefaultProverComponents> for NetworkProver {
         _context: ZKMContext<'a>,
         kind: ZKMProofKind,
     ) -> Result<ZKMProofWithPublicValues> {
-        block_on(self.prove_with_cycles(&pk.elf, stdin, kind, None))
-            .map(|(proof, _)| proof)
+        block_on(self.prove_with_cycles(&pk.elf, stdin, kind, None)).map(|(proof, _)| proof)
     }
 }
 
