@@ -43,7 +43,7 @@ pub struct ZKMCompressWithVkeyShape {
 
 /// Witness layout for the compress stage verifier.
 pub struct ZKMMerkleProofWitnessVariable<
-    C: CircuitConfig<F = KoalaBear>,
+    C: CircuitConfig<F=KoalaBear>,
     SC: FieldHasherVariable<C> + KoalaBearFriConfigVariable<C>,
 > {
     /// The shard proofs to verify.
@@ -67,7 +67,7 @@ pub struct ZKMMerkleProofWitnessValues<SC: FieldHasher<KoalaBear>> {
 impl<C, SC> ZKMMerkleProofVerifier<C, SC>
 where
     SC: KoalaBearFriConfigVariable<C>,
-    C: CircuitConfig<F = SC::Val, EF = SC::Challenge>,
+    C: CircuitConfig<F=SC::Val, EF=SC::Challenge>,
 {
     /// Verify (via Merkle tree) that the vkey digests of a proof belong to a specified set (encoded
     /// the Merkle tree proofs in input).
@@ -98,7 +98,7 @@ pub struct ZKMCompressWithVKeyVerifier<C, SC, A> {
 
 /// Witness layout for the verifier of the proof shape phase of the compress stage.
 pub struct ZKMCompressWithVKeyWitnessVariable<
-    C: CircuitConfig<F = KoalaBear>,
+    C: CircuitConfig<F=KoalaBear>,
     SC: KoalaBearFriConfigVariable<C>,
 > {
     pub compress_var: ZKMCompressWitnessVariable<C, SC>,
@@ -115,10 +115,10 @@ impl<C, SC, A> ZKMCompressWithVKeyVerifier<C, SC, A>
 where
     SC: KoalaBearFriConfigVariable<
         C,
-        FriChallengerVariable = DuplexChallengerVariable<C>,
-        DigestVariable = [Felt<KoalaBear>; DIGEST_SIZE],
+        FriChallengerVariable=DuplexChallengerVariable<C>,
+        DigestVariable=[Felt<KoalaBear>; DIGEST_SIZE],
     >,
-    C: CircuitConfig<F = SC::Val, EF = SC::Challenge, Bit = Felt<KoalaBear>>,
+    C: CircuitConfig<F=SC::Val, EF=SC::Challenge, Bit=Felt<KoalaBear>>,
     <SC::ValMmcs as Mmcs<KoalaBear>>::ProverData<RowMajorMatrix<KoalaBear>>: Clone,
     A: MachineAir<SC::Val> + for<'a> Air<RecursiveVerifierConstraintFolder<'a, C>>,
 {
@@ -139,6 +139,24 @@ where
         let vk_root = input.merkle_var.root.map(|x| builder.eval(x));
         ZKMMerkleProofVerifier::verify(builder, values, input.merkle_var, value_assertions);
         ZKMCompressVerifier::verify(builder, machine, input.compress_var, vk_root, kind);
+    }
+
+    pub fn verify2(
+        builder: &mut Builder<C>,
+        machine: &StarkMachine<SC, A>,
+        input: ZKMCompressWithVKeyWitnessVariable<C, SC>,
+        value_assertions: bool,
+        kind: PublicValuesOutputDigest,
+    ) {
+        let values = input
+            .compress_var
+            .vks_and_proofs
+            .iter()
+            .map(|(vk, _)| vk.hash(builder))
+            .collect::<Vec<_>>();
+        let vk_root = input.merkle_var.root.map(|x| builder.eval(x));
+        ZKMMerkleProofVerifier::verify(builder, values, input.merkle_var, value_assertions);
+        ZKMCompressVerifier::verify2(builder, machine, input.compress_var, vk_root, kind);
     }
 }
 
@@ -176,14 +194,14 @@ impl ZKMCompressWithVKeyWitnessValues<KoalaBearPoseidon2> {
     }
 }
 
-impl<C: CircuitConfig<F = KoalaBear, EF = InnerChallenge>, SC: KoalaBearFriConfigVariable<C>>
-    Witnessable<C> for ZKMCompressWithVKeyWitnessValues<SC>
+impl<C: CircuitConfig<F=KoalaBear, EF=InnerChallenge>, SC: KoalaBearFriConfigVariable<C>>
+Witnessable<C> for ZKMCompressWithVKeyWitnessValues<SC>
 where
-    Com<SC>: Witnessable<C, WitnessVariable = <SC as FieldHasherVariable<C>>::DigestVariable>,
-    // This trait bound is redundant, but Rust-Analyzer is not able to infer it.
+    Com<SC>: Witnessable<C, WitnessVariable=<SC as FieldHasherVariable<C>>::DigestVariable>,
+// This trait bound is redundant, but Rust-Analyzer is not able to infer it.
     SC: FieldHasher<KoalaBear>,
-    <SC as FieldHasher<KoalaBear>>::Digest: Witnessable<C, WitnessVariable = SC::DigestVariable>,
-    OpeningProof<SC>: Witnessable<C, WitnessVariable = FriProofVariable<C, SC>>,
+    <SC as FieldHasher<KoalaBear>>::Digest: Witnessable<C, WitnessVariable=SC::DigestVariable>,
+    OpeningProof<SC>: Witnessable<C, WitnessVariable=FriProofVariable<C, SC>>,
 {
     type WitnessVariable = ZKMCompressWithVKeyWitnessVariable<C, SC>;
 

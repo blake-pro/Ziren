@@ -1,5 +1,6 @@
 //! A simple example showing how to aggregate proofs of multiple programs with ZKM.
 
+use serde::{Deserialize, Serialize};
 use zkm_sdk::{
     include_elf, HashableKey, ProverClient, ZKMProof, ZKMProofWithPublicValues, ZKMStdin,
     ZKMVerifyingKey,
@@ -14,6 +15,7 @@ const FIBONACCI_ELF: &[u8] = include_elf!("fibonacci");
 /// An input to the aggregation program.
 ///
 /// Consists of a proof and a verification key.
+#[derive(Clone, Serialize, Deserialize)]
 struct AggregationInput {
     pub proof: ZKMProofWithPublicValues,
     pub vk: ZKMVerifyingKey,
@@ -52,6 +54,10 @@ fn main() {
     let input_2 = AggregationInput { proof: proof_2, vk: fibonacci_vk.clone() };
     let input_3 = AggregationInput { proof: proof_3, vk: fibonacci_vk.clone() };
     let inputs = vec![input_1, input_2, input_3];
+
+    // Wirte the inputs to a file.
+    let inputs_json = serde_json::to_string(&inputs).expect("failed to serialize inputs");
+    std::fs::write("inputs.json", inputs_json).expect("failed to write inputs to file");
 
     // Aggregate the proofs.
     tracing::info_span!("aggregate the proofs").in_scope(|| {

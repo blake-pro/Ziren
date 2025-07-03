@@ -197,7 +197,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
                 .parse()
                 .unwrap_or(CORE_CACHE_SIZE),
         )
-        .expect("PROVER_CORE_CACHE_SIZE must be a non-zero usize");
+            .expect("PROVER_CORE_CACHE_SIZE must be a non-zero usize");
 
         let core_shape_config = env::var("FIX_CORE_SHAPES")
             .map(|v| v.eq_ignore_ascii_case("true"))
@@ -391,6 +391,19 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
                 input,
             ))
         })
+    }
+
+    pub fn compress_program2(
+        &self,
+        input: &ZKMCompressWithVKeyWitnessValues<InnerSC>,
+    ) -> Arc<RecursionProgram<KoalaBear>> {
+        // Get the operations.
+        Arc::new(compress_program_from_input2::<C>(
+            self.compress_shape_config.as_ref(),
+            &self.compress_prover,
+            self.vk_verification,
+            input,
+        ))
     }
 
     pub fn shrink_program(
@@ -669,30 +682,30 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
                             let (program, witness_stream) = tracing::debug_span!(
                                 "get program and witness stream"
                             )
-                            .in_scope(|| match input {
-                                ZKMCircuitWitness::Core(input) => {
-                                    let mut witness_stream = Vec::new();
-                                    Witnessable::<InnerConfig>::write(&input, &mut witness_stream);
-                                    (self.recursion_program(&input), witness_stream)
-                                }
-                                ZKMCircuitWitness::Deferred(input) => {
-                                    let mut witness_stream = Vec::new();
-                                    Witnessable::<InnerConfig>::write(&input, &mut witness_stream);
-                                    (self.deferred_program(&input), witness_stream)
-                                }
-                                ZKMCircuitWitness::Compress(input) => {
-                                    let mut witness_stream = Vec::new();
+                                .in_scope(|| match input {
+                                    ZKMCircuitWitness::Core(input) => {
+                                        let mut witness_stream = Vec::new();
+                                        Witnessable::<InnerConfig>::write(&input, &mut witness_stream);
+                                        (self.recursion_program(&input), witness_stream)
+                                    }
+                                    ZKMCircuitWitness::Deferred(input) => {
+                                        let mut witness_stream = Vec::new();
+                                        Witnessable::<InnerConfig>::write(&input, &mut witness_stream);
+                                        (self.deferred_program(&input), witness_stream)
+                                    }
+                                    ZKMCircuitWitness::Compress(input) => {
+                                        let mut witness_stream = Vec::new();
 
-                                    let input_with_merkle = self.make_merkle_proofs(input);
+                                        let input_with_merkle = self.make_merkle_proofs(input);
 
-                                    Witnessable::<InnerConfig>::write(
-                                        &input_with_merkle,
-                                        &mut witness_stream,
-                                    );
+                                        Witnessable::<InnerConfig>::write(
+                                            &input_with_merkle,
+                                            &mut witness_stream,
+                                        );
 
-                                    (self.compress_program(&input_with_merkle), witness_stream)
-                                }
-                            });
+                                        (self.compress_program(&input_with_merkle), witness_stream)
+                                    }
+                                });
 
                             // Execute the runtime.
                             let record = tracing::debug_span!("execute runtime").in_scope(|| {
@@ -913,6 +926,102 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             (vk, proof)
         });
 
+        Ok(ZKMReduceProof { vk, proof })
+    }
+
+    #[instrument(name = "compress2", level = "info", skip_all)]
+    pub fn compress2(
+        &self,
+        compressed_proofs: Vec<ZKMReduceProof<InnerSC>>,
+        opts: ZKMProverOpts,
+    ) -> Result<ZKMReduceProof<InnerSC>, ZKMRecursionProverError> {
+        let vks_and_proofs = compressed_proofs
+            .into_iter()
+            .map(|proof| (proof.vk, proof.proof))
+            .collect::<Vec<_>>();
+        let input = ZKMCompressWitnessValues { vks_and_proofs, is_complete: true };
+
+        let (compress_program, witness_stream) = {
+            let mut witness_stream = Vec::new();
+
+            let input_with_merkle = self.make_merkle_proofs(input);
+
+            Witnessable::<InnerConfig>::write(
+                &input_with_merkle,
+                &mut witness_stream,
+            );
+
+            (self.compress_program2(&input_with_merkle), witness_stream)
+        };
+
+        // Execute the runtime.
+        let record = tracing::debug_span!("execute runtime").in_scope(|| {
+            let mut runtime =
+                RecursionRuntime::<Val<InnerSC>, Challenge<InnerSC>, _>::new(
+                    compress_program.clone(),
+                    self.compress_prover.config().perm.clone(),
+                );
+            runtime.witness_stream = witness_stream.into();
+            runtime
+                .run()
+                .unwrap_or_else(|err| panic!("Runtime execution failed: {err}"));
+            runtime.record
+        });
+
+        // Generate the dependencies.
+        let mut records = vec![record];
+        tracing::debug_span!("generate dependencies").in_scope(|| {
+            self.compress_prover.machine().generate_dependencies(
+                &mut records,
+                &opts.recursion_opts,
+                None,
+            )
+        });
+
+        // Generate the traces.
+        let record = records.into_iter().next().unwrap();
+        let traces = tracing::debug_span!("generate traces")
+            .in_scope(|| self.compress_prover.generate_traces(&record));
+
+        // Get the keys.
+        let (pk, vk) = tracing::debug_span!("Setup compress program")
+            .in_scope(|| self.compress_prover.setup(&compress_program));
+
+        // Observe the proving key.
+        let mut challenger = self.compress_prover.config().challenger();
+        tracing::debug_span!("observe proving key").in_scope(|| {
+            pk.observe_into(&mut challenger);
+        });
+
+        #[cfg(feature = "debug")]
+        self.compress_prover.debug_constraints(
+            &self.compress_prover.pk_to_host(&pk),
+            vec![record.clone()],
+            &mut challenger.clone(),
+        );
+
+        // Commit to the record and traces.
+        let data = tracing::debug_span!("commit")
+            .in_scope(|| self.compress_prover.commit(&record, traces));
+
+        // Generate the proof.
+        let proof = tracing::debug_span!("open").in_scope(|| {
+            self.compress_prover.open(&pk, data, &mut challenger).unwrap()
+        });
+
+        // Verify the proof.
+        #[cfg(feature = "debug")]
+        self.compress_prover
+            .machine()
+            .verify(
+                &vk,
+                &zkm_stark::MachineProof {
+                    shard_proofs: vec![proof.clone()],
+                },
+                &mut self.compress_prover.config().challenger(),
+            )
+            .unwrap();
+        println!("Proof verified successfully");
         Ok(ZKMReduceProof { vk, proof })
     }
 
@@ -1174,6 +1283,39 @@ pub fn compress_program_from_input<C: ZKMProverComponents>(
     let input = input.read(&mut builder);
     // Verify the proof.
     ZKMCompressWithVKeyVerifier::verify(
+        &mut builder,
+        compress_prover.machine(),
+        input,
+        vk_verification,
+        PublicValuesOutputDigest::Reduce,
+    );
+    let operations = builder.into_operations();
+    builder_span.exit();
+
+    // Compile the program.
+    let compiler_span = tracing::debug_span!("compile compress program").entered();
+    let mut compiler = AsmCompiler::<InnerConfig>::default();
+    let mut program = compiler.compile(operations);
+    if let Some(config) = config {
+        config.fix_shape(&mut program);
+    }
+    compiler_span.exit();
+
+    program
+}
+
+pub fn compress_program_from_input2<C: ZKMProverComponents>(
+    config: Option<&RecursionShapeConfig<KoalaBear, CompressAir<KoalaBear>>>,
+    compress_prover: &C::CompressProver,
+    vk_verification: bool,
+    input: &ZKMCompressWithVKeyWitnessValues<KoalaBearPoseidon2>,
+) -> RecursionProgram<KoalaBear> {
+    let builder_span = tracing::debug_span!("build compress program2").entered();
+    let mut builder = Builder::<InnerConfig>::default();
+    // read the input.
+    let input = input.read(&mut builder);
+    // Verify the proof.
+    ZKMCompressWithVKeyVerifier::verify2(
         &mut builder,
         compress_prover.machine(),
         input,
