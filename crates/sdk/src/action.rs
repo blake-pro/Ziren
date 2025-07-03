@@ -131,7 +131,7 @@ impl<'a> Prove<'a> {
         // Dump the program and stdin to files for debugging if `ZKM_DUMP` is set.
         crate::utils::zkm_dump(&pk.elf, &stdin);
 
-        prover.prove(pk, stdin, proof_opts, context, kind)
+        prover.prove_impl(pk, stdin, proof_opts, context, kind)
     }
 
     /// Set the proof kind to the core mode. This is the default.
@@ -155,6 +155,12 @@ impl<'a> Prove<'a> {
     /// Set the proof mode to the groth16 bn254 mode.
     pub fn groth16(mut self) -> Self {
         self.kind = ZKMProofKind::Groth16;
+        self
+    }
+
+    /// Set the proof mode to the compressed-proof-to-groth16 mode.
+    pub fn compress_to_groth16(mut self) -> Self {
+        self.kind = ZKMProofKind::CompressToGroth16;
         self
     }
 

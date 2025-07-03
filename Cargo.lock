@@ -528,6 +528,9 @@ name = "anyhow"
 version = "1.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
+dependencies = [
+ "backtrace",
+]
 
 [[package]]
 name = "arbitrary"
@@ -2641,7 +2644,7 @@ dependencies = [
  "tokio",
  "tracing",
  "walkdir",
- "yansi",
+ "yansi 0.5.1",
 ]
 
 [[package]]
@@ -6438,7 +6441,7 @@ dependencies = [
  "num-bigint 0.4.6",
  "rand 0.8.5",
  "rustc-hex",
- "zkm-lib 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
+ "zkm-lib 1.0.0",
 ]
 
 [[package]]
@@ -6595,7 +6598,7 @@ dependencies = [
 
 [[package]]
 name = "test-artifacts"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "zkm-build",
 ]
@@ -7929,6 +7932,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
+
+[[package]]
 name = "yoke"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8104,7 +8113,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-build"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -8114,8 +8123,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "zkm-cli"
+version = "1.1.0"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "clap",
+ "vergen",
+ "yansi 1.0.1",
+ "zkm-build",
+ "zkm-core-machine",
+ "zkm-sdk",
+]
+
+[[package]]
 name = "zkm-core-executor"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -8149,7 +8172,7 @@ dependencies = [
  "typenum",
  "vec_map",
  "zkm-curves",
- "zkm-lib 1.0.0",
+ "zkm-lib 1.1.0",
  "zkm-primitives",
  "zkm-stark",
  "zkm-zkvm",
@@ -8157,7 +8180,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-core-machine"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -8210,7 +8233,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-curves"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cfg-if",
  "curve25519-dalek",
@@ -8233,22 +8256,10 @@ dependencies = [
 
 [[package]]
 name = "zkm-derive"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "zkm-lib"
-version = "1.0.0"
-dependencies = [
- "bincode",
- "cfg-if",
- "elliptic-curve",
- "serde",
- "sha2",
- "zkm-primitives",
 ]
 
 [[package]]
@@ -8264,8 +8275,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "zkm-lib"
+version = "1.1.0"
+dependencies = [
+ "bincode",
+ "cfg-if",
+ "elliptic-curve",
+ "serde",
+ "sha2",
+ "zkm-primitives",
+]
+
+[[package]]
 name = "zkm-primitives"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bincode",
  "hex",
@@ -8282,7 +8305,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-prover"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -8321,7 +8344,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-recursion-circuit"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "ff 0.13.1",
  "hashbrown 0.14.5",
@@ -8358,7 +8381,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-recursion-compiler"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "backtrace",
  "criterion",
@@ -8383,7 +8406,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-recursion-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "backtrace",
  "ff 0.13.1",
@@ -8419,7 +8442,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-recursion-derive"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "quote",
  "syn 1.0.109",
@@ -8427,7 +8450,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-recursion-gnark-ffi"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -8451,7 +8474,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-sdk"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "alloy-primitives",
  "alloy-signer",
@@ -8501,7 +8524,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-stark"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "arrayref",
  "hashbrown 0.14.5",
@@ -8543,7 +8566,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-verifier"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "ark-bn254",
@@ -8565,7 +8588,7 @@ dependencies = [
 
 [[package]]
 name = "zkm-zkvm"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -8577,7 +8600,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "sha2",
- "zkm-lib 1.0.0",
+ "zkm-lib 1.1.0",
  "zkm-primitives",
 ]
 

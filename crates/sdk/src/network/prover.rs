@@ -130,9 +130,13 @@ impl NetworkProver {
     async fn request_proof(&self, input: &ProverInput, kind: ZKMProofKind) -> Result<String> {
         let seg_size =
             env::var("SHARD_SIZE").ok().and_then(|s| s.parse::<u32>().ok()).unwrap_or_default();
+
+        let from_step =
+            if kind == ZKMProofKind::CompressToGroth16 { Some(Step::InAgg.into()) } else { None };
+
         let target_step = if kind == ZKMProofKind::Compressed {
             Step::InAgg
-        } else if kind == ZKMProofKind::Groth16 {
+        } else if kind == ZKMProofKind::Groth16 || kind == ZKMProofKind::CompressToGroth16 {
             Step::InSnark
         } else {
             unimplemented!("unsupported ZKMProofKind")
@@ -142,10 +146,10 @@ impl NetworkProver {
         let mut request = GenerateProofRequest {
             proof_id: proof_id.clone(),
             elf_data: input.elf.clone(),
-            // public_input_stream: input.public_inputstream.clone(),
             private_input_stream: input.private_inputstream.clone(),
             seg_size,
             target_step: Some(target_step.into()),
+            from_step,
             ..Default::default()
         };
         for receipt_input in input.receipts.iter() {
@@ -161,6 +165,7 @@ impl NetworkProver {
     async fn wait_proof(
         &self,
         proof_id: &str,
+        kind: ZKMProofKind,
         timeout: Option<Duration>,
     ) -> Result<(ZKMProof, ZKMPublicValues, u64)> {
         let start_time = Instant::now();
@@ -184,11 +189,15 @@ impl NetworkProver {
                     sleep(Duration::from_secs(self.poll_interval)).await;
                 }
                 Some(Status::Success) => {
-                    let public_values_bytes =
-                        NetworkProver::download_file(&get_status_response.public_values_url)
-                            .await?;
-                    let public_values: ZKMPublicValues =
-                        ZKMPublicValues::from(&public_values_bytes);
+                    let public_values = if kind == ZKMProofKind::CompressToGroth16 {
+                        ZKMPublicValues::default()
+                    } else {
+                        let public_values_bytes =
+                            NetworkProver::download_file(&get_status_response.public_values_url)
+                                .await?;
+                        ZKMPublicValues::from(&public_values_bytes)
+                    };
+
                     // proof
                     let proof: ZKMProof =
                         serde_json::from_slice(&get_status_response.proof_with_public_inputs)
@@ -232,7 +241,13 @@ impl NetworkProver {
         let proof_id = self.request_proof(&prover_input, kind).await?;
 
         log::info!("calling wait_proof, proof_id={proof_id}");
-        let (proof, public_values, cycles) = self.wait_proof(&proof_id, timeout).await?;
+        let (proof, mut public_values, cycles) = self.wait_proof(&proof_id, kind, timeout).await?;
+
+        if kind == ZKMProofKind::CompressToGroth16 {
+            assert_eq!(private_input.len(), 1);
+            public_values = bincode::deserialize(private_input.last().unwrap())?;
+        }
+
         Ok((
             ZKMProofWithPublicValues {
                 proof,
@@ -260,7 +275,7 @@ impl Prover<DefaultProverComponents> for NetworkProver {
     }
 
     /// The proof network can generate Compressed or Groth16 proof.
-    fn prove<'a>(
+    fn prove_impl<'a>(
         &'a self,
         pk: &ZKMProvingKey,
         stdin: ZKMStdin,

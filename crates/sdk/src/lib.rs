@@ -405,6 +405,7 @@ impl NetworkProverBuilder {
 #[cfg(test)]
 mod tests {
     use crate::utils::compute_groth16_public_values;
+    use crate::ZKMProof;
     use crate::ZKMProof::Groth16;
     use crate::{utils, ProverClient, ZKMStdin};
     use zkm_primitives::io::ZKMPublicValues;
@@ -555,5 +556,31 @@ mod tests {
             computed_public_inputs[1], inner_proof.public_inputs[1],
             "Second public input does not match"
         );
+    }
+
+    #[test]
+    fn test_compress_to_groth16() {
+        utils::setup_logger();
+        let client = ProverClient::new();
+        let elf = test_artifacts::HELLO_WORLD_ELF;
+        let (pk, vk) = client.setup(elf);
+        let stdin = ZKMStdin::new();
+
+        // Generate proof & verify.
+        let proof = client.prove(&pk, stdin.clone()).compressed().run().unwrap();
+        client.verify(&proof, &vk).unwrap();
+
+        //--------------------------------------------
+
+        let client = ProverClient::new();
+
+        let mut stdin = ZKMStdin::new();
+        stdin.write::<ZKMPublicValues>(&proof.public_values);
+
+        let ZKMProof::Compressed(proof) = proof.proof else { panic!() };
+        stdin.write_proof(*proof, vk.vk.clone());
+
+        let proof = client.prove(&pk, stdin).compress_to_groth16().run().unwrap();
+        client.verify(&proof, &vk).unwrap();
     }
 }
