@@ -2,7 +2,7 @@ use crate::syscall_poseidon2_permute;
 
 const WIDTH: usize = 16; // Number of field elements in the Poseidon2 state
 const RATE: usize = 8; // Number of field elements processed per round
-const OUT: usize = 8; // Number of field elements in the output
+const DEFAULT_OUT_FIELD_LEN: usize = 8; // Number of field elements in the output
 const FIELD_SIZE: usize = 3; // Number of bytes can be safely converted to field element
 
 /// Executes the Poseidon2 permutation on the given state
@@ -13,7 +13,22 @@ pub fn poseidon2_permute(state: &mut [u32; WIDTH]) {
 }
 
 /// Perform the Poseidon2 hash on the given input
+/// The default poseidon2 implementation uses a fixed output length of 32 bytes.
 pub fn poseidon2(input: &[u8]) -> [u8; 32] {
+    // The output length is fixed to 32 bytes
+    let result = poseidon2_impl(input, DEFAULT_OUT_FIELD_LEN * 4);
+
+    result.try_into().unwrap()
+}
+
+pub fn poseidon2_128(input: &[u8]) -> [u8; 16] {
+    // The output length is fixed to 16 bytes
+    let result = poseidon2_impl(input, 16);
+
+    result.try_into().unwrap()
+}
+
+pub fn poseidon2_impl(input: &[u8], out_byte_len: usize) -> Vec<u8> {
     let l = input.len();
     let mut padded_input = input.to_vec();
     let new_size = (l + FIELD_SIZE) / FIELD_SIZE * FIELD_SIZE;
@@ -47,10 +62,9 @@ pub fn poseidon2(input: &[u8]) -> [u8; 32] {
         }
     }
 
-    let result =
-        state.into_iter().take(OUT).map(|x| x.to_le_bytes()).flatten().collect::<Vec<u8>>();
+    let result = state.into_iter().map(|x| x.to_le_bytes()).flatten().collect::<Vec<u8>>();
 
-    result.try_into().unwrap()
+    result[..out_byte_len].to_vec()
 }
 
 // each 3 bytes of input can be safely converted to a field element
