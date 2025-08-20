@@ -21,7 +21,7 @@ use zkm_stark::{
 use p3_field::PrimeField32;
 use p3_koala_bear::KoalaBear;
 
-use crate::shape::CoreShapeConfig;
+use crate::shape::{CoreShapeConfig, CoreShapeError};
 use crate::{
     io::ZKMStdin,
     utils::{chunk_vec, concurrency::TurnBasedSync},
@@ -50,6 +50,8 @@ pub enum ZKMCoreProverError {
     IoError(io::Error),
     #[error("serialization error: {0}")]
     SerializationError(bincode::Error),
+    #[error("core shape error: {0}")]
+    CoreShapeError(#[from] CoreShapeError),
 }
 
 pub fn prove_simple<SC: StarkGenericConfig, P: MachineProver<SC, MipsAir<SC::Val>>>(
@@ -232,7 +234,7 @@ where
             #[cfg(feature = "debug")]
             let all_records_tx = all_records_tx.clone();
 
-            let handle = s.spawn(move || {
+            let handle = s.spawn(move || -> Result<(), ZKMCoreProverError> {
                 let _span = span.enter();
                 tracing::debug_span!("phase 2 trace generation").in_scope(|| {
                     loop {
@@ -315,9 +317,9 @@ where
 
                             // Fix the shape of the records.
                             if let Some(shape_config) = shape_config {
-                                for record in records.iter_mut() {
-                                    shape_config.fix_shape(record).unwrap();
-                                }
+                                records
+                                    .iter_mut()
+                                    .try_for_each(|record| shape_config.fix_shape(record))?;
                             }
 
                             #[cfg(feature = "debug")]
@@ -352,6 +354,7 @@ where
                             break;
                         }
                     }
+                    Ok(())
                 })
             });
             p2_record_and_trace_gen_handles.push(handle);
@@ -414,7 +417,9 @@ where
         let public_values_stream = checkpoint_generator_handle.join().unwrap().unwrap();
 
         // Wait until the records and traces have been fully generated for phase 2.
-        p2_record_and_trace_gen_handles.into_iter().for_each(|handle| handle.join().unwrap());
+        for handle in p2_record_and_trace_gen_handles {
+            handle.join().unwrap()?;
+        }
 
         // Wait until the phase 2 prover has finished.
         let shard_proofs = p2_prover_handle.join().unwrap();
