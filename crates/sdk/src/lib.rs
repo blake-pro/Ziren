@@ -541,6 +541,9 @@ mod tests {
         let proof = client.prove(&pk, stdin).groth16().run().unwrap();
         client.verify(&proof, &vk).unwrap();
 
+        // The public inputs are concatenated using a length-prefix format.
+        // For example, for two inputs in the guest program, where each length is represented by 8 bytes:
+        // len(input[0]) input[0] len(input[1]) input[1]
         let string_input = b"hello world".to_vec();
         let guest_committed_values = bincode::serialize(&string_input).unwrap();
         assert_eq!(proof.public_values.as_ref(), guest_committed_values);
