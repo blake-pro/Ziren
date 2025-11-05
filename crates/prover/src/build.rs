@@ -162,13 +162,13 @@ pub fn dummy_proof() -> (StarkVerifyingKey<OuterSC>, ShardProof<OuterSC>) {
     tracing::info!("prove core");
     let mut stdin = ZKMStdin::new();
     stdin.write(&500u32);
-    let core_proof = prover.prove_core(&pk_d, program, &stdin, opts, context).unwrap();
+    let core_proof = prover.prove_core(&pk_d, program, &stdin, opts.clone(), context).unwrap();
 
     tracing::info!("compress");
-    let compressed_proof = prover.compress(&vk, core_proof, vec![], opts).unwrap();
+    let compressed_proof = prover.compress(&vk, core_proof, vec![], opts.clone()).unwrap();
 
     tracing::info!("shrink");
-    let shrink_proof = prover.shrink(compressed_proof, opts).unwrap();
+    let shrink_proof = prover.shrink(compressed_proof, opts.clone()).unwrap();
 
     tracing::info!("wrap");
     let wrapped_proof = prover.wrap_bn254(shrink_proof, opts).unwrap();

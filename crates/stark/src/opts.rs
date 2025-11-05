@@ -13,18 +13,45 @@ const DEFAULT_RECORDS_AND_TRACES_CHANNEL_CAPACITY: usize = 1;
 /// The threshold for splitting deferred events.
 pub const MAX_DEFERRED_SPLIT_THRESHOLD: usize = 1 << 15;
 
+/// Default number of concurrent tasks scheduled per GPU device.
+pub const DEFAULT_MAX_TASKS_PER_DEVICE: usize = 1;
+
+/// Options that describe how GPU work should be scheduled.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ZKMGpuSchedulingOpts {
+    /// The CUDA device identifiers that may be used. Empty means “detect automatically”.
+    pub device_ids: Vec<usize>,
+    /// Maximum number of concurrent tasks submitted to each device.
+    pub max_tasks_per_device: usize,
+}
+
+impl Default for ZKMGpuSchedulingOpts {
+    fn default() -> Self {
+        Self { device_ids: Vec::new(), max_tasks_per_device: DEFAULT_MAX_TASKS_PER_DEVICE }
+    }
+}
+
 /// Options to configure the Ziren prover for core and recursive proofs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ZKMProverOpts {
     /// Options for the core prover.
     pub core_opts: ZKMCoreOpts,
     /// Options for the recursion prover.
     pub recursion_opts: ZKMCoreOpts,
+    /// GPU scheduling configuration for the core prover.
+    pub core_gpu: ZKMGpuSchedulingOpts,
+    /// GPU scheduling configuration for the recursion prover.
+    pub recursion_gpu: ZKMGpuSchedulingOpts,
 }
 
 impl Default for ZKMProverOpts {
     fn default() -> Self {
-        Self { core_opts: ZKMCoreOpts::default(), recursion_opts: ZKMCoreOpts::recursion() }
+        Self {
+            core_opts: ZKMCoreOpts::default(),
+            recursion_opts: ZKMCoreOpts::recursion(),
+            core_gpu: ZKMGpuSchedulingOpts::default(),
+            recursion_gpu: ZKMGpuSchedulingOpts::default(),
+        }
     }
 }
 
@@ -104,6 +131,10 @@ impl ZKMProverOpts {
 
         // Set the recursion options.
         opts.recursion_opts.shard_batch_size = 1;
+
+        // Use default GPU scheduling; device enumeration happens at runtime.
+        opts.core_gpu = ZKMGpuSchedulingOpts::default();
+        opts.recursion_gpu = ZKMGpuSchedulingOpts::default();
 
         opts
     }

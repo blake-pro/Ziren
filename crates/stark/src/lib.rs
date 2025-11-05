@@ -12,7 +12,7 @@ mod folder;
 mod kb31_poseidon2;
 mod lookup;
 mod machine;
-mod opts;
+pub mod opts;
 mod permutation;
 mod proof;
 mod prover;

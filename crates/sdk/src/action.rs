@@ -124,7 +124,7 @@ impl<'a> Prove<'a> {
             recursion_opts,
             timeout,
         } = self;
-        let opts = ZKMProverOpts { core_opts, recursion_opts };
+        let opts = ZKMProverOpts { core_opts, recursion_opts, ..ZKMProverOpts::default() };
         let proof_opts = ProofOpts { zkm_prover_opts: opts, timeout };
         let context = context_builder.build();
 
