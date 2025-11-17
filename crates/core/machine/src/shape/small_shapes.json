@@ -19,7 +19,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -43,7 +43,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -67,7 +67,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -91,7 +91,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -115,7 +115,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -139,7 +139,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -163,7 +163,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -187,7 +187,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -211,7 +211,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -235,7 +235,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -259,7 +259,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -283,7 +283,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6421,7 +6421,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6445,7 +6445,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6469,7 +6469,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6493,7 +6493,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6517,7 +6517,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -6541,7 +6541,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 11,
       "AddSub": 16,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 11
     }
   },
@@ -90811,7 +90811,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -90835,7 +90835,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -90859,7 +90859,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -90883,7 +90883,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -90907,7 +90907,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -90931,7 +90931,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 8,
       "AddSub": 13,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 8
     }
   },
@@ -91951,7 +91951,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -91975,7 +91975,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -91999,7 +91999,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -92023,7 +92023,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -92047,7 +92047,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -92071,7 +92071,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96349,7 +96349,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96373,7 +96373,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96397,7 +96397,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96421,7 +96421,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96445,7 +96445,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -96469,7 +96469,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 12,
       "AddSub": 17,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 12
     }
   },
@@ -152911,7 +152911,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -152935,7 +152935,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -152959,7 +152959,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -152983,7 +152983,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -153007,7 +153007,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -153031,7 +153031,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 13,
       "AddSub": 18,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 13
     }
   },
@@ -202885,7 +202885,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -202909,7 +202909,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -202933,7 +202933,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -202957,7 +202957,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -202981,7 +202981,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -203005,7 +203005,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -220927,7 +220927,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -220951,7 +220951,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -220975,7 +220975,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -220999,7 +220999,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -221023,7 +221023,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -221047,7 +221047,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 16,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -238903,7 +238903,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -238927,7 +238927,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -238951,7 +238951,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -238975,7 +238975,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -238999,7 +238999,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -239023,7 +239023,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -239329,7 +239329,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -239353,7 +239353,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -239377,7 +239377,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -239401,7 +239401,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -239425,7 +239425,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -239449,7 +239449,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 15,
       "AddSub": 20,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 15
     }
   },
@@ -265885,7 +265885,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -265909,7 +265909,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -265933,7 +265933,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -265957,7 +265957,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -265981,7 +265981,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -266005,7 +266005,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 14,
       "AddSub": 19,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 14
     }
   },
@@ -266449,7 +266449,7 @@
       "MemoryGlobalFinalize": 17,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
@@ -266473,7 +266473,7 @@
       "MemoryGlobalFinalize": 18,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
@@ -266497,7 +266497,7 @@
       "MemoryGlobalFinalize": 19,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
@@ -266521,7 +266521,7 @@
       "MemoryGlobalFinalize": 20,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
@@ -266545,7 +266545,7 @@
       "MemoryGlobalFinalize": 21,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
@@ -266569,7 +266569,7 @@
       "MemoryGlobalFinalize": 22,
       "Jump": 16,
       "AddSub": 21,
-      "CloClz": 0,
+      "CloClz": 1,
       "SyscallCore": 16
     }
   },
