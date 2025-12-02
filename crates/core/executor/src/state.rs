@@ -28,6 +28,10 @@ pub struct ExecutionState {
     /// The shard clock keeps track of how many shards have been executed.
     pub current_shard: u32,
 
+    #[cfg(feature = "stats")]
+    /// total shards(including deferred shards) have been generated
+    pub total_shard_count: u32,
+
     /// if exit
     pub exited: bool,
 
@@ -68,8 +72,13 @@ pub struct ExecutionState {
     /// A ptr to the current position in the public values stream, incremented when reading from
     /// `public_values_stream`.
     pub public_values_stream_ptr: usize,
-    // /// Keeps track of how many times a certain syscall has been called.
+
+    /// Keeps track of how many times a certain syscall has been called.
     pub syscall_counts: HashMap<SyscallCode, u64>,
+
+    #[cfg(feature = "stats")]
+    /// Keeps track the number of permutations for each KeccakSponge.
+    pub keccak_sponge_syscall_count: Vec<u32>,
 }
 
 impl ExecutionState {
@@ -80,6 +89,8 @@ impl ExecutionState {
             global_clk: 0,
             // Start at shard 1 since shard 0 is reserved for memory initialization.
             current_shard: 1,
+            #[cfg(feature = "stats")]
+            total_shard_count: 1,
             clk: 0,
             pc: pc_start,
             next_pc,
@@ -94,6 +105,8 @@ impl ExecutionState {
             proof_stream: Vec::new(),
             proof_stream_ptr: 0,
             syscall_counts: HashMap::new(),
+            #[cfg(feature = "stats")]
+            keccak_sponge_syscall_count: vec![],
         }
     }
 }

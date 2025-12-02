@@ -180,7 +180,11 @@ impl ExecutionRecord {
                 remainder
             };
             if !remainder.is_empty() {
-                if last {
+                #[cfg(feature = "stats")]
+                let new_record = true;
+                #[cfg(not(feature = "stats"))]
+                let new_record = last;
+                if new_record {
                     let mut record = ExecutionRecord::new(self.program.clone());
                     record.precompile_events.insert(syscall_code, remainder);
                     shards_input.push(record);

@@ -91,6 +91,14 @@ impl Syscall for KeccakSpongeSyscall {
         let sponge_syscall_event =
             rt.rt.syscall_event(start_clk, None, rt.next_pc, syscall_code.syscall_id(), arg1, arg2);
         rt.add_precompile_event(syscall_code, sponge_syscall_event, sponge_event);
+
+        #[cfg(feature = "stats")]
+        // Record the number of Keccak sponge permutations.
+        rt.rt
+            .state
+            .keccak_sponge_syscall_count
+            .push(input_len_u32s / GENERAL_BLOCK_SIZE_U32S as u32);
+
         None
     }
 }

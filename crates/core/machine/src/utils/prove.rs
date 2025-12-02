@@ -33,12 +33,13 @@ use zkm_core_executor::{
 };
 use zkm_primitives::io::ZKMPublicValues;
 
+#[cfg(not(feature = "stats"))]
+use zkm_stark::air::PublicValues;
 use zkm_stark::{
-    air::{MachineAir, PublicValues},
-    Com, CpuProver, DebugConstraintBuilder, LookupBuilder, MachineProof, MachineProver,
-    MachineRecord, OpeningProof, PcsProverData, ProverConstraintFolder, StarkGenericConfig,
-    StarkMachine, StarkProvingKey, StarkVerifyingKey, UniConfig, Val, VerifierConstraintFolder,
-    ZKMCoreOpts,
+    air::MachineAir, Com, CpuProver, DebugConstraintBuilder, LookupBuilder, MachineProof,
+    MachineProver, MachineRecord, OpeningProof, PcsProverData, ProverConstraintFolder,
+    StarkGenericConfig, StarkMachine, StarkProvingKey, StarkVerifyingKey, UniConfig, Val,
+    VerifierConstraintFolder, ZKMCoreOpts,
 };
 
 #[derive(Error, Debug)]
@@ -205,6 +206,7 @@ where
         pk.observe_into(&mut challenger);
 
         // Spawn the phase 2 record generator thread.
+        #[cfg(not(feature = "stats"))]
         let p2_record_gen_sync = Arc::new(TurnBasedSync::new());
         let p2_trace_gen_sync = Arc::new(TurnBasedSync::new());
         let checkpoints_rx = Arc::new(Mutex::new(checkpoints_rx));
@@ -215,18 +217,26 @@ where
         let p2_records_and_traces_tx = Arc::new(Mutex::new(p2_records_and_traces_tx));
 
         let report_aggregate = Arc::new(Mutex::new(ExecutionReport::default()));
-        let state = Arc::new(Mutex::new(PublicValues::<u32, u32>::default().reset()));
-        let deferred = Arc::new(Mutex::new(ExecutionRecord::new(program.clone().into())));
+        #[cfg(not(feature = "stats"))]
+        let (state, deferred) = {
+            (
+                Arc::new(Mutex::new(PublicValues::<u32, u32>::default().reset())),
+                Arc::new(Mutex::new(ExecutionRecord::new(program.clone().into()))),
+            )
+        };
+
         let mut p2_record_and_trace_gen_handles = Vec::new();
         for _ in 0..opts.trace_gen_workers {
+            #[cfg(not(feature = "stats"))]
             let record_gen_sync = Arc::clone(&p2_record_gen_sync);
             let trace_gen_sync = Arc::clone(&p2_trace_gen_sync);
             let records_and_traces_tx = Arc::clone(&p2_records_and_traces_tx);
             let checkpoints_rx = Arc::clone(&checkpoints_rx);
 
             let report_aggregate = Arc::clone(&report_aggregate);
-            let state = Arc::clone(&state);
-            let deferred = Arc::clone(&deferred);
+            #[cfg(not(feature = "stats"))]
+            let (state, deferred) = { (Arc::clone(&state), Arc::clone(&deferred)) };
+
             let program = program.clone();
 
             let span = tracing::Span::current().clone();
@@ -259,26 +269,36 @@ where
                             *report_aggregate.lock().unwrap() += report;
                             reset_seek(&mut checkpoint);
 
-                            // Wait for our turn to update the state.
-                            record_gen_sync.wait_for_turn(index);
+                            #[cfg(not(feature = "stats"))]
+                            let mut state = {
+                                // Wait for our turn to update the state.
+                                record_gen_sync.wait_for_turn(index);
 
-                            // Update the public values & prover state for the shards which contain
-                            // "cpu events".
-                            let mut state = state.lock().unwrap();
-                            for record in records.iter_mut() {
-                                state.shard += 1;
-                                state.execution_shard = record.public_values.execution_shard;
-                                state.start_pc = record.public_values.start_pc;
-                                state.next_pc = record.public_values.next_pc;
-                                state.committed_value_digest =
-                                    record.public_values.committed_value_digest;
-                                state.deferred_proofs_digest =
-                                    record.public_values.deferred_proofs_digest;
-                                record.public_values = *state;
-                            }
+                                // Update the public values & prover state for the shards which contain
+                                // "cpu events".
+                                let mut state = state.lock().unwrap();
+                                for record in records.iter_mut() {
+                                    state.shard += 1;
+                                    state.execution_shard = record.public_values.execution_shard;
+                                    state.start_pc = record.public_values.start_pc;
+                                    state.next_pc = record.public_values.next_pc;
+                                    state.committed_value_digest =
+                                        record.public_values.committed_value_digest;
+                                    state.deferred_proofs_digest =
+                                        record.public_values.deferred_proofs_digest;
+                                    record.public_values = *state;
+                                }
+
+                                state
+                            };
+                            #[cfg(feature = "stats")]
+                            let mut state = records.last().unwrap().public_values.clone();
 
                             // Defer events that are too expensive to include in every shard.
+                            #[cfg(not(feature = "stats"))]
                             let mut deferred = deferred.lock().unwrap();
+                            #[cfg(feature = "stats")]
+                            let mut deferred = ExecutionRecord::new(program.clone().into());
                             for record in records.iter_mut() {
                                 deferred.append(&mut record.defer());
                             }
@@ -299,6 +319,7 @@ where
                                     deferred.split(done, last_record, opts.split_opts);
                                 tracing::debug!("deferred {} records", deferred.len());
 
+                                #[cfg(not(feature = "stats"))]
                                 // Update the public values & prover state for the shards which do
                                 // not contain "cpu events" before
                                 // committing to them.
@@ -316,7 +337,11 @@ where
                                     state.last_finalize_addr_bits =
                                         record.public_values.last_finalize_addr_bits;
                                     state.start_pc = state.next_pc;
-                                    record.public_values = *state;
+                                    #[cfg(feature = "stats")]
+                                    let value = state;
+                                    #[cfg(not(feature = "stats"))]
+                                    let value = *state;
+                                    record.public_values = value;
                                 }
                                 records_clone.append(&mut deferred);
 
@@ -331,6 +356,7 @@ where
                                     },
                                 );
 
+                                #[cfg(not(feature = "stats"))]
                                 // Let another worker update the state.
                                 record_gen_sync.advance_turn();
 
@@ -351,8 +377,9 @@ where
                             if shape_fixed_records.is_none() {
                                 // See if any deferred shards are ready to be committed to.
                                 let mut deferred = deferred.split(done, None, opts.split_opts);
-                                log::debug!("deferred {} records", deferred.len());
+                                tracing::debug!("deferred {} records", deferred.len());
 
+                                #[cfg(not(feature = "stats"))]
                                 // Update the public values & prover state for the shards which do not
                                 // contain "cpu events" before committing to them.
                                 if !done {
@@ -369,7 +396,11 @@ where
                                     state.last_finalize_addr_bits =
                                         record.public_values.last_finalize_addr_bits;
                                     state.start_pc = state.next_pc;
-                                    record.public_values = *state;
+                                    #[cfg(feature = "stats")]
+                                    let value = state;
+                                    #[cfg(not(feature = "stats"))]
+                                    let value = *state;
+                                    record.public_values = value;
                                 }
                                 records.append(&mut deferred);
 
@@ -384,6 +415,7 @@ where
                                     },
                                 );
 
+                                #[cfg(not(feature = "stats"))]
                                 // Let another worker update the state.
                                 record_gen_sync.advance_turn();
 

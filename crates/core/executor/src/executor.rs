@@ -2281,6 +2281,14 @@ impl<'a> Executor<'a> {
                     .collect();
             }
         });
+
+        #[cfg(feature = "stats")]
+        {
+            // Account for newly generated shards (from records) and deferred ones for stats.
+            let num_new_shards = self.records.len() as u32 + self.count_deferred_records() as u32;
+            self.state.total_shard_count += num_new_shards;
+        }
+
         if !done {
             self.records.clear();
         }
@@ -2386,6 +2394,11 @@ impl<'a> Executor<'a> {
             record.public_values.committed_value_digest = public_values.committed_value_digest;
             record.public_values.deferred_proofs_digest = public_values.deferred_proofs_digest;
             record.public_values.execution_shard = start_shard + i as u32;
+            #[cfg(feature = "stats")]
+            {
+                record.public_values.shard = self.state.total_shard_count + i as u32;
+            }
+
             if record.cpu_events.is_empty() {
                 record.public_values.start_pc = last_next_pc;
                 record.public_values.next_pc = last_next_pc;
@@ -2400,6 +2413,50 @@ impl<'a> Executor<'a> {
         }
 
         Ok(done)
+    }
+
+    #[cfg(feature = "stats")]
+    fn count_deferred_records(&mut self) -> u64 {
+        let syscall_counts = std::mem::take(&mut self.state.syscall_counts);
+        let keccak_sponge_syscall_count =
+            std::mem::take(&mut self.state.keccak_sponge_syscall_count);
+
+        let general_records = syscall_counts
+            .into_iter()
+            // Filter for syscalls that should be sent or are Linux syscalls, excluding Keccak.
+            .filter(|(syscall_code, _)| {
+                (syscall_code.should_send() == 1 || syscall_code.linux_sys() != 0)
+                    && *syscall_code != SyscallCode::KECCAK_SPONGE
+            })
+            .map(|(syscall_code, counts)| {
+                let threshold = match syscall_code {
+                    SyscallCode::SHA_EXTEND => self.opts.split_opts.sha_extend,
+                    SyscallCode::SHA_COMPRESS => self.opts.split_opts.sha_compress,
+                    _ => self.opts.split_opts.deferred,
+                };
+                // Ceiling division to calculate chunks.
+                (counts + threshold as u64 - 1) / threshold as u64
+            })
+            .sum::<u64>();
+
+        // Process keccak sponge syscall counts separately.
+        let keccak_threshold = self.opts.split_opts.keccak as u32;
+        let (mut keccak_records, last_len) = keccak_sponge_syscall_count.into_iter().fold(
+            (0u64, 0u32),
+            |(records, current_len), count| {
+                if current_len > 0 && current_len + count > keccak_threshold {
+                    (records + 1, count)
+                } else {
+                    (records, current_len + count)
+                }
+            },
+        );
+
+        if last_len > 0 {
+            keccak_records += 1;
+        }
+
+        general_records + keccak_records
     }
 
     fn postprocess(&mut self) {
@@ -2519,14 +2576,6 @@ impl<'a> Executor<'a> {
         if !self.unconstrained && self.state.global_clk.is_multiple_of(10_000_000) {
             log::info!("clk = {} pc = 0x{:x?}", self.state.global_clk, self.state.pc);
         }
-    }
-
-    #[allow(dead_code)]
-    fn show_regs(&self) {
-        let regs = (0..NUM_REGISTERS)
-            .map(|i| self.state.memory.get(i as u32).unwrap().value)
-            .collect::<Vec<_>>();
-        println!("global_clk: {}, pc: {}, regs {:?}", self.state.global_clk, self.state.pc, regs);
     }
 }
 
