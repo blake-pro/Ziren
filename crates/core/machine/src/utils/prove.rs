@@ -4,6 +4,7 @@ use p3_uni_stark::SymbolicAirBuilder;
 use serde::{de::DeserializeOwned, Serialize};
 use size::Size;
 use std::thread::ScopedJoinHandle;
+use std::time::Duration;
 use std::{
     fs::File,
     io::{
@@ -167,15 +168,26 @@ where
                 let _span = checkpoint_generator_span.enter();
                 tracing::debug_span!("checkpoint generator").in_scope(|| {
                     let mut index = 0;
+                    let mut total_generate_checkpoint_duration = Duration::new(0, 0);
                     loop {
                         // Enter the span.
                         let span = tracing::debug_span!("batch");
                         let _span = span.enter();
 
                         // Execute the runtime until we reach a checkpoint.
+                        let exec_start = Instant::now();
                         let (checkpoint, done) = runtime
                             .execute_state(false)
                             .map_err(ZKMCoreProverError::ExecutionError)?;
+                        let elapsed = exec_start.elapsed();
+                        let encode_checkpoint = bincode::serialize(&checkpoint).unwrap();
+                        tracing::info!(
+                            "Generate checkpoint {} in {:?}, size = {} KB",
+                            index,
+                            elapsed,
+                            encode_checkpoint.len() / 1024
+                        );
+                        total_generate_checkpoint_duration += elapsed;
 
                         // Save the checkpoint to a temp file.
                         let mut checkpoint_file =
@@ -191,6 +203,10 @@ where
 
                         // If we've reached the final checkpoint, break out of the loop.
                         if done {
+                            tracing::info!(
+                                "total_checkpoint_execution_duration: {:?}",
+                                total_generate_checkpoint_duration
+                            );
                             break Ok(runtime.state.public_values_stream);
                         }
 
@@ -246,6 +262,7 @@ where
                             let execution_state: ExecutionState =
                                 bincode::deserialize_from(&mut reader)
                                     .expect("failed to deserialize state");
+                            let trace_start = Instant::now();
                             let (mut records, report) = tracing::debug_span!("trace checkpoint")
                                 .in_scope(|| {
                                     trace_checkpoint::<SC>(
@@ -255,6 +272,11 @@ where
                                         shape_config,
                                     )
                                 });
+                            tracing::info!(
+                                "Execute checkpoint {} in {:?} ",
+                                index,
+                                trace_start.elapsed()
+                            );
                             log::debug!("generated {} records", records.len());
                             *report_aggregate.lock().unwrap() += report;
                             reset_seek(&mut checkpoint);

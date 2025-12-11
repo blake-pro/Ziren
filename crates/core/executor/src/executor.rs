@@ -2409,8 +2409,23 @@ impl<'a> Executor<'a> {
         let mut done = false;
         let mut current_shard = self.state.current_shard;
         let mut num_shards_executed = 0;
+        let mut max_cycle_time = std::time::Duration::ZERO;
+        let mut min_cycle_time = std::time::Duration::MAX;
+        let mut total_cycle_time = std::time::Duration::ZERO;
+        let mut total_cycles = 0u64;
         loop {
-            if self.execute_cycle()? {
+            let start_time = std::time::Instant::now();
+            let if_done = self.execute_cycle()?;
+            let elapsed = start_time.elapsed();
+            if elapsed > max_cycle_time {
+                max_cycle_time = elapsed;
+            }
+            if elapsed < min_cycle_time {
+                min_cycle_time = elapsed;
+            }
+            total_cycle_time += elapsed;
+            total_cycles += 1;
+            if if_done {
                 done = true;
                 break;
             }
@@ -2423,6 +2438,23 @@ impl<'a> Executor<'a> {
                 }
             }
         }
+        let avg_cycle_time = if total_cycles > 0 {
+            total_cycle_time / total_cycles as u32
+        } else {
+            std::time::Duration::ZERO
+        };
+        let min_cycle_time = if total_cycles > 0 {
+            min_cycle_time
+        } else {
+            std::time::Duration::ZERO
+        };
+        tracing::info!(
+            "mode {:?}: cycle time (max/min/avg) this batch: {:?}/{:?}/{:?}",
+            self.executor_mode,
+            max_cycle_time,
+            min_cycle_time,
+            avg_cycle_time,
+        );
 
         // Get the final public values.
         let public_values = self.record.public_values;
