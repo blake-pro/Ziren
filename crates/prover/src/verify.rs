@@ -311,14 +311,19 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             ));
         }
 
-        if public_values.vk_root != self.recursion_vk_root {
+        if public_values.vk_root != self.recursion_vk_root
+            && public_values.vk_root != self.last_recursion_vk_root
+        {
             return Err(MachineVerificationError::InvalidPublicValues("vk_root mismatch"));
         }
 
-        if self.vk_verification
-            && !self.recursion_vk_map.contains_key(&compress_vk.hash_koalabear())
-        {
-            return Err(MachineVerificationError::InvalidVerificationKey);
+        if self.vk_verification {
+            let vk_hash = compress_vk.hash_koalabear();
+            if !self.recursion_vk_map.contains_key(&vk_hash)
+                && !self.last_recursion_vk_map.contains_key(&vk_hash)
+            {
+                return Err(MachineVerificationError::InvalidVerificationKey);
+            }
         }
 
         // `is_complete` should be 1. In the reduce program, this ensures that the proof is fully
@@ -512,9 +517,6 @@ impl<C: ZKMProverComponents> SubproofVerifier for ZKMProver<C> {
         // Check that the committed value digest matches the one from syscall
         let public_values: &RecursionPublicValues<_> =
             proof.proof.public_values.as_slice().borrow();
-        if public_values.vk_root != self.recursion_vk_root {
-            return Err(MachineVerificationError::InvalidPublicValues("vk_root mismatch"));
-        }
         for (i, word) in public_values.committed_value_digest.iter().enumerate() {
             if *word != committed_value_digest[i].into() {
                 return Err(MachineVerificationError::InvalidPublicValues(

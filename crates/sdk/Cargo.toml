@@ -75,7 +75,7 @@ network = [
   "dep:reqwest",
   "dep:twirp",
   "dep:tonic",
-#  "dep:reqwest-middleware",
+  #  "dep:reqwest-middleware",
 ]
 network-v2 = [
   "dep:prost",
@@ -99,4 +99,3 @@ vergen = { version = "8", default-features = false, features = [
   "git2",
 ] }
 tonic-build = "0.8.0"
-

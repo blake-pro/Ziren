@@ -157,6 +157,12 @@ pub struct ZKMProver<C: ZKMProverComponents = DefaultProverComponents> {
     /// The Merkle tree for the allowed VKs.
     pub recursion_vk_tree: MerkleTree<KoalaBear, InnerSC>,
 
+    /// The root of the allowed recursion verification keys in the last version.
+    pub last_recursion_vk_root: <InnerSC as FieldHasher<KoalaBear>>::Digest,
+
+    /// The allowed VKs and their corresponding indices in the last version.
+    pub last_recursion_vk_map: BTreeMap<<InnerSC as FieldHasher<KoalaBear>>::Digest, usize>,
+
     /// The core shape configuration.
     pub core_shape_config: Option<CoreShapeConfig<KoalaBear>>,
 
@@ -220,19 +226,30 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
         tracing::debug!("vk verification: {}", vk_verification);
 
         // Read the shapes from the shapes directory and deserialize them into memory.
-        let allowed_vk_map: BTreeMap<[KoalaBear; DIGEST_SIZE], usize> = if vk_verification {
+        let (allowed_vk_map, last_allowed_vk_map) = if vk_verification {
             // Regenerate the vk_map.bin when the Ziren circuit is updated.
             // ```
             // cd Ziren
             // cargo run -r --bin build_compress_vks -- --num-compiler-workers 32 --count-setup-workers 32 --build-dir crates/prover
             // ```
             // It takes several days.
-            bincode::deserialize(include_bytes!("../vk_map.bin")).unwrap()
+            (
+                bincode::deserialize::<BTreeMap<[KoalaBear; DIGEST_SIZE], usize>>(include_bytes!(
+                    "../vk_map.bin"
+                ))
+                .unwrap(),
+                bincode::deserialize::<BTreeMap<[KoalaBear; DIGEST_SIZE], usize>>(include_bytes!(
+                    "../last_vk_map.bin"
+                ))
+                .unwrap(),
+            )
         } else {
             bincode::deserialize(include_bytes!("../dummy_vk_map.bin")).unwrap()
         };
 
         let (root, merkle_tree) = MerkleTree::commit(allowed_vk_map.keys().copied().collect());
+        let (last_root, _) =
+            MerkleTree::<KoalaBear, InnerSC>::commit(last_allowed_vk_map.keys().copied().collect());
 
         let mut compress_programs = BTreeMap::new();
         if let Some(config) = &recursion_shape_config {
@@ -268,6 +285,8 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             recursion_vk_root: root,
             recursion_vk_tree: merkle_tree,
             recursion_vk_map: allowed_vk_map,
+            last_recursion_vk_root: last_root,
+            last_recursion_vk_map: last_allowed_vk_map,
             core_shape_config,
             compress_shape_config: recursion_shape_config,
             vk_verification,

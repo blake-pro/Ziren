@@ -132,11 +132,12 @@ pub trait Prover<C: ZKMProverComponents>: Send + Sync {
         bundle: &ZKMProofWithPublicValues,
         vkey: &ZKMVerifyingKey,
     ) -> Result<(), ZKMVerificationError> {
-        if bundle.zkm_version != self.version() {
-            return Err(ZKMVerificationError::VersionMismatch(bundle.zkm_version.clone()));
-        }
         match &bundle.proof {
             ZKMProof::Core(proof) => {
+                if bundle.zkm_version != self.version() {
+                    return Err(ZKMVerificationError::VersionMismatch(bundle.zkm_version.clone()));
+                }
+
                 let public_values: &PublicValues<Word<_>, _> =
                     proof.last().unwrap().public_values.as_slice().borrow();
 
@@ -185,32 +186,40 @@ pub trait Prover<C: ZKMProverComponents>: Send + Sync {
                     .verify_compressed(proof, vkey)
                     .map_err(ZKMVerificationError::Recursion)
             }
-            ZKMProof::Plonk(proof) => self
-                .zkm_prover()
-                .verify_plonk_bn254(
-                    proof,
-                    vkey,
-                    &bundle.public_values,
-                    &if zkm_prover::build::zkm_dev_mode() {
-                        zkm_prover::build::plonk_bn254_artifacts_dev_dir()
-                    } else {
-                        try_install_circuit_artifacts("plonk")
-                    },
-                )
-                .map_err(ZKMVerificationError::Plonk),
-            ZKMProof::Groth16(proof) => self
-                .zkm_prover()
-                .verify_groth16_bn254(
-                    proof,
-                    vkey,
-                    &bundle.public_values,
-                    &if zkm_prover::build::zkm_dev_mode() {
-                        zkm_prover::build::groth16_bn254_artifacts_dev_dir()
-                    } else {
-                        try_install_circuit_artifacts("groth16")
-                    },
-                )
-                .map_err(ZKMVerificationError::Groth16),
+            ZKMProof::Plonk(proof) => {
+                if bundle.zkm_version != self.version() {
+                    return Err(ZKMVerificationError::VersionMismatch(bundle.zkm_version.clone()));
+                }
+                self.zkm_prover()
+                    .verify_plonk_bn254(
+                        proof,
+                        vkey,
+                        &bundle.public_values,
+                        &if zkm_prover::build::zkm_dev_mode() {
+                            zkm_prover::build::plonk_bn254_artifacts_dev_dir()
+                        } else {
+                            try_install_circuit_artifacts("plonk")
+                        },
+                    )
+                    .map_err(ZKMVerificationError::Plonk)
+            }
+            ZKMProof::Groth16(proof) => {
+                if bundle.zkm_version != self.version() {
+                    return Err(ZKMVerificationError::VersionMismatch(bundle.zkm_version.clone()));
+                }
+                self.zkm_prover()
+                    .verify_groth16_bn254(
+                        proof,
+                        vkey,
+                        &bundle.public_values,
+                        &if zkm_prover::build::zkm_dev_mode() {
+                            zkm_prover::build::groth16_bn254_artifacts_dev_dir()
+                        } else {
+                            try_install_circuit_artifacts("groth16")
+                        },
+                    )
+                    .map_err(ZKMVerificationError::Groth16)
+            }
             ZKMProof::CompressToGroth16 => unreachable!(),
         }
     }
