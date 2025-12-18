@@ -1,13 +1,13 @@
+use enum_map::EnumMap;
+use hashbrown::HashMap;
+use serde::{Deserialize, Serialize};
+use std::cmp::max;
 use std::{
     fs::File,
     io::{BufWriter, Write},
     str::FromStr,
     sync::Arc,
 };
-
-use enum_map::EnumMap;
-use hashbrown::HashMap;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use zkm_stark::ZKMCoreOpts;
 
@@ -2285,7 +2285,8 @@ impl<'a> Executor<'a> {
         #[cfg(feature = "stats")]
         {
             // Account for newly generated shards (from records) and deferred ones for stats.
-            let num_new_shards = self.records.len() as u32 + self.count_deferred_records() as u32;
+            let num_new_shards =
+                self.records.len() as u32 + self.count_deferred_records(done) as u32;
             self.state.total_shard_count += num_new_shards;
         }
 
@@ -2416,7 +2417,7 @@ impl<'a> Executor<'a> {
     }
 
     #[cfg(feature = "stats")]
-    fn count_deferred_records(&mut self) -> u64 {
+    fn count_deferred_records(&mut self, last_checkpoint: bool) -> u64 {
         let syscall_counts = std::mem::take(&mut self.state.syscall_counts);
         let keccak_sponge_syscall_count =
             std::mem::take(&mut self.state.keccak_sponge_syscall_count);
@@ -2456,7 +2457,18 @@ impl<'a> Executor<'a> {
             keccak_records += 1;
         }
 
-        general_records + keccak_records
+        let finalized_records = if last_checkpoint {
+            let events_count = max(
+                self.record.global_memory_finalize_events.len(),
+                self.record.global_memory_initialize_events.len(),
+            );
+
+            (events_count + self.opts.split_opts.memory - 1) / self.opts.split_opts.memory
+        } else {
+            0
+        };
+
+        general_records + keccak_records + finalized_records as u64
     }
 
     fn postprocess(&mut self) {
