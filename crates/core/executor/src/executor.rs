@@ -2464,10 +2464,35 @@ impl<'a> Executor<'a> {
         }
 
         let finalized_records = if last_checkpoint {
-            let events_count = max(
-                self.record.global_memory_finalize_events.len(),
-                self.record.global_memory_initialize_events.len(),
-            );
+            let events_count = if self.emit_global_memory_events {
+                max(
+                    self.record.global_memory_finalize_events.len(),
+                    self.record.global_memory_initialize_events.len(),
+                )
+            } else {
+                let mut init_count = 1; // addr 0
+                let mut finalize_count = 1; // addr 0
+
+                for addr in 1..NUM_REGISTERS as u32 {
+                    if self.state.memory.registers.get(addr).is_some() {
+                        finalize_count += 1;
+                        if !self.program.image.contains_key(&addr) {
+                            init_count += 1;
+                        }
+                    }
+                }
+
+                for addr in self.state.memory.page_table.keys() {
+                    if addr == 0 {
+                        continue;
+                    }
+                    finalize_count += 1;
+                    if !self.program.image.contains_key(&addr) {
+                        init_count += 1;
+                    }
+                }
+                max(init_count, finalize_count)
+            };
 
             (events_count + self.opts.split_opts.memory - 1) / self.opts.split_opts.memory
         } else {
