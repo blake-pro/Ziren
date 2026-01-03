@@ -192,6 +192,10 @@ where
 
                         // If we've reached the final checkpoint, break out of the loop.
                         if done {
+                            tracing::info!(
+                                "[execute_state] total checkponts generated: {}",
+                                index + 1
+                            );
                             break Ok(runtime.state.public_values_stream);
                         }
 
@@ -256,6 +260,8 @@ where
                             let execution_state: ExecutionState =
                                 bincode::deserialize_from(&mut reader)
                                     .expect("failed to deserialize state");
+                            #[cfg(feature = "stats")]
+                            let number_new_shards = execution_state.num_new_shards as usize;
                             let (mut records, report) = tracing::debug_span!("trace checkpoint")
                                 .in_scope(|| {
                                     trace_checkpoint::<SC>(
@@ -429,6 +435,13 @@ where
                             }
 
                             let records = shape_fixed_records.unwrap();
+
+                            #[cfg(feature = "stats")]
+                            assert_eq!(
+                                records.len(),
+                                number_new_shards,
+                                "checkpoint {index} Not same number of shards generated as expected"
+                            );
 
                             #[cfg(feature = "debug")]
                             all_records_tx.send(records.clone()).unwrap();

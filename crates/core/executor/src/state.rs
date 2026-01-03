@@ -32,6 +32,9 @@ pub struct ExecutionState {
     /// total shards(including deferred shards) have been generated
     pub total_shard_count: u32,
 
+    #[cfg(feature = "stats")]
+    pub num_new_shards: u32,
+
     /// if exit
     pub exited: bool,
 
@@ -91,6 +94,8 @@ impl ExecutionState {
             current_shard: 1,
             #[cfg(feature = "stats")]
             total_shard_count: 1,
+            #[cfg(feature = "stats")]
+            num_new_shards: 0,
             clk: 0,
             pc: pc_start,
             next_pc,

@@ -2287,7 +2287,13 @@ impl<'a> Executor<'a> {
             // Account for newly generated shards (from records) and deferred ones for stats.
             let num_new_shards =
                 self.records.len() as u32 + self.count_deferred_records(done) as u32;
+            tracing::info!(
+                "[execute_state] new shards in this batch: total {}, ordinary {}",
+                num_new_shards,
+                self.records.len()
+            );
             self.state.total_shard_count += num_new_shards;
+            checkpoint.num_new_shards = num_new_shards;
         }
 
         if !done {
