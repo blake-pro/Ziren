@@ -44,7 +44,7 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 thiserror = "1.0.63"
 hashbrown = { workspace = true }
-zkm-core-executor = { workspace = true }
+zkm-core-executor = { workspace = true, features = ["stats"] }
 zkm-stark = { workspace = true }
 zkm-primitives = { workspace = true }
 zkm-cuda = { workspace = true }
@@ -91,7 +91,7 @@ network-v2 = [
   "dep:tonic",
   "dep:backoff",
 ]
-stats = ["zkm-core-machine/stats"]
+#stats = ["zkm-core-machine/stats"]
 
 [build-dependencies]
 vergen = { version = "8", default-features = false, features = [

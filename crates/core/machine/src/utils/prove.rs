@@ -323,7 +323,11 @@ where
                                 // See if any deferred shards are ready to be committed to.
                                 let mut deferred =
                                     deferred.split(done, last_record, opts.split_opts);
-                                tracing::debug!("deferred {} records", deferred.len());
+                                tracing::info!(
+                                    "[last] checkpoint {} deferred {} records",
+                                    index,
+                                    deferred.len()
+                                );
 
                                 #[cfg(not(feature = "stats"))]
                                 // Update the public values & prover state for the shards which do
@@ -383,7 +387,11 @@ where
                             if shape_fixed_records.is_none() {
                                 // See if any deferred shards are ready to be committed to.
                                 let mut deferred = deferred.split(done, None, opts.split_opts);
-                                tracing::debug!("deferred {} records", deferred.len());
+                                tracing::info!(
+                                    "[Not Last] checkpoint {} deferred {} records",
+                                    index,
+                                    deferred.len()
+                                );
 
                                 #[cfg(not(feature = "stats"))]
                                 // Update the public values & prover state for the shards which do not
@@ -437,11 +445,14 @@ where
                             let records = shape_fixed_records.unwrap();
 
                             #[cfg(feature = "stats")]
-                            assert_eq!(
-                                records.len(),
-                                number_new_shards,
-                                "checkpoint {index} Not same number of shards generated as expected"
-                            );
+                            {
+                                tracing::info!("checkpoint {index} generated {} records, expected {}", records.len(), number_new_shards);
+                                assert_eq!(
+                                    records.len(),
+                                    number_new_shards,
+                                    "checkpoint {index} Not same number of shards generated as expected"
+                                );
+                            }
 
                             #[cfg(feature = "debug")]
                             all_records_tx.send(records.clone()).unwrap();

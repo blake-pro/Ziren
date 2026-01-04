@@ -574,4 +574,31 @@ mod tests {
         let proof = client.prove(&pk, stdin).compress_to_groth16().run().unwrap();
         client.verify(&proof, &vk).unwrap();
     }
+
+    #[ignore]
+    #[test]
+    fn test_prove() {
+        // Setup logging.
+        std::env::set_var("RUST_LOG", "info");
+        utils::setup_logger();
+
+        let mut stdin = ZKMStdin::new();
+        let encoded_input = std::fs::read("private_input").expect("failed to read input_stream");
+        let inputs_data: Vec<Vec<u8>> =
+            bincode::deserialize(&encoded_input).expect("failed to deserialize input data");
+        for input in inputs_data {
+            stdin.write_vec(input);
+        }
+        let elf = std::fs::read("elf").unwrap();
+
+        let client = ProverClient::new();
+        let (_, report) = client.execute(&elf, stdin.clone()).run().unwrap();
+        println!("executed program with {} cycles", report.total_instruction_count());
+
+        // Generate the proof for the given guest and input.
+        let (pk, vk) = client.setup(&elf);
+        let _proof = client.prove(&pk, stdin).run().unwrap();
+
+        println!("generated proof");
+    }
 }
