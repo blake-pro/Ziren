@@ -93,7 +93,7 @@ impl ExecutionState {
             // Start at shard 1 since shard 0 is reserved for memory initialization.
             current_shard: 1,
             #[cfg(feature = "stats")]
-            total_shard_count: 1,
+            total_shard_count: 0,
             #[cfg(feature = "stats")]
             num_new_shards: 0,
             clk: 0,

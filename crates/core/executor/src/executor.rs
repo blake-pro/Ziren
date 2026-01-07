@@ -2403,7 +2403,7 @@ impl<'a> Executor<'a> {
             record.public_values.execution_shard = start_shard + i as u32;
             #[cfg(feature = "stats")]
             {
-                record.public_values.shard = self.state.total_shard_count + i as u32;
+                record.public_values.shard = self.state.total_shard_count - 1 + i as u32;
             }
 
             if record.cpu_events.is_empty() {
