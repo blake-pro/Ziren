@@ -34,15 +34,8 @@ impl PlonkVerifier {
     ///
     /// * `proof` - The proof bytes.
     /// * `public_inputs` - The Ziren public inputs.
-    /// * `zkm_vkey_hash` - The Ziren vkey hash.
-    ///   This is generated in the following manner:
-    ///
-    /// ```ignore
-    /// use zkm_sdk::ProverClient;
-    /// let client = ProverClient::new();
-    /// let (pk, vk) = client.setup(ELF);
-    /// let zkm_vkey_hash = vk.bytes32();
-    /// ```
+    /// * `zkm_vkey_hash` - The first public input hash expected by the Ziren SNARK verifier.
+    ///   Pass it as a `0x`-prefixed 32-byte hex string.
     /// * `plonk_vk` - The Plonk verifying key bytes.
     ///   Usually this will be the [`static@crate::PLONK_VK_BYTES`] constant.
     ///

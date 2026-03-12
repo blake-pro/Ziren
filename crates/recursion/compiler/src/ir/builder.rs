@@ -494,8 +494,13 @@ impl<C: Config> Builder<C> {
         });
     }
 
-    pub fn commit_vkey_hash_circuit(&mut self, var: Var<C::N>) {
-        self.push_op(DslIr::CircuitCommitVkeyHash(var));
+    pub fn commit_vkey_hash_circuit(
+        &mut self,
+        vk_pc_start: Felt<C::F>,
+        vk_commitment: Var<C::N>,
+        zkm_vk_digest: [Felt<C::F>; zkm_recursion_core::DIGEST_SIZE],
+    ) {
+        self.push_op(DslIr::CircuitCommitVkeyHash(vk_pc_start, vk_commitment, zkm_vk_digest));
     }
 
     pub fn commit_committed_values_digest_circuit(&mut self, var: Var<C::N>) {

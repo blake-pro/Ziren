@@ -269,9 +269,10 @@ pub enum DslIr<C: Config> {
     Halt,
 
     // Public inputs for circuits.
-    /// Asserts that the inputted var is equal the circuit's vkey hash public input. Should only be
-    /// used when target is a gnark circuit.
-    CircuitCommitVkeyHash(Var<C::N>),
+    /// Asserts the circuit vkey hash public input equals
+    /// sha256(sha256(vk_pc_start || vk_commitment) || zkm_vk_digest), mapped to bn254.
+    /// Should only be used when target is a gnark circuit.
+    CircuitCommitVkeyHash(Felt<C::F>, Var<C::N>, [Felt<C::F>; zkm_recursion_core::DIGEST_SIZE]),
     /// Asserts that the inputted var is equal the circuit's committed values digest public input.
     /// Should only be used when target is a gnark circuit.
     CircuitCommitCommittedValuesDigest(Var<C::N>),

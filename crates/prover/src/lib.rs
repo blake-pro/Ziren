@@ -85,7 +85,7 @@ use zkm_stark::{
 use zkm_stark::{shape::OrderedShape, MachineProvingKey};
 
 pub use types::*;
-use utils::{words_to_bytes, zkm_committed_values_digest_bn254, zkm_vkey_digest_bn254};
+use utils::{snark_public_input_from_outer_vk, words_to_bytes, zkm_committed_values_digest_bn254};
 
 use components::{DefaultProverComponents, ZKMProverComponents};
 
@@ -1070,7 +1070,8 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             vks_and_proofs: vec![(proof.vk.clone(), proof.proof.clone())],
             is_complete: true,
         };
-        let vkey_hash = zkm_vkey_digest_bn254(&proof);
+        let pv: &RecursionPublicValues<KoalaBear> = proof.proof.public_values.as_slice().borrow();
+        let vkey_hash = snark_public_input_from_outer_vk(&proof.vk, &pv.zkm_vk_digest);
         let committed_values_digest = zkm_committed_values_digest_bn254(&proof);
 
         let mut witness = Witness::default();
@@ -1105,7 +1106,8 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             vks_and_proofs: vec![(proof.vk.clone(), proof.proof.clone())],
             is_complete: true,
         };
-        let vkey_hash = zkm_vkey_digest_bn254(&proof);
+        let pv: &RecursionPublicValues<KoalaBear> = proof.proof.public_values.as_slice().borrow();
+        let vkey_hash = snark_public_input_from_outer_vk(&proof.vk, &pv.zkm_vk_digest);
         let committed_values_digest = zkm_committed_values_digest_bn254(&proof);
 
         let mut witness = Witness::default();
@@ -1141,7 +1143,8 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             vks_and_proofs: vec![(proof.vk.clone(), proof.proof.clone())],
             is_complete: true,
         };
-        let vkey_hash = zkm_vkey_digest_bn254(&proof);
+        let pv: &RecursionPublicValues<KoalaBear> = proof.proof.public_values.as_slice().borrow();
+        let vkey_hash = snark_public_input_from_outer_vk(&proof.vk, &pv.zkm_vk_digest);
         let committed_values_digest = zkm_committed_values_digest_bn254(&proof);
 
         let mut witness = Witness::default();

@@ -382,13 +382,41 @@ impl NetworkProverBuilder {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use crate::utils::committed_public_values;
     use crate::ZKMProof;
     use crate::ZKMProof::Groth16;
     use crate::{utils, ProverClient, ZKMStdin};
+    use num_bigint::BigUint;
     use p3_field::PrimeField;
+    use serde::Deserialize;
     use zkm_primitives::io::ZKMPublicValues;
+    use zkm_prover::utils::snark_public_input_hash_bytes;
     use zkm_prover::HashableKey;
+
+    #[derive(Deserialize)]
+    struct SnarkVkeyHashMeta {
+        vk_pc_commitment_hash_hex: String,
+    }
+
+    fn decode_hex_32(hex: &str) -> [u8; 32] {
+        assert_eq!(hex.len(), 64, "invalid hash hex length");
+        let mut out = [0u8; 32];
+        for i in 0..32 {
+            out[i] = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).expect("invalid hex");
+        }
+        out
+    }
+
+    fn load_meta_path() -> PathBuf {
+        if zkm_prover::build::zkm_dev_mode() {
+            zkm_prover::build::groth16_bn254_artifacts_dev_dir().join("snark_vkey_hash_meta.json")
+        } else {
+            crate::install::try_install_circuit_artifacts("groth16")
+                .join("snark_vkey_hash_meta.json")
+        }
+    }
 
     #[test]
     fn test_execute() {
@@ -542,8 +570,15 @@ mod tests {
             _ => panic!("expected a compressed proof"),
         };
 
-        let vk_hash = vk.hash_bn254().as_canonical_biguint().to_string();
-        assert_eq!(vk_hash, inner_proof.public_inputs[0], "vk hash does not match");
+        let meta_bytes = std::fs::read(load_meta_path()).expect("missing snark meta");
+        let meta: SnarkVkeyHashMeta = serde_json::from_slice(&meta_bytes).expect("invalid meta");
+        let mut expected = snark_public_input_hash_bytes(
+            &decode_hex_32(&meta.vk_pc_commitment_hash_hex),
+            &vk.hash_koalabear(),
+        );
+        expected[0] &= 0x1f;
+        let expected = BigUint::from_bytes_be(&expected).to_string();
+        assert_eq!(expected, inner_proof.public_inputs[0], "vk hash does not match");
 
         let committed_public_values = committed_public_values(proof.public_values.as_ref());
         assert_eq!(

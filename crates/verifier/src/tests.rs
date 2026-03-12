@@ -3,14 +3,14 @@ use std::io::Read;
 use test_artifacts::HELLO_WORLD_ELF;
 use zkm_prover::build::groth16_bn254_artifacts_dev_dir;
 use zkm_sdk::install::try_install_circuit_artifacts;
-use zkm_sdk::{HashableKey, ProverClient, ZKMStdin};
+use zkm_sdk::{ProverClient, ZKMProof, ZKMStdin};
 
 // RUST_LOG=debug cargo test -r test_verify_groth16 --features ark
 #[test]
 fn test_verify_groth16() {
     // Set up the pk and vk.
     let client = ProverClient::cpu();
-    let (pk, vk) = client.setup(HELLO_WORLD_ELF);
+    let (pk, _vk) = client.setup(HELLO_WORLD_ELF);
 
     // Generate the Groth16 proof.
     let zkm_proof_with_public_values = client.prove(&pk, ZKMStdin::new()).groth16().run().unwrap();
@@ -19,8 +19,15 @@ fn test_verify_groth16() {
     let proof = zkm_proof_with_public_values.bytes();
     let public_inputs = zkm_proof_with_public_values.public_values.to_vec();
 
-    // Get the vkey hash.
-    let vkey_hash = vk.bytes32();
+    // Get the first public input as bytes32 hex string.
+    let vkey_hash = match &zkm_proof_with_public_values.proof {
+        ZKMProof::Groth16(proof) => {
+            let value =
+                num_bigint::BigUint::parse_bytes(proof.public_inputs[0].as_bytes(), 10).unwrap();
+            format!("0x{:0>64}", value.to_str_radix(16))
+        }
+        _ => unreachable!(),
+    };
 
     crate::Groth16Verifier::verify(&proof, &public_inputs, &vkey_hash, &crate::GROTH16_VK_BYTES)
         .expect("Groth16 proof is invalid");
@@ -41,7 +48,7 @@ fn test_verify_groth16() {
 fn test_verify_plonk() {
     // Set up the pk and vk.
     let client = ProverClient::cpu();
-    let (pk, vk) = client.setup(HELLO_WORLD_ELF);
+    let (pk, _vk) = client.setup(HELLO_WORLD_ELF);
 
     // Generate the Plonk proof.
     let zkm_proof_with_public_values = client.prove(&pk, ZKMStdin::new()).plonk().run().unwrap();
@@ -50,8 +57,15 @@ fn test_verify_plonk() {
     let proof = zkm_proof_with_public_values.bytes();
     let public_inputs = zkm_proof_with_public_values.public_values.to_vec();
 
-    // Get the vkey hash.
-    let vkey_hash = vk.bytes32();
+    // Get the first public input as bytes32 hex string.
+    let vkey_hash = match &zkm_proof_with_public_values.proof {
+        ZKMProof::Plonk(proof) => {
+            let value =
+                num_bigint::BigUint::parse_bytes(proof.public_inputs[0].as_bytes(), 10).unwrap();
+            format!("0x{:0>64}", value.to_str_radix(16))
+        }
+        _ => unreachable!(),
+    };
 
     crate::PlonkVerifier::verify(&proof, &public_inputs, &vkey_hash, &crate::PLONK_VK_BYTES)
         .expect("Plonk proof is invalid");
@@ -98,8 +112,15 @@ fn test_e2e_verify_groth16() {
     let proof = zkm_proof_with_public_values.bytes();
     let public_inputs = zkm_proof_with_public_values.public_values.to_vec();
 
-    // Get the vkey hash.
-    let vkey_hash = vk.bytes32();
+    // Get the first public input as bytes32 hex string.
+    let vkey_hash = match &zkm_proof_with_public_values.proof {
+        ZKMProof::Groth16(proof) => {
+            let value =
+                num_bigint::BigUint::parse_bytes(proof.public_inputs[0].as_bytes(), 10).unwrap();
+            format!("0x{:0>64}", value.to_str_radix(16))
+        }
+        _ => unreachable!(),
+    };
     println!("vk hash: {vkey_hash:?}");
 
     let mut groth16_vk_bytes = Vec::new();

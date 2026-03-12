@@ -2,7 +2,7 @@ use std::{borrow::Borrow, path::Path, str::FromStr};
 
 use anyhow::Result;
 use num_bigint::BigUint;
-use p3_field::{FieldAlgebra, PrimeField};
+use p3_field::FieldAlgebra;
 use p3_koala_bear::KoalaBear;
 use zkm_core_executor::{subproof::SubproofVerifier, ZKMReduceProof};
 use zkm_core_machine::cpu::MAX_CPU_LOG_DEGREE;
@@ -22,7 +22,10 @@ use zkm_stark::{
 
 use crate::{
     components::ZKMProverComponents,
-    utils::{is_recursion_public_values_valid, is_root_public_values_valid},
+    utils::{
+        is_recursion_public_values_valid, is_root_public_values_valid,
+        snark_public_input_hash_bytes,
+    },
     CoreSC, HashableKey, OuterSC, ZKMCoreProofData, ZKMProver, ZKMVerifyingKey,
 };
 
@@ -417,7 +420,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
         // Verify the proof with the corresponding public inputs.
         prover.verify(proof, &vkey_hash, &committed_values_digest, build_dir)?;
 
-        verify_plonk_bn254_public_inputs(vk, public_values, &proof.public_inputs)?;
+        verify_plonk_bn254_public_inputs(vk, public_values, &proof.public_inputs, build_dir)?;
 
         Ok(())
     }
@@ -438,10 +441,38 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
         // Verify the proof with the corresponding public inputs.
         prover.verify(proof, &vkey_hash, &committed_values_digest, build_dir)?;
 
-        verify_groth16_bn254_public_inputs(vk, public_values, &proof.public_inputs)?;
+        verify_groth16_bn254_public_inputs(vk, public_values, &proof.public_inputs, build_dir)?;
 
         Ok(())
     }
+}
+
+#[derive(serde::Deserialize)]
+struct SnarkVkeyHashMeta {
+    vk_pc_commitment_hash_hex: String,
+}
+
+fn decode_hex_32(hex: &str) -> Result<[u8; 32]> {
+    if hex.len() != 64 {
+        return Err(anyhow::anyhow!("invalid hash length, expected 64 hex chars"));
+    }
+    let mut out = [0u8; 32];
+    for i in 0..32 {
+        out[i] = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)?;
+    }
+    Ok(out)
+}
+
+fn expected_snark_vkey_hash(vk: &ZKMVerifyingKey, build_dir: &Path) -> Result<BigUint> {
+    let meta_path = build_dir.join("snark_vkey_hash_meta.json");
+    let meta_bytes = std::fs::read(meta_path)?;
+    let meta: SnarkVkeyHashMeta = serde_json::from_slice(&meta_bytes)?;
+    let vk_pc_commitment_hash = decode_hex_32(&meta.vk_pc_commitment_hash_hex)?;
+
+    let zkm_vk_digest = vk.hash_koalabear();
+    let mut snark_hash = snark_public_input_hash_bytes(&vk_pc_commitment_hash, &zkm_vk_digest);
+    snark_hash[0] &= 0x1f;
+    Ok(BigUint::from_bytes_be(&snark_hash))
 }
 
 /// Verify the vk_hash and public_values_hash in the public inputs of the PlonkBn254Proof match the
@@ -450,11 +481,12 @@ pub fn verify_plonk_bn254_public_inputs(
     vk: &ZKMVerifyingKey,
     public_values: &ZKMPublicValues,
     plonk_bn254_public_inputs: &[String],
+    build_dir: &Path,
 ) -> Result<()> {
     let expected_vk_hash = BigUint::from_str(&plonk_bn254_public_inputs[0])?;
     let expected_public_values_hash = BigUint::from_str(&plonk_bn254_public_inputs[1])?;
 
-    let vk_hash = vk.hash_bn254().as_canonical_biguint();
+    let vk_hash = expected_snark_vkey_hash(vk, build_dir)?;
     if vk_hash != expected_vk_hash {
         return Err(PlonkVerificationError::InvalidVerificationKey.into());
     }
@@ -473,11 +505,12 @@ pub fn verify_groth16_bn254_public_inputs(
     vk: &ZKMVerifyingKey,
     public_values: &ZKMPublicValues,
     groth16_bn254_public_inputs: &[String],
+    build_dir: &Path,
 ) -> Result<()> {
     let expected_vk_hash = BigUint::from_str(&groth16_bn254_public_inputs[0])?;
     let expected_public_values_hash = BigUint::from_str(&groth16_bn254_public_inputs[1])?;
 
-    let vk_hash = vk.hash_bn254().as_canonical_biguint();
+    let vk_hash = expected_snark_vkey_hash(vk, build_dir)?;
     if vk_hash != expected_vk_hash {
         return Err(Groth16VerificationError::InvalidVerificationKey.into());
     }

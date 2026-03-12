@@ -1,7 +1,8 @@
 //! A script that generates a Groth16 proof for the Fibonacci program, and verifies the
 //! Groth16 proof in ZKM.
 
-use zkm_sdk::{include_elf, utils, HashableKey, ProverClient, ZKMStdin};
+use num_bigint::BigUint;
+use zkm_sdk::{include_elf, utils, ProverClient, ZKMProof, ZKMStdin};
 
 /// The ELF for the Groth16 verifier program.
 const PLONK_ELF: &[u8] = include_elf!("plonk-verifier");
@@ -26,10 +27,16 @@ fn generate_fibonacci_proof() -> (Vec<u8>, Vec<u8>, String) {
     let client = ProverClient::new();
 
     // Generate the plonk proof for the Fibonacci program.
-    let (pk, vk) = client.setup(FIBONACCI_ELF);
-    println!("vk: {:?}", vk.bytes32());
+    let (pk, _vk) = client.setup(FIBONACCI_ELF);
     let proof = client.prove(&pk, stdin).plonk().run().unwrap();
-    (proof.bytes(), proof.public_values.to_vec(), vk.bytes32())
+    let vkey_hash = match &proof.proof {
+        ZKMProof::Plonk(inner) => {
+            let value = BigUint::parse_bytes(inner.public_inputs[0].as_bytes(), 10).unwrap();
+            format!("0x{:0>64}", value.to_str_radix(16))
+        }
+        _ => unreachable!(),
+    };
+    (proof.bytes(), proof.public_values.to_vec(), vkey_hash)
 }
 
 fn main() {

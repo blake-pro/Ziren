@@ -52,7 +52,15 @@ impl CpuProver {
                 &outer_proof.proof,
             )
         } else {
-            try_install_circuit_artifacts("groth16")
+            let installed = try_install_circuit_artifacts("groth16");
+            if installed.join("snark_vkey_hash_meta.json").exists() {
+                installed
+            } else {
+                zkm_prover::build::try_build_groth16_bn254_artifacts_dev(
+                    &outer_proof.vk,
+                    &outer_proof.proof,
+                )
+            }
         };
 
         let proof = self.prover.wrap_groth16_bn254(outer_proof, &groth16_bn254_artifacts);
@@ -139,7 +147,15 @@ impl Prover<DefaultProverComponents> for CpuProver {
                     &outer_proof.proof,
                 )
             } else {
-                try_install_circuit_artifacts("plonk")
+                let installed = try_install_circuit_artifacts("plonk");
+                if installed.join("snark_vkey_hash_meta.json").exists() {
+                    installed
+                } else {
+                    zkm_prover::build::try_build_plonk_bn254_artifacts_dev(
+                        &outer_proof.vk,
+                        &outer_proof.proof,
+                    )
+                }
             };
             let proof = self.prover.wrap_plonk_bn254(outer_proof, &plonk_bn254_artifacts);
 
@@ -158,7 +174,15 @@ impl Prover<DefaultProverComponents> for CpuProver {
                     &outer_proof.proof,
                 )
             } else {
-                try_install_circuit_artifacts("groth16")
+                let installed = try_install_circuit_artifacts("groth16");
+                if installed.join("snark_vkey_hash_meta.json").exists() {
+                    installed
+                } else {
+                    zkm_prover::build::try_build_groth16_bn254_artifacts_dev(
+                        &outer_proof.vk,
+                        &outer_proof.proof,
+                    )
+                }
             };
 
             let proof = self.prover.wrap_groth16_bn254(outer_proof, &groth16_bn254_artifacts);

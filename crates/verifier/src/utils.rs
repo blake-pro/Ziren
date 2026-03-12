@@ -22,7 +22,7 @@ pub fn bn254_public_values(zkm_vkey_hash: &[u8; 32], zkm_public_inputs: &[u8]) -
     [vkey_hash, committed_values_digest]
 }
 
-/// Decodes the Ziren vkey hash from the string from a call to `vk.bytes32`.
+/// Decodes the Ziren verifier input hash from a `0x`-prefixed hex string.
 pub fn decode_zkm_vkey_hash(zkm_vkey_hash: &str) -> Result<[u8; 32], Error> {
     let bytes = hex::decode(&zkm_vkey_hash[2..]).map_err(|_| Error::InvalidProgramVkeyHash)?;
     bytes.try_into().map_err(|_| Error::InvalidProgramVkeyHash)

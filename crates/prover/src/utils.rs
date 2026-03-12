@@ -7,19 +7,21 @@ use std::{
 
 use itertools::Itertools;
 use p3_bn254_fr::Bn254Fr;
-use p3_field::{FieldAlgebra, PrimeField32};
+use p3_field::{FieldAlgebra, PrimeField, PrimeField32};
 use p3_koala_bear::KoalaBear;
 use p3_symmetric::CryptographicHasher;
+use sha2::{Digest, Sha256};
 use zkm_core_executor::{Executor, Program};
 use zkm_core_machine::{io::ZKMStdin, reduce::ZKMReduceProof};
 use zkm_recursion_circuit::machine::RootPublicValues;
 use zkm_recursion_core::{
     air::{RecursionPublicValues, NUM_PV_ELMS_TO_HASH},
-    stark::KoalaBearPoseidon2Outer,
+    stark::{KoalaBearPoseidon2Outer, DIGEST_SIZE as OUTER_COMMITMENT_DIGEST_SIZE},
 };
-use zkm_stark::{koala_bear_poseidon2::MyHash as InnerHash, Word, ZKMCoreOpts};
+use zkm_stark::{koala_bear_poseidon2::MyHash as InnerHash, Word, ZKMCoreOpts, DIGEST_SIZE};
 
-use crate::{InnerSC, ZKMCoreProofData};
+use crate::{InnerSC, OuterSC, ZKMCoreProofData};
+use zkm_stark::StarkVerifyingKey;
 
 /// Get the Ziren vkey KoalaBear Poseidon2 digest this reduce proof is representing.
 pub fn zkm_vkey_digest_koalabear(
@@ -167,6 +169,69 @@ pub fn words_to_bytes_be(words: &[u32; 8]) -> [u8; 32] {
     bytes
 }
 
+fn pad_to_32_bytes_be(mut value: Vec<u8>) -> [u8; 32] {
+    if value.len() > 32 {
+        value = value[value.len() - 32..].to_vec();
+    }
+    let mut out = [0u8; 32];
+    out[32 - value.len()..].copy_from_slice(&value);
+    out
+}
+
+/// Encode a KoalaBear felt into a fixed-width big-endian u32 representation.
+pub fn koalabear_u32_be_bytes(value: KoalaBear) -> [u8; 4] {
+    value.as_canonical_u32().to_be_bytes()
+}
+
+/// Encode an array of KoalaBear digest words as 32-byte big-endian bytes.
+pub fn zkm_vk_digest_be_bytes(digest: &[KoalaBear; DIGEST_SIZE]) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    for (i, word) in digest.iter().enumerate() {
+        out[i * 4..(i + 1) * 4].copy_from_slice(&koalabear_u32_be_bytes(*word));
+    }
+    out
+}
+
+/// Encode an outer vk commitment as fixed-width big-endian bytes.
+pub fn outer_vk_commitment_be_bytes(vk: &StarkVerifyingKey<OuterSC>) -> Vec<u8> {
+    let commitment: [_; OUTER_COMMITMENT_DIGEST_SIZE] = vk.commit.into();
+    commitment
+        .iter()
+        .flat_map(|value| pad_to_32_bytes_be(value.as_canonical_biguint().to_bytes_be()))
+        .collect()
+}
+
+/// Computes h1 = sha256(pc_start_be || commitment_be).
+pub fn outer_vk_pc_commitment_hash(vk: &StarkVerifyingKey<OuterSC>) -> [u8; 32] {
+    let mut input = Vec::with_capacity(4 + 32 * OUTER_COMMITMENT_DIGEST_SIZE);
+    input.extend_from_slice(&koalabear_u32_be_bytes(vk.pc_start));
+    input.extend_from_slice(&outer_vk_commitment_be_bytes(vk));
+    Sha256::digest(input).into()
+}
+
+/// Computes h2 = sha256(h1 || zkm_vk_digest_be).
+pub fn snark_public_input_hash_bytes(
+    vk_pc_commitment_hash: &[u8; 32],
+    zkm_vk_digest: &[KoalaBear; DIGEST_SIZE],
+) -> [u8; 32] {
+    let mut input = Vec::with_capacity(64);
+    input.extend_from_slice(vk_pc_commitment_hash);
+    input.extend_from_slice(&zkm_vk_digest_be_bytes(zkm_vk_digest));
+    Sha256::digest(input).into()
+}
+
+/// Computes the first SNARK public input from outer vk + zkm vk digest.
+pub fn snark_public_input_from_outer_vk(
+    outer_vk: &StarkVerifyingKey<OuterSC>,
+    zkm_vk_digest: &[KoalaBear; DIGEST_SIZE],
+) -> p3_bn254_fr::Bn254Fr {
+    let h1 = outer_vk_pc_commitment_hash(outer_vk);
+    let h2 = snark_public_input_hash_bytes(&h1, zkm_vk_digest);
+    let h2_as_koalabear: [KoalaBear; 32] =
+        h2.map(|byte| KoalaBear::from_canonical_u32(byte as u32));
+    koalabear_bytes_to_bn254(&h2_as_koalabear)
+}
+
 pub trait MaybeTakeIterator<I: Iterator>: Iterator<Item = I::Item> {
     fn maybe_skip(self, bound: Option<usize>) -> RangedIterator<Self>
     where
@@ -208,5 +273,85 @@ impl<I: Iterator> Iterator for RangedIterator<I> {
             RangedIterator::Take(take) => take.next(),
             RangedIterator::Range(range) => range.next(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use num_bigint::BigUint;
+
+    use super::*;
+
+    fn encode_hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
+    }
+
+    #[test]
+    fn test_zkm_vk_digest_be_bytes_endianness() {
+        let words = [
+            0x00000000u32,
+            0x00000001,
+            0x7f000000,
+            0x12345678,
+            0x0badc0de,
+            0x0000beef,
+            0x01020304,
+            0x70000000,
+        ];
+        let digest = words.map(KoalaBear::from_canonical_u32);
+
+        let bytes = zkm_vk_digest_be_bytes(&digest);
+        assert_eq!(
+            encode_hex(&bytes),
+            "00000000000000017f000000123456780badc0de0000beef0102030470000000"
+        );
+    }
+
+    #[test]
+    fn test_snark_vkey_hash_fixed_vector() {
+        let pc_start = 0x01020304u32;
+        let commitment = [
+            0x2f, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54,
+            0x32, 0x10, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb,
+            0xcc, 0xdd, 0xee, 0xff,
+        ];
+
+        let mut h1_input = Vec::with_capacity(4 + 32);
+        h1_input.extend_from_slice(&pc_start.to_be_bytes());
+        h1_input.extend_from_slice(&commitment);
+        let h1: [u8; 32] = Sha256::digest(h1_input).into();
+        assert_eq!(
+            encode_hex(&h1),
+            "1eda9bedfb468334f32f07075629cfc25f4f4c44d3f8b879517fe730f822193a"
+        );
+
+        let words = [
+            0x00000000u32,
+            0x00000001,
+            0x7f000000,
+            0x12345678,
+            0x0badc0de,
+            0x0000beef,
+            0x01020304,
+            0x70000000,
+        ];
+        let digest = words.map(KoalaBear::from_canonical_u32);
+        let h2 = snark_public_input_hash_bytes(&h1, &digest);
+        assert_eq!(
+            encode_hex(&h2),
+            "5c8f70cfe3b73ba3512ef4220e97597881b08a9ff79f0147a2df6d8d0133c4e6"
+        );
+
+        let h2_as_koalabear = h2.map(|b| KoalaBear::from_canonical_u32(b as u32));
+        let pi0 = koalabear_bytes_to_bn254(&h2_as_koalabear).as_canonical_biguint();
+        assert_eq!(
+            pi0,
+            BigUint::from_str(
+                "12918197490875836353672850408626191289408280561329280668107775525892102800614"
+            )
+            .unwrap()
+        );
     }
 }

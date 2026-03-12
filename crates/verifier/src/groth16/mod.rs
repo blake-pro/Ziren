@@ -34,15 +34,8 @@ impl Groth16Verifier {
     ///
     /// * `proof` - The proof bytes.
     /// * `public_inputs` - The Ziren public inputs.
-    /// * `zkm_vkey_hash` - The Ziren vkey hash.
-    ///   This is generated in the following manner:
-    ///
-    /// ```ignore
-    /// use zkm_sdk::ProverClient;
-    /// let client = ProverClient::new();
-    /// let (pk, vk) = client.setup(ELF);
-    /// let zkm_vkey_hash = vk.bytes32();
-    /// ```
+    /// * `zkm_vkey_hash` - The first public input hash expected by the Ziren SNARK verifier.
+    ///   Pass it as a `0x`-prefixed 32-byte hex string.
     /// * `groth16_vk` - The Groth16 verifying key bytes.
     ///   Usually this will be the [`static@crate::GROTH16_VK_BYTES`] constant, which is the Groth16
     ///   verifying key for the current Ziren version.

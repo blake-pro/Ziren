@@ -2,10 +2,7 @@ use p3_koala_bear::KoalaBear;
 use std::{borrow::Borrow, fs::metadata, path::PathBuf};
 use zkm_core_executor::ZKMContext;
 use zkm_core_machine::io::ZKMStdin;
-use zkm_recursion_circuit::{
-    hash::FieldHasherVariable,
-    machine::{ZKMCompressWitnessValues, ZKMWrapVerifier},
-};
+use zkm_recursion_circuit::machine::{ZKMCompressWitnessValues, ZKMWrapVerifier};
 use zkm_recursion_compiler::{
     config::OuterConfig,
     constraints::{Constraint, ConstraintCompiler},
@@ -21,9 +18,28 @@ use zkm_recursion_gnark_ffi::{DvSnarkBn254Prover, Groth16Bn254Prover, PlonkBn254
 use zkm_stark::{ShardProof, StarkVerifyingKey, ZKMProverOpts};
 
 use crate::{
-    utils::{koalabear_bytes_to_bn254, koalabears_to_bn254, words_to_bytes},
+    utils::{
+        koalabear_bytes_to_bn254, outer_vk_pc_commitment_hash, snark_public_input_from_outer_vk,
+        words_to_bytes,
+    },
     OuterSC, WrapAir, ZKMProver,
 };
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SnarkVkeyHashMeta {
+    vk_pc_commitment_hash_hex: String,
+}
+
+fn write_snark_vkey_hash_meta(template_vk: &StarkVerifyingKey<OuterSC>, build_dir: &PathBuf) {
+    let vk_pc_commitment_hash = outer_vk_pc_commitment_hash(template_vk)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let meta = SnarkVkeyHashMeta { vk_pc_commitment_hash_hex: vk_pc_commitment_hash };
+    let path = build_dir.join("snark_vkey_hash_meta.json");
+    let serialized = serde_json::to_vec_pretty(&meta).expect("failed to serialize snark meta");
+    std::fs::write(path, serialized).expect("failed to write snark meta");
+}
 
 /// Tries to build the PLONK artifacts inside the development directory.
 pub fn try_build_plonk_bn254_artifacts_dev(
@@ -107,6 +123,7 @@ pub fn build_plonk_bn254_artifacts(
 ) {
     let build_dir = build_dir.into();
     std::fs::create_dir_all(&build_dir).expect("failed to create build directory");
+    write_snark_vkey_hash_meta(template_vk, &build_dir);
     let (constraints, witness) = build_constraints_and_witness(template_vk, template_proof);
     PlonkBn254Prover::build(constraints, witness, build_dir);
 }
@@ -120,6 +137,7 @@ pub fn build_groth16_bn254_artifacts(
 ) {
     let build_dir = build_dir.into();
     std::fs::create_dir_all(&build_dir).expect("failed to create build directory");
+    write_snark_vkey_hash_meta(template_vk, &build_dir);
     let (constraints, witness) = build_constraints_and_witness(template_vk, template_proof);
     Groth16Bn254Prover::build(constraints, witness, build_dir);
 }
@@ -136,6 +154,7 @@ pub fn build_dvsnark_bn254_artifacts(
     let store_dir = store_dir.into();
     std::fs::create_dir_all(&build_dir).expect("failed to create build directory");
     std::fs::create_dir_all(&store_dir).expect("failed to create store directory");
+    write_snark_vkey_hash_meta(template_vk, &build_dir);
     let (constraints, witness) = build_constraints_and_witness(template_vk, template_proof);
     DvSnarkBn254Prover::build(constraints, witness, build_dir, store_dir);
 }
@@ -172,7 +191,7 @@ pub fn build_constraints_and_witness(
         tracing::info_span!("wrap circuit").in_scope(|| build_outer_circuit(&template_input));
 
     let pv: &RecursionPublicValues<KoalaBear> = template_proof.public_values.as_slice().borrow();
-    let vkey_hash = koalabears_to_bn254(&pv.zkm_vk_digest);
+    let vkey_hash = snark_public_input_from_outer_vk(template_vk, &pv.zkm_vk_digest);
     let committed_values_digest_bytes: [KoalaBear; 32] =
         words_to_bytes(&pv.committed_value_digest).try_into().unwrap();
     let committed_values_digest = koalabear_bytes_to_bn254(&committed_values_digest_bytes);
@@ -222,22 +241,10 @@ fn build_outer_circuit(template_input: &ZKMCompressWitnessValues<OuterSC>) -> Ve
     let wrap_span = tracing::debug_span!("build wrap circuit").entered();
     let mut builder = Builder::<OuterConfig>::default();
 
-    // Get the value of the vk.
-    let template_vk = template_input.vks_and_proofs.first().unwrap().0.clone();
     // Get an input variable.
     let input = template_input.read(&mut builder);
-    // Fix the `wrap_vk` value to be the same as the template `vk`. Since the chip information and
-    // the ordering is already a constant, we just need to constrain the commitment and pc_start.
-
     // Get the vk variable from the input.
-    let vk = input.vks_and_proofs.first().unwrap().0.clone();
-    // Get the expected commitment.
-    let expected_commitment: [_; 1] = template_vk.commit.into();
-    let expected_commitment = expected_commitment.map(|x| builder.eval(x));
-    // Constrain `commit` to be the same as the template `vk`.
-    OuterSC::assert_digest_eq(&mut builder, expected_commitment, vk.commitment);
-    // Constrain `pc_start` to be the same as the template `vk`.
-    builder.assert_felt_eq(vk.pc_start, template_vk.pc_start);
+    let _vk = input.vks_and_proofs.first().unwrap().0.clone();
 
     // Verify the proof.
     ZKMWrapVerifier::verify(&mut builder, &wrap_machine, input);

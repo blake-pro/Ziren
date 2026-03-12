@@ -80,5 +80,11 @@ where
 
         // Reflect the public values to the next level.
         SC::commit_recursion_public_values(builder, public_values.inner);
+        SC::commit_vkey_hash_public_input(
+            builder,
+            vk.pc_start,
+            vk.commitment,
+            public_values.inner.zkm_vk_digest,
+        );
     }
 }

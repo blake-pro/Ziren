@@ -6,9 +6,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/consensys/gnark/frontend"
 	"github.com/ProjectZKM/zkm-recursion-gnark/zkm/koalabear"
 	"github.com/ProjectZKM/zkm-recursion-gnark/zkm/poseidon2"
+	"github.com/consensys/gnark/frontend"
+	"github.com/consensys/gnark/std/hash/sha2"
+	"github.com/consensys/gnark/std/math/uints"
 )
 
 var srsFile string = "srs.bin"
@@ -219,8 +221,46 @@ func (circuit *Circuit) Define(api frontend.API) error {
 			}
 			exts[cs.Args[0][0]] = circuit.Exts[i]
 		case "CommitVkeyHash":
-			element := vars[cs.Args[0][0]]
-			api.AssertIsEqual(circuit.VkeyHash, element)
+			if len(cs.Args) != 10 {
+				return fmt.Errorf("CommitVkeyHash expects 10 args, got %d", len(cs.Args))
+			}
+
+			uapi, err := uints.New[uints.U32](api)
+			if err != nil {
+				return fmt.Errorf("failed to initialize uint api: %w", err)
+			}
+
+			// h1 = sha256(vk_pc_start_be || vk_commitment_be)
+			pcStartFelt := felts[cs.Args[0][0]]
+			vkCommitment := vars[cs.Args[1][0]]
+			pcStartBytes := fixedWidthBEBytesFromVariable(api, uapi, pcStartFelt.Value, 31, 4)
+			commitmentBytes := fixedWidthBEBytesFromVariable(api, uapi, vkCommitment, 254, 32)
+			h1Input := append(pcStartBytes, commitmentBytes...)
+			h1Hasher, err := sha2.New(api)
+			if err != nil {
+				return fmt.Errorf("failed to create sha2 hasher (h1): %w", err)
+			}
+			h1Hasher.Write(h1Input)
+			h1 := h1Hasher.Sum()
+
+			// h2 = sha256(h1 || zkm_vk_digest_be)
+			zkmDigestBytes := make([]uints.U8, 0, 32)
+			for i := 2; i < 10; i++ {
+				digestWord := felts[cs.Args[i][0]]
+				zkmDigestBytes = append(
+					zkmDigestBytes,
+					fixedWidthBEBytesFromVariable(api, uapi, digestWord.Value, 31, 4)...,
+				)
+			}
+			h2Hasher, err := sha2.New(api)
+			if err != nil {
+				return fmt.Errorf("failed to create sha2 hasher (h2): %w", err)
+			}
+			h2Hasher.Write(append(h1, zkmDigestBytes...))
+			h2 := h2Hasher.Sum()
+
+			expected := maskedBn254ValueFromSha256Bytes(api, uapi, h2)
+			api.AssertIsEqual(circuit.VkeyHash, expected)
 		case "CommitCommittedValuesDigest":
 			element := vars[cs.Args[0][0]]
 			api.AssertIsEqual(circuit.CommittedValuesDigest, element)
@@ -236,4 +276,59 @@ func (circuit *Circuit) Define(api frontend.API) error {
 	}
 
 	return nil
+}
+
+func fixedWidthBEBytesFromVariable(
+	api frontend.API,
+	uapi *uints.BinaryField[uints.U32],
+	value frontend.Variable,
+	bitLen int,
+	byteLen int,
+) []uints.U8 {
+	leBits := api.ToBinary(value, bitLen)
+	beBytes := make([]uints.U8, byteLen)
+
+	for beIdx := 0; beIdx < byteLen; beIdx++ {
+		leByteIdx := byteLen - 1 - beIdx
+		byteBits := make([]frontend.Variable, 8)
+		for bit := 0; bit < 8; bit++ {
+			bitIdx := leByteIdx*8 + bit
+			if bitIdx < bitLen {
+				byteBits[bit] = leBits[bitIdx]
+			} else {
+				byteBits[bit] = frontend.Variable(0)
+			}
+		}
+		beBytes[beIdx] = uapi.ByteValueOf(api.FromBinary(byteBits...))
+	}
+
+	return beBytes
+}
+
+func maskedBn254ValueFromSha256Bytes(
+	api frontend.API,
+	uapi *uints.BinaryField[uints.U32],
+	digest []uints.U8,
+) frontend.Variable {
+	if len(digest) != 32 {
+		panic("sha256 digest must be 32 bytes")
+	}
+
+	firstByteBits := api.ToBinary(digest[0].Val, 8)
+	firstByteBits[5] = frontend.Variable(0)
+	firstByteBits[6] = frontend.Variable(0)
+	firstByteBits[7] = frontend.Variable(0)
+	maskedFirstByte := uapi.ByteValueOf(api.FromBinary(firstByteBits...))
+
+	acc := frontend.Variable(0)
+	for i := 0; i < 32; i++ {
+		var current frontend.Variable
+		if i == 0 {
+			current = maskedFirstByte.Val
+		} else {
+			current = digest[i].Val
+		}
+		acc = api.Add(api.Mul(acc, 256), current)
+	}
+	return acc
 }

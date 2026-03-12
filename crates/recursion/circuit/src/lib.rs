@@ -46,7 +46,7 @@ use zkm_recursion_core::{
 };
 
 use p3_koala_bear::KoalaBear;
-use utils::{felt_bytes_to_bn254_var, felts_to_bn254_var, words_to_bytes};
+use utils::{felt_bytes_to_bn254_var, words_to_bytes};
 
 type EF = <KoalaBearPoseidon2 as StarkGenericConfig>::Challenge;
 
@@ -102,6 +102,13 @@ pub trait KoalaBearFriConfigVariable<C: CircuitConfig<F = KoalaBear>>:
     fn commit_recursion_public_values(
         builder: &mut Builder<C>,
         public_values: RecursionPublicValues<Felt<C::F>>,
+    );
+
+    fn commit_vkey_hash_public_input(
+        builder: &mut Builder<C>,
+        vk_pc_start: Felt<C::F>,
+        vk_commitment: Self::DigestVariable,
+        zkm_vk_digest: [Felt<C::F>; zkm_recursion_core::DIGEST_SIZE],
     );
 }
 
@@ -605,6 +612,14 @@ impl<C: CircuitConfig<F = KoalaBear, Bit = Felt<KoalaBear>>> KoalaBearFriConfigV
     ) {
         builder.commit_public_values_v2(public_values);
     }
+
+    fn commit_vkey_hash_public_input(
+        _builder: &mut Builder<C>,
+        _vk_pc_start: Felt<C::F>,
+        _vk_commitment: Self::DigestVariable,
+        _zkm_vk_digest: [Felt<C::F>; zkm_recursion_core::DIGEST_SIZE],
+    ) {
+    }
 }
 
 impl<C: CircuitConfig<F = KoalaBear, N = Bn254Fr, Bit = Var<Bn254Fr>>> KoalaBearFriConfigVariable<C>
@@ -625,8 +640,14 @@ impl<C: CircuitConfig<F = KoalaBear, N = Bn254Fr, Bit = Var<Bn254Fr>>> KoalaBear
         let committed_values_digest_bytes: Var<_> =
             felt_bytes_to_bn254_var(builder, &committed_values_digest_bytes_felts);
         builder.commit_committed_values_digest_circuit(committed_values_digest_bytes);
+    }
 
-        let vkey_hash = felts_to_bn254_var(builder, &public_values.zkm_vk_digest);
-        builder.commit_vkey_hash_circuit(vkey_hash);
+    fn commit_vkey_hash_public_input(
+        builder: &mut Builder<C>,
+        vk_pc_start: Felt<C::F>,
+        vk_commitment: Self::DigestVariable,
+        zkm_vk_digest: [Felt<C::F>; zkm_recursion_core::DIGEST_SIZE],
+    ) {
+        builder.commit_vkey_hash_circuit(vk_pc_start, vk_commitment[0], zkm_vk_digest);
     }
 }

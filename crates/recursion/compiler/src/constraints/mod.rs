@@ -373,10 +373,13 @@ impl<C: Config + Debug> ConstraintCompiler<C> {
                     opcode: ConstraintOpcode::WitnessE,
                     args: vec![vec![a.id()], vec![b.to_string()]],
                 }),
-                DslIr::CircuitCommitVkeyHash(a) => constraints.push(Constraint {
-                    opcode: ConstraintOpcode::CommitVkeyHash,
-                    args: vec![vec![a.id()]],
-                }),
+                DslIr::CircuitCommitVkeyHash(vk_pc_start, vk_commitment, zkm_vk_digest) => {
+                    let mut args = Vec::with_capacity(2 + zkm_vk_digest.len());
+                    args.push(vec![vk_pc_start.id()]);
+                    args.push(vec![vk_commitment.id()]);
+                    args.extend(zkm_vk_digest.into_iter().map(|digest| vec![digest.id()]));
+                    constraints.push(Constraint { opcode: ConstraintOpcode::CommitVkeyHash, args });
+                }
                 DslIr::CircuitCommitCommittedValuesDigest(a) => constraints.push(Constraint {
                     opcode: ConstraintOpcode::CommitCommittedValuesDigest,
                     args: vec![vec![a.id()]],
