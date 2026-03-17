@@ -14,6 +14,7 @@
 pub mod build;
 pub mod components;
 pub mod shapes;
+pub mod snark_vk_meta;
 pub mod types;
 pub mod utils;
 pub mod verify;

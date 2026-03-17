@@ -1,6 +1,8 @@
 use p3_koala_bear::KoalaBear;
+use p3_field::PrimeField32;
 use std::{borrow::Borrow, fs::metadata, path::PathBuf};
 use zkm_core_executor::ZKMContext;
+use zkm_core_machine::ZKM_CIRCUIT_VERSION;
 use zkm_core_machine::io::ZKMStdin;
 use zkm_recursion_circuit::machine::{ZKMCompressWitnessValues, ZKMWrapVerifier};
 use zkm_recursion_compiler::{
@@ -18,27 +20,39 @@ use zkm_recursion_gnark_ffi::{DvSnarkBn254Prover, Groth16Bn254Prover, PlonkBn254
 use zkm_stark::{ShardProof, StarkVerifyingKey, ZKMProverOpts};
 
 use crate::{
+    snark_vk_meta::{
+        read_snark_vk_meta_or_empty, upsert_snark_vk_meta, write_snark_vk_meta, SnarkVkMetaRecord,
+    },
     utils::{
-        koalabear_bytes_to_bn254, outer_vk_pc_commitment_hash, snark_public_input_from_outer_vk,
+        koalabear_bytes_to_bn254, outer_vk_commitment_be_bytes, snark_public_input_from_outer_vk,
         words_to_bytes,
     },
     OuterSC, WrapAir, ZKMProver,
 };
 
-#[derive(serde::Serialize, serde::Deserialize)]
-struct SnarkVkeyHashMeta {
-    vk_pc_commitment_hash_hex: String,
-}
-
 fn write_snark_vkey_hash_meta(template_vk: &StarkVerifyingKey<OuterSC>, build_dir: &PathBuf) {
-    let vk_pc_commitment_hash = outer_vk_pc_commitment_hash(template_vk)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<String>();
-    let meta = SnarkVkeyHashMeta { vk_pc_commitment_hash_hex: vk_pc_commitment_hash };
-    let path = build_dir.join("snark_vkey_hash_meta.json");
-    let serialized = serde_json::to_vec_pretty(&meta).expect("failed to serialize snark meta");
-    std::fs::write(path, serialized).expect("failed to write snark meta");
+    let baseline_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../verifier/bn254-vk/snark_vk_meta.bin");
+    let mut records = read_snark_vk_meta_or_empty(&baseline_path)
+        .expect("failed to read baseline snark_vk_meta.bin");
+
+    let commitment_bytes = outer_vk_commitment_be_bytes(template_vk);
+    let commitment: [u8; 32] = commitment_bytes
+        .as_slice()
+        .try_into()
+        .expect("outer vk commitment must be exactly 32 bytes");
+
+    upsert_snark_vk_meta(
+        &mut records,
+        SnarkVkMetaRecord {
+            version: ZKM_CIRCUIT_VERSION.to_string(),
+            pc_start: template_vk.pc_start.as_canonical_u32(),
+            commitment,
+        },
+    );
+
+    let output_path = build_dir.join("snark_vk_meta.bin");
+    write_snark_vk_meta(&output_path, &records).expect("failed to write snark_vk_meta.bin");
 }
 
 /// Tries to build the PLONK artifacts inside the development directory.
@@ -243,8 +257,6 @@ fn build_outer_circuit(template_input: &ZKMCompressWitnessValues<OuterSC>) -> Ve
 
     // Get an input variable.
     let input = template_input.read(&mut builder);
-    // Get the vk variable from the input.
-    let _vk = input.vks_and_proofs.first().unwrap().0.clone();
 
     // Verify the proof.
     ZKMWrapVerifier::verify(&mut builder, &wrap_machine, input);

@@ -4,8 +4,10 @@ use anyhow::Result;
 use num_bigint::BigUint;
 use p3_field::FieldAlgebra;
 use p3_koala_bear::KoalaBear;
+use sha2::{Digest, Sha256};
 use zkm_core_executor::{subproof::SubproofVerifier, ZKMReduceProof};
 use zkm_core_machine::cpu::MAX_CPU_LOG_DEGREE;
+use zkm_core_machine::ZKM_CIRCUIT_VERSION;
 use zkm_primitives::{consts::WORD_SIZE, io::ZKMPublicValues};
 
 use thiserror::Error;
@@ -17,14 +19,15 @@ use zkm_recursion_gnark_ffi::{
 use zkm_stark::{
     air::{PublicValues, POSEIDON_NUM_WORDS, PV_DIGEST_NUM_WORDS},
     koala_bear_poseidon2::KoalaBearPoseidon2,
-    MachineProof, MachineProver, MachineVerificationError, StarkGenericConfig, Word,
+    MachineProof, MachineProver, MachineVerificationError, StarkGenericConfig, Word, DIGEST_SIZE,
 };
 
 use crate::{
     components::ZKMProverComponents,
+    snark_vk_meta::{get_snark_vk_meta_by_version, read_snark_vk_meta_or_empty},
     utils::{
         is_recursion_public_values_valid, is_root_public_values_valid,
-        snark_public_input_hash_bytes,
+        snark_public_input_hash_bytes, zkm_vk_digest_be_bytes,
     },
     CoreSC, HashableKey, OuterSC, ZKMCoreProofData, ZKMProver, ZKMVerifyingKey,
 };
@@ -447,32 +450,32 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
     }
 }
 
-#[derive(serde::Deserialize)]
-struct SnarkVkeyHashMeta {
-    vk_pc_commitment_hash_hex: String,
-}
-
-fn decode_hex_32(hex: &str) -> Result<[u8; 32]> {
-    if hex.len() != 64 {
-        return Err(anyhow::anyhow!("invalid hash length, expected 64 hex chars"));
-    }
-    let mut out = [0u8; 32];
-    for i in 0..32 {
-        out[i] = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)?;
-    }
-    Ok(out)
-}
-
 fn expected_snark_vkey_hash(vk: &ZKMVerifyingKey, build_dir: &Path) -> Result<BigUint> {
-    let meta_path = build_dir.join("snark_vkey_hash_meta.json");
-    let meta_bytes = std::fs::read(meta_path)?;
-    let meta: SnarkVkeyHashMeta = serde_json::from_slice(&meta_bytes)?;
-    let vk_pc_commitment_hash = decode_hex_32(&meta.vk_pc_commitment_hash_hex)?;
+    let meta_path = build_dir.join("snark_vk_meta.bin");
+    let records = read_snark_vk_meta_or_empty(&meta_path)?;
+    let meta = get_snark_vk_meta_by_version(&records, ZKM_CIRCUIT_VERSION)
+        .map_err(|e| anyhow::anyhow!("failed to load snark vk meta for current version: {e}"))?;
 
     let zkm_vk_digest = vk.hash_koalabear();
-    let mut snark_hash = snark_public_input_hash_bytes(&vk_pc_commitment_hash, &zkm_vk_digest);
-    snark_hash[0] &= 0x1f;
+    let snark_hash =
+        snark_public_input_hash_from_meta(meta.pc_start, &meta.commitment, &zkm_vk_digest);
     Ok(BigUint::from_bytes_be(&snark_hash))
+}
+
+fn snark_public_input_hash_from_meta(
+    pc_start: u32,
+    commitment: &[u8; 32],
+    zkm_vk_digest: &[KoalaBear; DIGEST_SIZE],
+) -> [u8; 32] {
+    let mut h1_input = Vec::with_capacity(4 + 32);
+    h1_input.extend_from_slice(&pc_start.to_be_bytes());
+    h1_input.extend_from_slice(commitment);
+    let h1: [u8; 32] = Sha256::digest(h1_input).into();
+
+    debug_assert_eq!(zkm_vk_digest_be_bytes(zkm_vk_digest).len(), 32);
+    let mut snark_hash = snark_public_input_hash_bytes(&h1, zkm_vk_digest);
+    snark_hash[0] &= 0x1f;
+    snark_hash
 }
 
 /// Verify the vk_hash and public_values_hash in the public inputs of the PlonkBn254Proof match the
@@ -556,5 +559,44 @@ impl<C: ZKMProverComponents> SubproofVerifier for ZKMProver<C> {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use p3_field::PrimeField32;
+
+    use super::snark_public_input_hash_from_meta;
+    use p3_koala_bear::KoalaBear;
+
+    fn encode_hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
+    }
+
+    #[test]
+    fn test_snark_public_input_hash_from_meta_vector() {
+        let pc_start = 0x01020304u32;
+        let commitment = [
+            0x2f, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54,
+            0x32, 0x10, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb,
+            0xcc, 0xdd, 0xee, 0xff,
+        ];
+        let words = [
+            0x00000000u32,
+            0x00000001,
+            0x7f000000,
+            0x12345678,
+            0x0badc0de,
+            0x0000beef,
+            0x01020304,
+            0x70000000,
+        ];
+        let digest = words.map(KoalaBear::from_canonical_u32);
+
+        let hash = snark_public_input_hash_from_meta(pc_start, &commitment, &digest);
+        assert_eq!(
+            encode_hex(&hash),
+            "1c8f70cfe3b73ba3512ef4220e97597881b08a9ff79f0147a2df6d8d0133c4e6"
+        );
     }
 }

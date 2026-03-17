@@ -9,6 +9,7 @@ use p3_poseidon2::{ExternalLayerConstants, Poseidon2};
 
 pub mod consts;
 pub mod io;
+pub mod snark_vk_meta;
 pub mod types;
 
 lazy_static! {

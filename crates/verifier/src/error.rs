@@ -28,4 +28,8 @@ pub enum Error {
     // Ziren Errors
     #[error("Invalid program vkey hash")]
     InvalidProgramVkeyHash,
+    #[error("SNARK VK metadata version not found")]
+    VersionNotFound,
+    #[error("Invalid SNARK VK metadata binary format")]
+    InvalidSnarkVkMetaFormat,
 }
