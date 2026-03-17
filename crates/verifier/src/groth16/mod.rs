@@ -7,7 +7,10 @@ use substrate_bn::Fr;
 use alloc::vec::Vec;
 use sha2::{Digest, Sha256};
 
-use crate::{decode_zkm_vkey_hash, error::Error, hash_public_inputs};
+use crate::{
+    decode_zkm_vkey_hash, error::Error, hash_public_inputs, snark_public_input_hash_from_meta,
+    SnarkVkMeta,
+};
 pub(crate) use converter::{load_groth16_proof_from_bytes, load_groth16_verifying_key_from_bytes};
 pub(crate) use verify::*;
 
@@ -34,8 +37,8 @@ impl Groth16Verifier {
     ///
     /// * `proof` - The proof bytes.
     /// * `public_inputs` - The Ziren public inputs.
-    /// * `zkm_vkey_hash` - The first public input hash expected by the Ziren SNARK verifier.
-    ///   Pass it as a `0x`-prefixed 32-byte hex string.
+    /// * `zkm_vkey_hash` - The zkm vk digest encoded as a `0x`-prefixed 32-byte hex string.
+    /// * `snark_vk_meta` - Versioned SNARK vk metadata containing `pc_start` and `commitment`.
     /// * `groth16_vk` - The Groth16 verifying key bytes.
     ///   Usually this will be the [`static@crate::GROTH16_VK_BYTES`] constant, which is the Groth16
     ///   verifying key for the current Ziren version.
@@ -47,6 +50,7 @@ impl Groth16Verifier {
         proof: &[u8],
         zkm_public_inputs: &[u8],
         zkm_vkey_hash: &str,
+        snark_vk_meta: &SnarkVkMeta,
         groth16_vk: &[u8],
     ) -> Result<(), Groth16Error> {
         // Hash the vk and get the first 4 bytes.
@@ -63,7 +67,8 @@ impl Groth16Verifier {
             return Err(Groth16Error::Groth16VkeyHashMismatch);
         }
 
-        let zkm_vkey_hash = decode_zkm_vkey_hash(zkm_vkey_hash)?;
+        let zkm_vk_digest = decode_zkm_vkey_hash(zkm_vkey_hash)?;
+        let zkm_vkey_hash = snark_public_input_hash_from_meta(snark_vk_meta, &zkm_vk_digest);
 
         Self::verify_gnark_proof(
             &proof[4..],
@@ -75,10 +80,12 @@ impl Groth16Verifier {
     #[cfg(feature = "ark")]
     pub fn ark_verify(
         proof_with_pub_values: &ZKMProofWithPublicValues,
-        vkey_hash: &str,
+        zkm_vkey_hash: &str,
+        snark_vk_meta: &SnarkVkMeta,
         groth16_vk: &[u8],
     ) -> Result<bool, ArkGroth16Error> {
-        let ark_proof = crate::convert_ark(proof_with_pub_values, vkey_hash, groth16_vk)?;
+        let ark_proof =
+            crate::convert_ark(proof_with_pub_values, zkm_vkey_hash, snark_vk_meta, groth16_vk)?;
 
         Groth16::<Bn254, LibsnarkReduction>::verify_proof(
             &ark_proof.groth16_vk,

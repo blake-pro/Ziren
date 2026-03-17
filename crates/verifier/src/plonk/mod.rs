@@ -22,7 +22,10 @@ use error::PlonkError;
 use sha2::{Digest, Sha256};
 use substrate_bn::Fr;
 
-use crate::{decode_zkm_vkey_hash, error::Error, hash_public_inputs};
+use crate::{
+    decode_zkm_vkey_hash, error::Error, hash_public_inputs, snark_public_input_hash_from_meta,
+    SnarkVkMeta,
+};
 /// A verifier for Plonk zero-knowledge proofs.
 #[derive(Debug)]
 pub struct PlonkVerifier;
@@ -34,8 +37,8 @@ impl PlonkVerifier {
     ///
     /// * `proof` - The proof bytes.
     /// * `public_inputs` - The Ziren public inputs.
-    /// * `zkm_vkey_hash` - The first public input hash expected by the Ziren SNARK verifier.
-    ///   Pass it as a `0x`-prefixed 32-byte hex string.
+    /// * `zkm_vkey_hash` - The zkm vk digest encoded as a `0x`-prefixed 32-byte hex string.
+    /// * `snark_vk_meta` - Versioned SNARK vk metadata containing `pc_start` and `commitment`.
     /// * `plonk_vk` - The Plonk verifying key bytes.
     ///   Usually this will be the [`static@crate::PLONK_VK_BYTES`] constant.
     ///
@@ -46,6 +49,7 @@ impl PlonkVerifier {
         proof: &[u8],
         zkm_public_inputs: &[u8],
         zkm_vkey_hash: &str,
+        snark_vk_meta: &SnarkVkMeta,
         plonk_vk: &[u8],
     ) -> Result<(), PlonkError> {
         // Hash the vk and get the first 4 bytes.
@@ -62,7 +66,8 @@ impl PlonkVerifier {
             return Err(PlonkError::PlonkVkeyHashMismatch);
         }
 
-        let zkm_vkey_hash = decode_zkm_vkey_hash(zkm_vkey_hash)?;
+        let zkm_vk_digest = decode_zkm_vkey_hash(zkm_vkey_hash)?;
+        let zkm_vkey_hash = snark_public_input_hash_from_meta(snark_vk_meta, &zkm_vk_digest);
 
         Self::verify_gnark_proof(
             &proof[4..],

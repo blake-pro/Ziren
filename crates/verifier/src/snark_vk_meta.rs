@@ -70,18 +70,23 @@ mod tests {
     #[test]
     fn test_parse_duplicate_versions_mapped_to_verifier_error() {
         let bytes = serialize_snark_vk_meta(&[
-            SnarkVkMetaRecord { version: "v1.2.4".to_string(), pc_start: 0, commitment: [0x22u8; 32] },
-            SnarkVkMetaRecord { version: "v1.2.4".to_string(), pc_start: 1, commitment: [0x33u8; 32] },
+            SnarkVkMetaRecord {
+                version: "v1.2.4".to_string(),
+                pc_start: 0,
+                commitment: [0x22u8; 32],
+            },
+            SnarkVkMetaRecord {
+                version: "v1.2.4".to_string(),
+                pc_start: 1,
+                commitment: [0x33u8; 32],
+            },
         ]);
         assert_eq!(bytes, Err(SnarkVkMetaError::DuplicateVersion));
     }
 
     #[test]
     fn test_get_missing_version() {
-        assert!(matches!(
-            get_snark_vk_meta("version-not-exists"),
-            Err(Error::VersionNotFound)
-        ));
+        assert!(matches!(get_snark_vk_meta("version-not-exists"), Err(Error::VersionNotFound)));
     }
 
     #[test]
@@ -89,9 +94,9 @@ mod tests {
         let expected = SnarkVkMeta {
             pc_start: 0,
             commitment: [
-                0x09, 0xf4, 0x6d, 0x5e, 0x3f, 0x82, 0xee, 0x9c, 0x92, 0xd1, 0xdf, 0x45, 0xd8,
-                0xfe, 0x4d, 0xee, 0x29, 0x2c, 0x0c, 0x08, 0x1b, 0x78, 0x61, 0x16, 0x3c, 0x81,
-                0xc3, 0xea, 0x23, 0x4e, 0xb8, 0xff,
+                0x09, 0xf4, 0x6d, 0x5e, 0x3f, 0x82, 0xee, 0x9c, 0x92, 0xd1, 0xdf, 0x45, 0xd8, 0xfe,
+                0x4d, 0xee, 0x29, 0x2c, 0x0c, 0x08, 0x1b, 0x78, 0x61, 0x16, 0x3c, 0x81, 0xc3, 0xea,
+                0x23, 0x4e, 0xb8, 0xff,
             ],
         };
         assert_eq!(get_snark_vk_meta("v1.2.4"), Ok(expected));

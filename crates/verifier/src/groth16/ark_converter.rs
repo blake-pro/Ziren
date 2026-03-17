@@ -11,7 +11,9 @@ use thiserror::Error;
 use zkm_sdk::ZKMProofWithPublicValues;
 
 use crate::error::Error;
-use crate::{decode_zkm_vkey_hash, hash_public_inputs};
+use crate::{
+    decode_zkm_vkey_hash, hash_public_inputs, snark_public_input_hash_from_meta, SnarkVkMeta,
+};
 
 const GNARK_MASK: u8 = 0b11 << 6;
 const GNARK_COMPRESSED_POSITIVE: u8 = 0b10 << 6;
@@ -52,7 +54,8 @@ pub struct ArkProof {
 
 pub fn convert_ark(
     proof_with_pub_values: &ZKMProofWithPublicValues,
-    vkey_hash: &str,
+    zkm_vkey_hash: &str,
+    snark_vk_meta: &SnarkVkMeta,
     groth16_vk: &[u8],
 ) -> Result<ArkProof, ArkGroth16Error> {
     let proof = proof_with_pub_values.bytes();
@@ -75,10 +78,10 @@ pub fn convert_ark(
     // Convert gnark proof to arkworks proof
     let ark_proof = load_ark_proof_from_bytes(&proof[4..])?;
     let ark_groth16_vk = load_ark_groth16_verifying_key_from_bytes(groth16_vk)?;
-    let ark_public_inputs = load_ark_public_inputs_from_bytes(
-        &decode_zkm_vkey_hash(&vkey_hash)?,
-        &hash_public_inputs(&public_inputs),
-    );
+    let zkm_vk_digest = decode_zkm_vkey_hash(zkm_vkey_hash)?;
+    let zkm_vkey_hash = snark_public_input_hash_from_meta(snark_vk_meta, &zkm_vk_digest);
+    let ark_public_inputs =
+        load_ark_public_inputs_from_bytes(&zkm_vkey_hash, &hash_public_inputs(&public_inputs));
 
     Ok(ArkProof {
         groth16_vk: ark_groth16_vk.into(),

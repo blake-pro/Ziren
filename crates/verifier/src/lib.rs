@@ -29,8 +29,8 @@ mod snark_vk_meta;
 
 mod utils;
 pub use error::Error;
-pub use utils::*;
 pub use snark_vk_meta::{get_snark_vk_meta, SnarkVkMeta};
+pub use utils::*;
 
 pub use groth16::error::Groth16Error;
 pub use groth16::Groth16Verifier;
