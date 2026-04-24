@@ -139,8 +139,7 @@ impl SyscallInstrsChip {
         let syscall_id = get_syscall_id::<AB>(local);
         let send_to_table = is_send_table::<AB>(local);
         let is_sys_linux: AB::Expr = local.is_sys_linux.into();
-        let send_to_linux = send_to_table.clone() * is_sys_linux.clone();
-        let send_to_precompile = send_to_table.clone() * (AB::Expr::one() - is_sys_linux.clone());
+        let send_to_precompile = get_send_table::<AB>(local);
 
         builder.assert_bool(get_send_table::<AB>(local));
         builder.assert_bool(local.is_sys_linux);
@@ -208,7 +207,7 @@ impl SyscallInstrsChip {
             op_b_hi,
             op_c_lo,
             op_c_hi,
-            send_to_linux,
+            is_sys_linux,
             LookupScope::Local,
         );
 
