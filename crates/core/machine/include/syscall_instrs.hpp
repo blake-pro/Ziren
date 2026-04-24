@@ -84,10 +84,11 @@ namespace zkm_core_machine_sys::syscall_instrs {
         }
 
         // Populate unified KoalaBear range check flags and columns.
+        bool is_linux = cols.is_sys_linux == F::one();
         bool is_commit_deferred =
             syscall_id == F::from_canonical_u32(to_syscall_id(SyscallCode::COMMIT_DEFERRED_PROOFS));
-        bool op_b_needs_check = send_to_table || is_halt_val;
-        bool op_c_needs_check = send_to_table || is_commit_deferred;
+        bool op_b_needs_check = (send_to_table && !is_linux) || is_halt_val;
+        bool op_c_needs_check = (send_to_table && !is_linux) || is_commit_deferred;
 
         if (op_b_needs_check) {
             cols.op_b_check = F::one();

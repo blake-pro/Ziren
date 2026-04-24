@@ -379,6 +379,58 @@ pub trait InstructionAirBuilder: BaseAirBuilder {
         );
     }
 
+    /// Sends a syscall operation with u32 arguments packed into two half-words each.
+    #[allow(clippy::too_many_arguments)]
+    fn send_syscall_packed(
+        &mut self,
+        shard: impl Into<Self::Expr>,
+        clk: impl Into<Self::Expr>,
+        syscall_id: impl Into<Self::Expr>,
+        arg1_lo: impl Into<Self::Expr>,
+        arg1_hi: impl Into<Self::Expr>,
+        arg2_lo: impl Into<Self::Expr>,
+        arg2_hi: impl Into<Self::Expr>,
+        multiplicity: impl Into<Self::Expr>,
+        scope: LookupScope,
+    ) {
+        let values: Vec<Self::Expr> = vec![
+            shard.into(),
+            clk.into(),
+            syscall_id.into(),
+            arg1_lo.into(),
+            arg1_hi.into(),
+            arg2_lo.into(),
+            arg2_hi.into(),
+        ];
+        self.send(AirLookup::new(values, multiplicity.into(), LookupKind::SyscallPacked), scope);
+    }
+
+    /// Receives a syscall operation with u32 arguments packed into two half-words each.
+    #[allow(clippy::too_many_arguments)]
+    fn receive_syscall_packed(
+        &mut self,
+        shard: impl Into<Self::Expr>,
+        clk: impl Into<Self::Expr>,
+        syscall_id: impl Into<Self::Expr>,
+        arg1_lo: impl Into<Self::Expr>,
+        arg1_hi: impl Into<Self::Expr>,
+        arg2_lo: impl Into<Self::Expr>,
+        arg2_hi: impl Into<Self::Expr>,
+        multiplicity: impl Into<Self::Expr>,
+        scope: LookupScope,
+    ) {
+        let values: Vec<Self::Expr> = vec![
+            shard.into(),
+            clk.into(),
+            syscall_id.into(),
+            arg1_lo.into(),
+            arg1_hi.into(),
+            arg2_lo.into(),
+            arg2_hi.into(),
+        ];
+        self.receive(AirLookup::new(values, multiplicity.into(), LookupKind::SyscallPacked), scope);
+    }
+
     /// Packs a Word's 4 bytes into 2 half-words: lo = b0 + b1*256, hi = b2 + b3*256.
     /// Each half-word is in [0, 65535] < P, so the encoding is injective (collision-free).
     fn word_to_halves(word: Word<impl Into<Self::Expr> + Copy>) -> [Self::Expr; 2] {

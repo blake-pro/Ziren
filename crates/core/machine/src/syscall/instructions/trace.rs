@@ -161,10 +161,11 @@ impl SyscallInstrsChip {
         }
 
         // Populate unified KoalaBear range check flags and columns.
+        let is_linux = cols.is_sys_linux == F::ONE;
         let is_commit_deferred =
             syscall_id == F::from_canonical_u32(SyscallCode::COMMIT_DEFERRED_PROOFS.syscall_id());
-        let op_b_needs_check = send_to_table || is_halt_val;
-        let op_c_needs_check = send_to_table || is_commit_deferred;
+        let op_b_needs_check = (send_to_table && !is_linux) || is_halt_val;
+        let op_c_needs_check = (send_to_table && !is_linux) || is_commit_deferred;
 
         if op_b_needs_check {
             cols.op_b_check = F::ONE;
@@ -174,5 +175,51 @@ impl SyscallInstrsChip {
             cols.op_c_check = F::ONE;
             cols.op_c_range_check.populate(event.arg2);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::borrow::Borrow;
+
+    use p3_field::FieldAlgebra;
+    use p3_koala_bear::KoalaBear;
+    use p3_matrix::Matrix;
+    use zkm_core_executor::{
+        events::{MemoryWriteRecord, SyscallEvent},
+        syscalls::SyscallCode,
+        ExecutionRecord,
+    };
+    use zkm_stark::air::MachineAir;
+
+    use super::{SyscallInstrColumns, SyscallInstrsChip};
+
+    #[test]
+    fn linux_syscall_with_negative_arg_does_not_enable_koalabear_range_check() {
+        let chip = SyscallInstrsChip;
+        let mut input = ExecutionRecord::default();
+        input.syscall_events.push(SyscallEvent {
+            pc: 0,
+            next_pc: 4,
+            shard: 1,
+            clk: 1,
+            a_record: MemoryWriteRecord {
+                value: 0,
+                prev_value: SyscallCode::SYS_OPENAT as u32,
+                ..Default::default()
+            },
+            a_record_is_real: true,
+            syscall_id: SyscallCode::SYS_OPENAT as u32,
+            arg1: (-100i32) as u32,
+            arg2: 0,
+        });
+
+        let trace = chip.generate_trace(&input, &mut ExecutionRecord::default()).unwrap();
+        let row = trace.row_slice(0);
+        let cols: &SyscallInstrColumns<KoalaBear> = (*row).borrow();
+
+        assert_eq!(cols.is_sys_linux, KoalaBear::ONE);
+        assert_eq!(cols.op_b_check, KoalaBear::ZERO);
+        assert_eq!(cols.op_c_check, KoalaBear::ZERO);
     }
 }

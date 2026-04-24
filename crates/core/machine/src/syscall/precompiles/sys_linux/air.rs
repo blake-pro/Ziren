@@ -181,12 +181,16 @@ where
         );
 
         // ── Cross-chip interactions ────────────────────────────────────
-        builder.receive_syscall(
+        let [a0_lo, a0_hi] = AB::word_to_halves(local.a0);
+        let [a1_lo, a1_hi] = AB::word_to_halves(local.a1);
+        builder.receive_syscall_packed(
             local.shard,
             local.clk,
             local.syscall_id,
-            local.a0.reduce::<AB>(),
-            local.a1.reduce::<AB>(),
+            a0_lo,
+            a0_hi,
+            a1_lo,
+            a1_hi,
             local.is_real,
             LookupScope::Local,
         );

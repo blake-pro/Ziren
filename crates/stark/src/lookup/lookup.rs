@@ -45,6 +45,9 @@ pub enum LookupKind {
     /// Lookup connecting syscall result and argument bytes between SyscallInstrsChip,
     /// SyscallChip, and SysLinuxChip.
     SyscallResult = 8,
+
+    /// Lookup with a syscall using half-word packed arguments.
+    SyscallPacked = 9,
 }
 
 impl LookupKind {
@@ -60,6 +63,7 @@ impl LookupKind {
             LookupKind::Syscall,
             LookupKind::Global,
             LookupKind::SyscallResult,
+            LookupKind::SyscallPacked,
         ]
     }
 }
@@ -101,6 +105,7 @@ impl Display for LookupKind {
             LookupKind::Syscall => write!(f, "Syscall"),
             LookupKind::Global => write!(f, "Global"),
             LookupKind::SyscallResult => write!(f, "SyscallResult"),
+            LookupKind::SyscallPacked => write!(f, "SyscallPacked"),
         }
     }
 }

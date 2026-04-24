@@ -326,6 +326,7 @@ where
             + Into::<AB::Expr>::into(local.arg1_hi) * AB::Expr::from_canonical_u32(65536);
         let arg2: AB::Expr = local.arg2_lo.into()
             + Into::<AB::Expr>::into(local.arg2_hi) * AB::Expr::from_canonical_u32(65536);
+        let is_non_linux: AB::Expr = local.is_real.into() - Into::<AB::Expr>::into(local.is_linux);
 
         // U16Range checks for ALL syscalls (not just linux), gated by is_real.
         // This ensures the global lookup's half-word args are always canonical.
@@ -366,7 +367,18 @@ where
                     local.syscall_id,
                     arg1.clone(),
                     arg2.clone(),
-                    local.is_real,
+                    is_non_linux.clone(),
+                    LookupScope::Local,
+                );
+                builder.receive_syscall_packed(
+                    local.shard,
+                    local.clk,
+                    local.syscall_id,
+                    local.arg1_lo,
+                    local.arg1_hi,
+                    local.arg2_lo,
+                    local.arg2_hi,
+                    local.is_linux,
                     LookupScope::Local,
                 );
 
@@ -434,7 +446,18 @@ where
                     local.syscall_id,
                     arg1.clone(),
                     arg2.clone(),
-                    local.is_real,
+                    is_non_linux,
+                    LookupScope::Local,
+                );
+                builder.send_syscall_packed(
+                    local.shard,
+                    local.clk,
+                    local.syscall_id,
+                    local.arg1_lo,
+                    local.arg1_hi,
+                    local.arg2_lo,
+                    local.arg2_hi,
+                    local.is_linux,
                     LookupScope::Local,
                 );
 

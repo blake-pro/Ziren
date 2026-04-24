@@ -138,6 +138,9 @@ impl SyscallInstrsChip {
     ) {
         let syscall_id = get_syscall_id::<AB>(local);
         let send_to_table = is_send_table::<AB>(local);
+        let is_sys_linux: AB::Expr = local.is_sys_linux.into();
+        let send_to_linux = send_to_table.clone() * is_sys_linux.clone();
+        let send_to_precompile = send_to_table.clone() * (AB::Expr::one() - is_sys_linux.clone());
 
         builder.assert_bool(get_send_table::<AB>(local));
         builder.assert_bool(local.is_sys_linux);
@@ -162,13 +165,13 @@ impl SyscallInstrsChip {
         builder.when(AB::Expr::one() - local.is_real).assert_zero(send_to_table.clone());
 
         // KoalaBear range checks on op_b and op_c, activated by stored flags.
-        // op_b_check = 1 when send_to_table || is_halt (covers both syscall bridge and exit code).
-        // op_c_check = 1 when send_to_table || is_commit_deferred_proofs (covers bridge and digest).
+        // Linux syscall arguments may be any u32, so only reduced precompile
+        // syscalls need KoalaBear range checks before using reduce().
         builder.assert_bool(local.op_b_check);
         builder.assert_bool(local.op_c_check);
-        builder.when(send_to_table.clone()).assert_one(local.op_b_check);
+        builder.when(send_to_precompile.clone()).assert_one(local.op_b_check);
         builder.when(local.is_halt).assert_one(local.op_b_check);
-        builder.when(send_to_table.clone()).assert_one(local.op_c_check);
+        builder.when(send_to_precompile.clone()).assert_one(local.op_c_check);
         builder.when(local.is_commit_deferred_proofs.result).assert_one(local.op_c_check);
         builder.when_not(local.is_real).assert_zero(local.op_b_check);
         builder.when_not(local.is_real).assert_zero(local.op_c_check);
@@ -192,7 +195,20 @@ impl SyscallInstrsChip {
             syscall_id.clone(),
             local.op_b_value.reduce::<AB>(),
             local.op_c_value.reduce::<AB>(),
-            send_to_table,
+            send_to_precompile,
+            LookupScope::Local,
+        );
+        let [op_b_lo, op_b_hi] = AB::word_to_halves(local.op_b_value);
+        let [op_c_lo, op_c_hi] = AB::word_to_halves(local.op_c_value);
+        builder.send_syscall_packed(
+            local.shard,
+            local.clk,
+            syscall_id.clone(),
+            op_b_lo,
+            op_b_hi,
+            op_c_lo,
+            op_c_hi,
+            send_to_linux,
             LookupScope::Local,
         );
 
