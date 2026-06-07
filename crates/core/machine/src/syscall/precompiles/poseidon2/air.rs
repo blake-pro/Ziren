@@ -3,10 +3,11 @@ use std::borrow::Borrow;
 use p3_air::{Air, AirBuilder, BaseAir, PairBuilder};
 use p3_field::FieldAlgebra;
 use p3_matrix::Matrix;
+use zkm_core_executor::ByteOpcode;
 
-use crate::operations::poseidon2::air::{eval_external_round, eval_internal_rounds};
+use crate::operations::poseidon2::air::eval_degree3;
 use crate::operations::poseidon2::permutation::Poseidon2Cols;
-use crate::operations::poseidon2::{NUM_EXTERNAL_ROUNDS, WIDTH};
+use crate::operations::poseidon2::WIDTH;
 use crate::operations::KoalaBearWordRangeChecker;
 use crate::syscall::precompiles::poseidon2::{
     columns::{Poseidon2MemCols, NUM_COLS},
@@ -44,6 +45,21 @@ where
                 local.is_real.into(),
             );
             let pre_state_word = local.state_mem[i].prev_value().0;
+            // Enforce that the low three limbs are bytes.
+            builder.send_byte(
+                AB::Expr::from_canonical_u8(ByteOpcode::U8Range as u8),
+                AB::Expr::zero(),
+                pre_state_word[0],
+                pre_state_word[1],
+                local.is_real,
+            );
+            builder.send_byte(
+                AB::Expr::from_canonical_u8(ByteOpcode::U8Range as u8),
+                AB::Expr::zero(),
+                pre_state_word[2],
+                AB::Expr::zero(),
+                local.is_real,
+            );
             let pre_state = pre_state_word
                 .iter()
                 .enumerate()
@@ -58,10 +74,7 @@ where
         }
 
         // Constrain the permutation.
-        for r in 0..NUM_EXTERNAL_ROUNDS {
-            eval_external_round(builder, &local.poseidon2.permutation, r);
-        }
-        eval_internal_rounds(builder, &local.poseidon2.permutation);
+        eval_degree3(builder, &local.poseidon2.permutation);
 
         for i in 0..WIDTH {
             // Range check the current value of the state in memory. This ensures that each part
@@ -73,6 +86,21 @@ where
                 local.is_real.into(),
             );
             let post_state_word = local.state_mem[i].value().0;
+            // Enforce that the low three limbs are bytes.
+            builder.send_byte(
+                AB::Expr::from_canonical_u8(ByteOpcode::U8Range as u8),
+                AB::Expr::zero(),
+                post_state_word[0],
+                post_state_word[1],
+                local.is_real,
+            );
+            builder.send_byte(
+                AB::Expr::from_canonical_u8(ByteOpcode::U8Range as u8),
+                AB::Expr::zero(),
+                post_state_word[2],
+                AB::Expr::zero(),
+                local.is_real,
+            );
             let post_state = post_state_word
                 .iter()
                 .enumerate()

@@ -11,6 +11,8 @@ use zkm_core_executor::{
     ExecutionRecord, Program,
 };
 use zkm_stark::air::MachineAir;
+#[cfg(feature = "picus")]
+use zkm_stark::air::PicusInfo;
 
 use crate::{
     utils::{next_power_of_two, zeroed_f_vec},
@@ -31,6 +33,11 @@ impl<F: PrimeField32> MachineAir<F> for SyscallInstrsChip {
 
     fn name(&self) -> String {
         "SyscallInstrs".to_string()
+    }
+
+    #[cfg(feature = "picus")]
+    fn picus_info(&self) -> PicusInfo {
+        SyscallInstrColumns::<u8>::picus_info()
     }
 
     fn num_rows(&self, input: &Self::Record) -> Option<usize> {
@@ -115,7 +122,6 @@ impl SyscallInstrsChip {
         cols.is_sys_linux = F::from_bool(event.a_record.prev_value & 0x0ff00 != 0);
 
         let prev_a_bytes = event.a_record.prev_value.to_le_bytes();
-        let send_to_table = (prev_a_bytes[1] != 0) || (prev_a_bytes[2] == 1);
         let is_halt_val = cols.is_halt == F::ONE;
 
         // Populate is_prev_a1_zero for bidirectional is_sys_linux constraint.
@@ -161,10 +167,17 @@ impl SyscallInstrsChip {
         }
 
         // Populate unified KoalaBear range check flags and columns.
+        // Activate the KoalaBear range check only when the value travels as a single reduced
+        // field element: the precompile bridge (prev_a_bytes[2] == 1), `is_halt` (exit code),
+        // and `is_commit_deferred_proofs` (digest). Linux syscall args travel via half-word
+        // packed columns in `SyscallChip` (U16-range-checked), so reduce() collisions are
+        // impossible there and the KoalaBear constraint must not be applied — otherwise legal
+        // u32 args like AT_FDCWD = 0xFFFFFF9C fail the check.
+        let send_to_precompile = prev_a_bytes[2] == 1;
         let is_commit_deferred =
             syscall_id == F::from_canonical_u32(SyscallCode::COMMIT_DEFERRED_PROOFS.syscall_id());
-        let op_b_needs_check = send_to_table || is_halt_val;
-        let op_c_needs_check = send_to_table || is_commit_deferred;
+        let op_b_needs_check = send_to_precompile || is_halt_val;
+        let op_c_needs_check = send_to_precompile || is_commit_deferred;
 
         if op_b_needs_check {
             cols.op_b_check = F::ONE;

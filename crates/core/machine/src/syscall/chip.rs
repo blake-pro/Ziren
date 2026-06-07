@@ -14,7 +14,11 @@ use p3_maybe_rayon::prelude::ParallelIterator;
 use zkm_core_executor::events::{ByteRecord, GlobalLookupEvent, PrecompileEvent};
 use zkm_core_executor::{events::SyscallEvent, ByteOpcode, ExecutionRecord, Program};
 use zkm_derive::AlignedBorrow;
+#[cfg(feature = "picus")]
+use zkm_derive::PicusAnnotations;
 use zkm_stark::air::AirLookup;
+#[cfg(feature = "picus")]
+use zkm_stark::air::PicusInfo;
 use zkm_stark::air::{LookupScope, MachineAir, ZKMAirBuilder};
 use zkm_stark::LookupKind;
 
@@ -59,24 +63,20 @@ impl SyscallChip {
 }
 
 /// The column layout for the chip.
-///
-/// `arg1` and `arg2` are NOT stored as columns. They are derived inline as
-/// `arg1_lo + arg1_hi * 65536` to avoid redundant columns while keeping the
-/// reduced field element available for local `send_syscall`/`receive_syscall`.
-///
-/// **Soundness**: `arg1_lo/hi` and `arg2_lo/hi` are U16Range-checked inside
-/// `send_syscall_result_packed` (see `crates/stark/src/air/builder.rs`).
-/// Any chip using this interaction gets range-checked half-words automatically.
 #[derive(AlignedBorrow, Clone, Copy)]
+#[cfg_attr(feature = "picus", derive(PicusAnnotations))]
 #[repr(C)]
 pub struct SyscallCols<T: Copy> {
     /// The shard number of the syscall.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub shard: T,
 
     /// The clk of the syscall.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub clk: T,
 
     /// The syscall_id of the syscall.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub syscall_id: T,
 
     /// Half-word packed arg1: low 16 bits (byte0 + byte1 * 256).
@@ -85,20 +85,27 @@ pub struct SyscallCols<T: Copy> {
     /// arg1/arg2 through receive_syscall and don't use the half-words.
     /// If a new precompile needs byte-level argument access, it should use
     /// receive_syscall_result_packed to get these half-words.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub arg1_lo: T,
     /// Half-word packed arg1: high 16 bits (byte2 + byte3 * 256).
+    #[cfg_attr(feature = "picus", picus(input))]
     pub arg1_hi: T,
 
     /// Half-word packed arg2: low 16 bits.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub arg2_lo: T,
     /// Half-word packed arg2: high 16 bits.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub arg2_hi: T,
 
     /// Half-word packed result (lo = byte0 + byte1*256, hi = byte2 + byte3*256).
+    #[cfg_attr(feature = "picus", picus(output))]
     pub result_lo: T,
+    #[cfg_attr(feature = "picus", picus(output))]
     pub result_hi: T,
 
     /// Whether the syscall is a linux syscall.
+    #[cfg_attr(feature = "picus", picus(input))]
     pub is_linux: T,
 
     pub is_real: T,
@@ -113,6 +120,15 @@ impl<F: PrimeField32> MachineAir<F> for SyscallChip {
 
     fn name(&self) -> String {
         format!("Syscall{}", self.shard_kind).to_string()
+    }
+
+    #[cfg(feature = "picus")]
+    fn picus_info(&self) -> PicusInfo {
+        SyscallCols::<u8>::picus_info()
+    }
+
+    fn local_only(&self) -> bool {
+        true
     }
 
     fn generate_dependencies(

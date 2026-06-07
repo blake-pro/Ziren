@@ -1,4 +1,5 @@
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fmt::{self, Display, Formatter},
     iter::{Product, Sum},
@@ -14,8 +15,39 @@ static PICUS_NAMES_GLOBAL: OnceLock<RwLock<HashMap<usize, String>>> = OnceLock::
 
 /// Maintains col indices for fresh variables during the course of extraction
 static FRESH_VAR_CTR: OnceLock<AtomicUsize> = OnceLock::new();
+
+/// Default AST-size threshold beyond which Picus reifies an expression into a
+/// fresh variable during extraction.
+///
+/// This is a pragmatic memory-control heuristic for very large AIRs such as
+/// Poseidon2. The arithmetic overloads in this file build tree-shaped syntax and
+/// clone aggressively, so letting expressions grow without bound can exhaust
+/// memory before they ever reach a constraint sink.
+const DEFAULT_EXPR_REIFY_THRESHOLD: usize = 128;
+
+#[derive(Default)]
+struct ExprReifyContext {
+    threshold: usize,
+    pending_bindings: Vec<(usize, PicusExpr)>,
+}
+
+thread_local! {
+    /// Optional extraction-local queue of oversized expressions that have been
+    /// replaced by fresh variables during `PicusExpr` construction.
+    ///
+    /// `PicusExpr` itself does not own a builder or module, so arithmetic
+    /// overloads cannot emit constraints directly. Instead they enqueue
+    /// `fresh_k = expr` bindings here, and the active `PicusBuilder` flushes
+    /// them before it appends the next real constraint.
+    static EXPR_REIFY_CONTEXT: RefCell<Option<ExprReifyContext>> = const { RefCell::new(None) };
+}
+
 pub fn set_picus_names(map: HashMap<usize, String>) {
     let _ = PICUS_NAMES_GLOBAL.set(RwLock::new(map));
+}
+
+pub(crate) fn picus_name_for(id: usize) -> Option<String> {
+    PICUS_NAMES_GLOBAL.get()?.read().unwrap().get(&id).cloned()
 }
 
 // Get or initialize the fresh var counter
@@ -41,6 +73,56 @@ pub fn fresh_picus_var() -> PicusAtom {
 // update the counter
 pub fn fresh_picus_expr() -> PicusExpr {
     PicusExpr::Var(fresh_picus_var_id())
+}
+
+/// Scope guard enabling threshold-based expression reification for the current
+/// thread.
+///
+/// While this guard is live, `PicusExpr` arithmetic will replace oversized
+/// subexpressions with fresh variables and queue the defining equalities for the
+/// active builder to flush later.
+pub struct ExprReifyScope;
+
+impl Drop for ExprReifyScope {
+    fn drop(&mut self) {
+        EXPR_REIFY_CONTEXT.with(|ctx| {
+            let mut ctx = ctx.borrow_mut();
+            let prev = ctx.take();
+            if let Some(prev) = prev.as_ref() {
+                assert!(
+                    prev.pending_bindings.is_empty(),
+                    "dropping expression reification scope with unflushed pending bindings"
+                );
+            }
+            assert!(prev.is_some(), "ExprReifyScope dropped without an active reification context");
+        });
+    }
+}
+
+/// Enables threshold-based expression reification for the current thread.
+pub fn begin_expr_reify_scope(threshold: Option<usize>) -> ExprReifyScope {
+    EXPR_REIFY_CONTEXT.with(|ctx| {
+        let mut ctx = ctx.borrow_mut();
+        assert!(ctx.is_none(), "expression reification context is already active on this thread");
+        *ctx = Some(ExprReifyContext {
+            threshold: threshold.unwrap_or(DEFAULT_EXPR_REIFY_THRESHOLD),
+            pending_bindings: Vec::new(),
+        });
+    });
+    ExprReifyScope
+}
+
+/// Drains any pending `fresh = expr` bindings produced by oversized
+/// subexpression reification during the active extraction pass.
+pub fn drain_pending_expr_bindings() -> Vec<(usize, PicusExpr)> {
+    EXPR_REIFY_CONTEXT.with(|ctx| {
+        let mut ctx = ctx.borrow_mut();
+        if let Some(ctx) = ctx.as_mut() {
+            std::mem::take(&mut ctx.pending_bindings)
+        } else {
+            Vec::new()
+        }
+    })
 }
 
 use p3_field::{FieldAlgebra, PrimeField32};
@@ -118,12 +200,10 @@ impl Display for PicusAtom {
         match self {
             Self::Const(c) => write!(f, "{c}"),
             Self::Var(id) => {
-                if let Some(lock) = PICUS_NAMES_GLOBAL.get() {
-                    if let Some(name) = lock.read().unwrap().get(id) {
-                        return f.write_str(name);
-                    }
+                if let Some(name) = picus_name_for(*id) {
+                    return f.write_str(&name);
                 }
-                write!(f, "v{id}")
+                write!(f, "fresh_{id}")
             }
         }
     }
@@ -277,6 +357,22 @@ impl PicusExpr {
     pub fn is_const_zero(&self) -> bool {
         matches!(self, PicusExpr::Const(c) if *c == 0)
     }
+
+    fn maybe_reify(self) -> Self {
+        EXPR_REIFY_CONTEXT.with(|ctx| {
+            let mut ctx = ctx.borrow_mut();
+            let Some(ctx) = ctx.as_mut() else {
+                return self;
+            };
+            if self.size() <= ctx.threshold {
+                return self;
+            }
+
+            let fresh = fresh_picus_var_id();
+            ctx.pending_bindings.push((fresh, self));
+            PicusExpr::Var(fresh)
+        })
+    }
 }
 
 macro_rules! impl_from_ints {
@@ -308,17 +404,17 @@ impl Add<PicusExpr> for PicusExpr {
                 if c == 0 {
                     rhs
                 } else {
-                    PicusExpr::Add(Box::new(lhs), Box::new(rhs))
+                    PicusExpr::Add(Box::new(lhs), Box::new(rhs)).maybe_reify()
                 }
             }
             (_, PicusExpr::Const(c)) => {
                 if c == 0 {
                     lhs
                 } else {
-                    PicusExpr::Add(Box::new(lhs), Box::new(rhs))
+                    PicusExpr::Add(Box::new(lhs), Box::new(rhs)).maybe_reify()
                 }
             }
-            _ => PicusExpr::Add(Box::new(lhs), Box::new(rhs)),
+            _ => PicusExpr::Add(Box::new(lhs), Box::new(rhs)).maybe_reify(),
         }
     }
 }
@@ -364,10 +460,10 @@ impl Sub<PicusExpr> for PicusExpr {
                 if c == 0 {
                     lhs
                 } else {
-                    PicusExpr::Sub(Box::new(self), Box::new(rhs))
+                    PicusExpr::Sub(Box::new(self), Box::new(rhs)).maybe_reify()
                 }
             }
-            _ => PicusExpr::Sub(Box::new(self), Box::new(rhs)),
+            _ => PicusExpr::Sub(Box::new(self), Box::new(rhs)).maybe_reify(),
         }
     }
 }
@@ -406,7 +502,7 @@ impl Neg for PicusExpr {
         let lhs = self.clone();
         match lhs.clone() {
             PicusExpr::Const(c) => reduce_mod((current_modulus().unwrap() - c) as i64).into(),
-            _ => PicusExpr::Neg(Box::new(lhs)),
+            _ => PicusExpr::Neg(Box::new(lhs)).maybe_reify(),
         }
     }
 }
@@ -422,7 +518,7 @@ impl Mul<PicusExpr> for PicusExpr {
         match (lhs.clone(), rhs.clone()) {
             (PicusExpr::Const(c), _) => rhs * c,
             (_, PicusExpr::Const(c)) => lhs * c,
-            _ => PicusExpr::Mul(Box::new(lhs), Box::new(rhs)),
+            _ => PicusExpr::Mul(Box::new(lhs), Box::new(rhs)).maybe_reify(),
         }
     }
 }
@@ -469,7 +565,7 @@ impl Mul<u64> for PicusExpr {
         let lhs = self.clone();
         match lhs {
             PicusExpr::Const(c_1) => reduce_mod((c_1 * rhs) as i64).into(),
-            _ => PicusExpr::Mul(Box::new(lhs), Box::new(rhs.into())),
+            _ => PicusExpr::Mul(Box::new(lhs), Box::new(rhs.into())).maybe_reify(),
         }
     }
 }
@@ -549,6 +645,8 @@ pub enum PicusConstraint {
     Or(Box<PicusConstraint>, Box<PicusConstraint>),
     /// Canonical equality-to-zero form: `Eq(e)` represents `e = 0`.
     Eq(Box<PicusExpr>),
+    /// Assert expression is deterministic
+    Det(Box<PicusExpr>),
 }
 
 impl PicusConstraint {
@@ -651,6 +749,10 @@ impl PicusConstraint {
             Eq(e) => {
                 let new_e = multiplier.clone() * (*e.clone());
                 PicusConstraint::Eq(Box::new(new_e))
+            }
+            Det(e) => {
+                let new_expr = multiplier.clone() * (*e.clone());
+                PicusConstraint::Det(Box::new(new_expr))
             }
         }
     }

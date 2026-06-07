@@ -1,6 +1,8 @@
 use std::mem::size_of;
 
 use zkm_derive::AlignedBorrow;
+#[cfg(feature = "picus")]
+use zkm_derive::PicusAnnotations;
 use zkm_stark::Word;
 
 use crate::{
@@ -10,6 +12,8 @@ use crate::{
         XorOperation,
     },
 };
+#[cfg(feature = "picus")]
+use zkm_stark::PicusInfo;
 
 pub const NUM_SHA_COMPRESS_COLS: usize = size_of::<ShaCompressCols<u8>>();
 
@@ -21,12 +25,17 @@ pub const NUM_SHA_COMPRESS_COLS: usize = size_of::<ShaCompressCols<u8>>();
 /// compression cycle, one iteration of sha compress is computed. During finalize, the columns are
 /// combined and written back to memory.
 #[derive(AlignedBorrow, Default, Debug, Clone, Copy)]
+#[cfg_attr(feature = "picus", derive(PicusAnnotations))]
 #[repr(C)]
 pub struct ShaCompressCols<T> {
     /// Inputs.
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub shard: T,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub clk: T,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub w_ptr: T,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub h_ptr: T,
 
     pub start: T,
@@ -47,13 +56,21 @@ pub struct ShaCompressCols<T> {
     /// compression, this is w[i] being read only.
     pub mem_addr: T,
 
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub a: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub b: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub c: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub d: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub e: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub f: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub g: Word<T>,
+    #[cfg_attr(feature = "picus", picus(transition_input))]
     pub h: Word<T>,
 
     /// Current value of K[i]. This is a constant array that loops around every 64 iterations.
@@ -101,8 +118,11 @@ pub struct ShaCompressCols<T> {
     pub finalized_operand: Word<T>,
     pub finalize_add: AddOperation<T>,
 
+    #[cfg_attr(feature = "picus", picus(selector))]
     pub is_initialize: T,
+    #[cfg_attr(feature = "picus", picus(selector))]
     pub is_compression: T,
+    #[cfg_attr(feature = "picus", picus(selector))]
     pub is_finalize: T,
     pub is_last_row: T,
 

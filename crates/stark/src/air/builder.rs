@@ -184,6 +184,173 @@ pub trait ByteAirBuilder: BaseAirBuilder {
     }
 }
 
+/// Optional hooks for builders that want to replace exact operation AIR with a summary.
+///
+/// Builders should return `true` only when they have emitted a semantically sound replacement for
+/// the exact constraints. Returning `false` tells the caller to proceed with exact lowering.
+pub trait OperationSummaryAirBuilder: AirBuilder {
+    /// Returns whether `expr` is known to be the constant one in the current
+    /// extraction context.
+    ///
+    /// This is useful for guarded local operations whose exact AIR is only
+    /// functional when their enable flag is active. Builders can use this to
+    /// decide whether an exact operation is safe to outline as a submodule, or
+    /// whether it must remain inlined under its original guard.
+    fn is_known_one(&self, _expr: &Self::Expr) -> bool {
+        false
+    }
+
+    fn try_emit_is_zero_summary(
+        &mut self,
+        _input: Self::Expr,
+        _result: Self::Expr,
+        _is_real: Self::Expr,
+    ) -> bool {
+        false
+    }
+
+    fn try_emit_is_zero_word_summary(
+        &mut self,
+        _input: Word<Self::Expr>,
+        _is_lower_half_zero: Self::Expr,
+        _is_upper_half_zero: Self::Expr,
+        _result: Self::Expr,
+        _is_real: Self::Expr,
+    ) -> bool {
+        false
+    }
+
+    /// Optional hook for replacing the exact `KoalaBearWordRangeChecker` AIR
+    /// with an equivalent semantic summary.
+    ///
+    /// This summary should preserve the current operation semantics only. In
+    /// particular, it should not invent missing byte-range assumptions for the
+    /// lower three limbs; those must come from surrounding AIR if they are
+    /// required for soundness.
+    fn try_emit_koala_bear_word_range_summary(
+        &mut self,
+        _input: Word<Self::Expr>,
+        _is_real: Self::Expr,
+    ) -> bool {
+        false
+    }
+
+    /// Optional hook for replacing the exact memory timestamp ordering AIR
+    /// with a compact checker-style summary.
+    ///
+    /// This hook is intentionally scoped to the arithmetic part of
+    /// `eval_memory_access_timestamp`; the surrounding memory send/receive
+    /// interactions remain the caller's responsibility. Builders that support
+    /// this hook may emit an auxiliary module with a dummy constant output when
+    /// their target IR requires every module call to produce at least one
+    /// result.
+    #[allow(clippy::too_many_arguments)]
+    fn try_emit_memory_timestamp_summary(
+        &mut self,
+        _do_check: Self::Expr,
+        _shard: Self::Expr,
+        _clk: Self::Expr,
+        _prev_shard: Self::Expr,
+        _prev_clk: Self::Expr,
+        _compare_clk: Self::Expr,
+        _diff_16bit_limb: Self::Expr,
+        _diff_8bit_limb: Self::Expr,
+    ) -> bool {
+        false
+    }
+
+    /// Optional hook for replacing a large exact operation AIR with a semantic
+    /// module call that exposes only projected inputs/outputs.
+    ///
+    /// `projection_info` describes which ranges inside the hidden witness row
+    /// correspond to the caller-visible semantic boundary. Builders that
+    /// support this hook should:
+    /// - emit an auxiliary module whose interface is the flattened projected
+    ///   inputs/outputs,
+    /// - keep the rest of the witness row existential/internal, and
+    /// - use `build_exact` to populate the auxiliary module with the original
+    ///   exact constraints over a fresh hidden witness row of width
+    ///   `source_width`.
+    ///
+    /// Returning `false` leaves the caller responsible for emitting the exact
+    /// inline constraints instead.
+    fn try_emit_projected_summary<F>(
+        &mut self,
+        _module_name: &str,
+        _projection_info: &crate::air::PicusProjectionInfo,
+        _current_inputs: &[Self::Expr],
+        _current_outputs: &[Self::Expr],
+        _source_width: usize,
+        _build_exact: F,
+    ) -> bool
+    where
+        F: FnOnce(&mut Self, &[Self::Var]),
+    {
+        false
+    }
+
+    /// Variant of [`Self::try_emit_projected_summary`] that lets the caller
+    /// pin selected hidden witness columns to constants inside the outlined
+    /// module.
+    ///
+    /// This is useful for guarded operations that are only outlined when their
+    /// enable flag is known to be one. In that case, the hidden witness should
+    /// reflect the specialized value directly rather than carrying an
+    /// additional symbolic guard through the nested module.
+    #[allow(clippy::too_many_arguments)]
+    fn try_emit_projected_summary_with_hidden_consts<F>(
+        &mut self,
+        _module_name: &str,
+        _projection_info: &crate::air::PicusProjectionInfo,
+        _current_inputs: &[Self::Expr],
+        _current_outputs: &[Self::Expr],
+        _source_width: usize,
+        _hidden_consts: &[(usize, u64)],
+        _build_exact: F,
+    ) -> bool
+    where
+        F: FnOnce(&mut Self, &[Self::Var]),
+    {
+        false
+    }
+
+    /// Optional hook for replacing an embedded exact sub-AIR with a semantic
+    /// module call whose boundary is still described by a projection.
+    ///
+    /// Unlike [`Self::try_emit_projected_summary`], this hook builds the hidden
+    /// witness as a full phase-shaped trace matrix rather than a single hidden
+    /// row. This is intended for large sub-AIRs that use `next` rows internally
+    /// but should still remain behind a compact caller-visible boundary.
+    ///
+    /// `projection_info` is interpreted on the hidden sub-AIR's local row
+    /// (row 0). Builders that support this hook should:
+    /// - emit an auxiliary module whose interface is the flattened projected
+    ///   inputs/outputs taken from that hidden local row,
+    /// - materialize a hidden trace matrix of width `source_width` and the row
+    ///   count implied by the current extraction phase plus `source_local_only`,
+    /// - run `build_exact` against that hidden trace so the full exact sub-AIR
+    ///   remains internal to the auxiliary module.
+    ///
+    /// Returning `false` leaves the caller responsible for lowering the sub-AIR
+    /// inline, typically through `SubAirBuilder`.
+    #[allow(clippy::too_many_arguments)]
+    fn try_emit_hidden_subair_summary<F>(
+        &mut self,
+        _module_name: &str,
+        _projection_info: &crate::air::PicusProjectionInfo,
+        _current_inputs: &[Self::Expr],
+        _current_outputs: &[Self::Expr],
+        _source_width: usize,
+        _source_local_only: bool,
+        _build_exact: F,
+    ) -> bool
+    where
+        F: FnOnce(&mut Self),
+    {
+        false
+    }
+}
+
 /// A trait which contains methods related to ALU lookups in an AIR.
 pub trait InstructionAirBuilder: BaseAirBuilder {
     /// Sends a MIPS instruction to be processed.
@@ -567,7 +734,10 @@ pub trait MachineAirBuilder:
 }
 
 /// A trait which contains all helper methods for building Ziren machine AIRs.
-pub trait ZKMAirBuilder: MachineAirBuilder + ByteAirBuilder + InstructionAirBuilder {}
+pub trait ZKMAirBuilder:
+    MachineAirBuilder + ByteAirBuilder + InstructionAirBuilder + OperationSummaryAirBuilder
+{
+}
 
 impl<AB: AirBuilder + MessageBuilder<M>, M> MessageBuilder<M> for FilteredAirBuilder<'_, AB> {
     fn send(&mut self, message: M, scope: LookupScope) {
@@ -586,7 +756,11 @@ impl<AB: BaseAirBuilder> InstructionAirBuilder for AB {}
 impl<AB: BaseAirBuilder> ExtensionAirBuilder for AB {}
 impl<AB: BaseAirBuilder> SepticExtensionAirBuilder for AB {}
 impl<AB: BaseAirBuilder + AirBuilderWithPublicValues> MachineAirBuilder for AB {}
-impl<AB: BaseAirBuilder + AirBuilderWithPublicValues> ZKMAirBuilder for AB {}
+impl<AB: EmptyMessageBuilder + AirBuilderWithPublicValues> OperationSummaryAirBuilder for AB {}
+impl<AB: BaseAirBuilder + AirBuilderWithPublicValues + OperationSummaryAirBuilder> ZKMAirBuilder
+    for AB
+{
+}
 
 impl<SC: StarkGenericConfig> EmptyMessageBuilder for ProverConstraintFolder<'_, SC> {}
 impl<SC: StarkGenericConfig> EmptyMessageBuilder for VerifierConstraintFolder<'_, SC> {}

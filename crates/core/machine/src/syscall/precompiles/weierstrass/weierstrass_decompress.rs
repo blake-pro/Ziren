@@ -30,6 +30,10 @@ use zkm_curves::{
     CurveError, CurveType, EllipticCurve,
 };
 use zkm_derive::AlignedBorrow;
+#[cfg(feature = "picus")]
+use zkm_derive::PicusAnnotations;
+#[cfg(feature = "picus")]
+use zkm_stark::air::PicusInfo;
 use zkm_stark::air::{BaseAirBuilder, LookupScope, MachineAir, Polynomial, ZKMAirBuilder};
 
 use crate::{
@@ -48,6 +52,7 @@ pub const fn num_weierstrass_decompress_cols<P: FieldParameters + NumWords>() ->
 /// A set of columns to compute `WeierstrassDecompress` that decompresses a point on a Weierstrass
 /// curve.
 #[derive(Debug, Clone, AlignedBorrow)]
+#[cfg_attr(feature = "picus", derive(PicusAnnotations))]
 #[repr(C)]
 pub struct WeierstrassDecompressCols<T, P: FieldParameters + NumWords> {
     pub is_real: T,
@@ -156,6 +161,11 @@ impl<F: PrimeField32, E: EllipticCurve + WeierstrassParameters> MachineAir<F>
             CurveType::Bls12381 => "Bls12381Decompress".to_string(),
             _ => panic!("Unsupported curve"),
         }
+    }
+
+    #[cfg(feature = "picus")]
+    fn picus_info(&self) -> PicusInfo {
+        WeierstrassDecompressCols::<u8, E::BaseField>::picus_info()
     }
 
     fn generate_trace(

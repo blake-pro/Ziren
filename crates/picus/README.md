@@ -20,6 +20,198 @@ Relevant entry points:
 - Picus AST / serialization: `crates/picus/src/pcl/`
 - Instruction opcode routing spec: `crates/picus/src/opcode_spec.rs`
 
+## Picus Annotations
+
+Picus annotations are metadata on AIR column structs. They do not change the AIR
+semantics or the trace; they only tell the extractor which columns should become
+Picus module inputs, outputs, transition state, or selectors.
+
+In the common case, Picus can infer a useful module interface directly from
+lookup interactions such as instruction, memory, syscall, and global messages.
+That is often enough for chips whose observable behavior is already exposed by
+those interactions.
+
+However, interaction-based inference is not always sufficient. In particular,
+chips that enforce important semantics across rows can carry state that never
+appears directly in an interaction payload. For those chips, Picus annotations
+tell the extractor which columns are part of the semantic interface and which
+columns should be treated as carried transition state.
+
+The metadata is collected by deriving `PicusAnnotations` on the column struct and
+then returning `Cols::<u8>::picus_info()` from the chip's `picus_info()` method.
+
+Supported annotations:
+
+- `#[picus(input)]`
+  - Marks the current-row field as a Picus module input.
+  - Use this when the extracted module should treat the field as externally supplied
+    state for the current row.
+
+- `#[picus(output)]`
+  - Marks the current-row field as a Picus module output.
+  - Use this when the field is a current-row result you want visible at the Picus
+    interface.
+
+- `#[picus(transition_input)]`
+  - Marks the current-row field as incoming carried state for transition-capable phases.
+  - In practice this means the field is exposed as an input for phases that reason
+    about cross-row behavior (`FirstRow`, `Transition`, `Boundary`, `LastRow`).
+
+- `#[picus(transition_output)]`
+  - Marks the immediate successor row's version of the field as an output in phases
+    that expose successor state (`FirstRow` and `Transition`).
+  - Use this when the next-row value is semantically important and you want Picus to
+    check determinism of that successor state.
+
+- `#[picus(selector)]`
+  - Marks a field as a selector column.
+  - The extractor uses selector columns to build selector-specialized modules and
+    the optional `top` module that constrains selector shape.
+
+Rule of thumb:
+
+- Start by relying on interaction-driven inference; do not annotate columns just
+  because they exist.
+- Use `input` / `output` for values that are meaningful on the current row by
+  themselves.
+- Use `transition_input` / `transition_output` for state that is intentionally
+  carried from one row to the next.
+- If a field is both incoming carried state and outgoing successor state, mark it
+  with both `transition_input` and `transition_output`.
+- Do not mark a field as transition state just because it appears in a transition
+  constraint. Mark it only when it is part of the semantic row-to-row interface of
+  the chip.
+- Be conservative with `transition_output`: exporting next-row values makes Picus
+  check determinism of that successor state. If the next-row value is padding-only,
+  phase-local, or intentionally existential, do not expose it.
+
+Concrete example:
+
+- In `BooleanCircuitGarble`, `delta` and `checks` are carried across gate rows, so
+  they are marked with `#[picus(transition_input, transition_output)]`.
+- That tells Picus to treat the current row's `delta` / `checks` as inputs and the
+  immediate next row's `delta` / `checks` as outputs in the phases where successor
+  state is part of the interface.
+
+## Picus Projections
+
+`PicusAnnotations` describe concrete trace storage fields on a chip row.
+`PicusProjection` is different: it describes a smaller semantic interface
+projected out of a larger witness layout.
+
+This is useful when a submodule has many internal witness columns, but Picus
+should expose only the semantically relevant boundary to the caller. Typical
+examples are operation summaries such as Poseidon2 or embedded sub-AIRs such as
+Keccak.
+
+Use a projection when:
+
+- the full witness layout is too large or too internal to expose directly,
+- the caller should see only a specific input/output contract,
+- the remaining witness columns should stay existential inside the summarized
+  submodule.
+
+Do not use a projection as a replacement for `PicusAnnotations` on the chip's
+main trace columns. Projections are for operation/submodule boundaries, not for
+describing ordinary chip row I/O.
+
+### Derive shape
+
+Projection metadata is declared on a separate struct with:
+
+- `#[derive(PicusProjection)]`
+- a struct-level `#[picus_projection(source = ..., col_map = ...)]`
+- field-level `#[picus(input, path = ...)]` / `#[picus(output, path = ...)]`
+
+Example:
+
+```rust
+use zkm_derive::PicusProjection;
+
+#[derive(PicusProjection)]
+#[picus_projection(
+    source = Poseidon2Degree3Cols<u8>,
+    col_map = POSEIDON2_DEGREE3_COL_MAP
+)]
+pub struct Poseidon2Degree3Projection {
+    #[picus(input, path = state.external_rounds_state[0])]
+    pub state_in: [u8; WIDTH],
+
+    #[picus(output, path = state.output_state)]
+    pub state_out: [u8; WIDTH],
+}
+```
+
+This does not change the witness layout. It only says:
+
+- the semantic input starts at `state.external_rounds_state[0]` and spans
+  `WIDTH` columns,
+- the semantic output starts at `state.output_state` and spans `WIDTH` columns.
+
+### How `path` works
+
+`path = ...` points at the source slice inside the `col_map`.
+
+Important detail:
+
+- `path` selects the start of the semantic slice,
+- the projected field type determines the width,
+- the derive recursively takes the first concrete source column from the path.
+
+So this:
+
+```rust
+#[picus(input, path = state.external_rounds_state[0])]
+pub state_in: [u8; WIDTH],
+```
+
+means:
+
+- start at the first column of `state.external_rounds_state[0]`,
+- take `WIDTH` consecutive columns.
+
+You do not need to write `state.external_rounds_state[0][0]` unless you really
+want to refer to a scalar source column.
+
+### Column map requirement
+
+The `col_map` argument should be a `usize`-instantiated version of the source
+layout whose fields hold concrete column indices.
+
+For example:
+
+```rust
+pub const POSEIDON2_DEGREE3_COL_MAP: Poseidon2Degree3Cols<usize> = make_col_map_degree3();
+```
+
+This lets the derive resolve `path = ...` into concrete source ranges without
+changing the actual runtime trace type.
+
+### Intended usage in Picus
+
+Today projections are consumed by summary hooks in `OperationSummaryAirBuilder`,
+not by ordinary chip extraction.
+
+The supported pattern is:
+
+1. Keep the full exact AIR/witness layout unchanged.
+2. Define a projection for the caller-visible semantic boundary.
+3. Use a Picus summary hook to emit an auxiliary module whose interface is the
+   projected inputs/outputs.
+4. Keep the rest of the source witness internal to that auxiliary module.
+
+That is how Picus can summarize a large operation while preserving exact
+internal constraints.
+
+### Rule of thumb
+
+- Use `PicusAnnotations` for concrete chip row metadata.
+- Use `PicusProjection` for summarized operation or sub-AIR boundaries.
+- Keep projections semantic and minimal: expose only what the caller should
+  reason about.
+- Leave intermediate round state, helper witnesses, and existential internals
+  out of the projection unless they are part of the intended contract.
+
 ## OpcodeSpec
 
 `OpcodeSpec` defines how instruction lookups are routed during extraction.
@@ -106,8 +298,10 @@ This example assumes you added a new machine chip named `MyChip` in `zkm-core-ma
 - Ensure the chip has a stable `name()`; this is what `--chip` matches.
 
 2. Ensure the chip has Picus metadata.
-- Derive/provide `PicusInfo` metadata for column naming and selectors.
-- Mark selector columns (for case-splitting).
+- Derive/provide `PicusInfo` metadata for column naming, row I/O, transition state, and selectors.
+- Mark selector columns for case-splitting.
+- Mark current-row inputs/outputs only when they are intended to be part of the extracted module interface.
+- Mark transition inputs/outputs only for fields that are semantically carried across rows.
 
 Example (from `AddSubCols`):
 
@@ -131,7 +325,8 @@ pub struct AddSubCols<T> {
 ```
 
 This annotation pattern is what allows extraction to discover selector columns and produce
-selector-specialized Picus modules.
+selector-specialized Picus modules. If the chip also carries row-to-row state, annotate those
+fields with `transition_input` / `transition_output` as needed.
 
 Also implement `picus_info` on the chip. For example, here is what needs to be added for the `AddSub` chip. 
 

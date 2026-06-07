@@ -28,6 +28,11 @@ impl<F: PrimeField32> MachineAir<F> for CpuChip {
         self.id().to_string()
     }
 
+    #[cfg(feature = "picus")]
+    fn picus_info(&self) -> zkm_stark::PicusInfo {
+        CpuCols::<u8>::picus_info()
+    }
+
     fn num_rows(&self, input: &Self::Record) -> Option<usize> {
         let n_real_rows = input.cpu_events.len();
         let padded_nb_rows = if let Some(shape) = &input.shape {

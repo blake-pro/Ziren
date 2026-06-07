@@ -203,7 +203,7 @@ impl Display for PicusModule {
 /// Examples:
 ///
 /// - `Const(5)`         → `5`
-/// - `Var("x",1,0)`     → `x_1_0`
+/// - `Var(7)`           → `fresh_7` (or the registered column name when available)
 /// - `Add(a,b)`         → `(+ a b)`
 /// - `Neg(e)`           → `(- e)`
 /// - `Pow(2, e)`        → `(pow 2 e)`
@@ -212,7 +212,13 @@ impl Display for PicusExpr {
         use PicusExpr::{Add, Const, Div, Mul, Neg, Pow, Sub, Var};
         match self {
             Const(v) => write!(f, "{v}"),
-            Var(id) => write!(f, "x_{id}"),
+            Var(id) => {
+                if let Some(name) = super::picus_name_for(*id) {
+                    f.write_str(&name)
+                } else {
+                    write!(f, "fresh_{id}")
+                }
+            }
             Add(a, b) => write!(f, "(+ {a} {b})"),
             Sub(a, b) => write!(f, "(- {a} {b})"),
             Mul(a, b) => write!(f, "(* {a} {b})"),
@@ -231,13 +237,14 @@ impl Display for PicusExpr {
 ///   constraints/expressions.
 impl Display for PicusConstraint {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use PicusConstraint::{And, Eq, Geq, Gt, Iff, Implies, Leq, Lt, Not, Or};
+        use PicusConstraint::{And, Det, Eq, Geq, Gt, Iff, Implies, Leq, Lt, Not, Or};
         match self {
             Lt(e1, e2) => write!(f, "(< {e1} {e2})"),
             Leq(e1, e2) => write!(f, "(<= {e1} {e2})"),
             Gt(e1, e2) => write!(f, "(> {e1} {e2})"),
             Geq(e1, e2) => write!(f, "(>= {e1} {e2})"),
             Eq(e) => write!(f, "(= {e} 0)"),
+            Det(e) => write!(f, "(det {e})"),
             Implies(c1, c2) => write!(f, "(=> {c1} {c2})"),
             Iff(c1, c2) => write!(f, "(<=> {c1} {c2})"),
             Not(c) => write!(f, "(! {c})"),
