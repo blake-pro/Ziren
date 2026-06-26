@@ -245,22 +245,21 @@ impl<F: PrimeField32, const DEGREE: usize> MachineAir<F> for Poseidon2SkinnyChip
                     // external rows and `NUM_INTERNAL_ROUNDS` constants on the single internal row,
                     // so iterate over the full column width and fill each kind in its own range.
                     (0..NUM_ROUND_CONSTANTS).for_each(|j| {
-                        cols.round_counters_preprocessed.round_constants[j] = if is_external_round
-                            && j < WIDTH
-                        {
-                            let r = i - 1;
-                            let round = if i < INTERNAL_ROUND_IDX {
-                                r
-                            } else {
-                                r + NUM_INTERNAL_ROUNDS - 1
-                            };
+                        cols.round_counters_preprocessed.round_constants[j] =
+                            if is_external_round && j < WIDTH {
+                                let r = i - 1;
+                                let round = if i < INTERNAL_ROUND_IDX {
+                                    r
+                                } else {
+                                    r + NUM_INTERNAL_ROUNDS - 1
+                                };
 
-                            F::from_wrapped_u32(RC_16_30_U32[round][j])
-                        } else if i == INTERNAL_ROUND_IDX && j < NUM_INTERNAL_ROUNDS {
-                            F::from_wrapped_u32(RC_16_30_U32[NUM_EXTERNAL_ROUNDS / 2 + j][0])
-                        } else {
-                            F::ZERO
-                        };
+                                F::from_wrapped_u32(RC_16_30_U32[round][j])
+                            } else if i == INTERNAL_ROUND_IDX && j < NUM_INTERNAL_ROUNDS {
+                                F::from_wrapped_u32(RC_16_30_U32[NUM_EXTERNAL_ROUNDS / 2 + j][0])
+                            } else {
+                                F::ZERO
+                            };
                     });
 
                     // Set the memory columns. We read once, at the first iteration,

@@ -250,7 +250,10 @@ mod tests {
     use p3_matrix::dense::{RowMajorMatrix, RowMajorMatrixView};
     use p3_matrix::stack::VerticalPair;
     use p3_matrix::Matrix;
-    use std::{borrow::BorrowMut, panic::{catch_unwind, take_hook, set_hook, AssertUnwindSafe}};
+    use std::{
+        borrow::BorrowMut,
+        panic::{catch_unwind, set_hook, take_hook, AssertUnwindSafe},
+    };
     use zkm_core_executor::{
         events::{
             BooleanCircuitGarbleEvent, MemoryReadRecord, MemoryWriteRecord, PrecompileEvent,

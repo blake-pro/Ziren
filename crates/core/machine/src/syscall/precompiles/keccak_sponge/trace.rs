@@ -229,7 +229,6 @@ impl KeccakSpongeChip {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -237,7 +236,9 @@ mod tests {
     use p3_field::FieldAlgebra;
     use p3_koala_bear::KoalaBear;
     use std::borrow::Borrow;
-    use zkm_core_executor::events::{ByteLookupEvent, MemoryReadRecord, MemoryWriteRecord, KeccakSpongeEvent};
+    use zkm_core_executor::events::{
+        ByteLookupEvent, KeccakSpongeEvent, MemoryReadRecord, MemoryWriteRecord,
+    };
 
     fn make_event(blocks: usize) -> KeccakSpongeEvent {
         let shard = 1;

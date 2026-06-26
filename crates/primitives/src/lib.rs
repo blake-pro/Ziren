@@ -1166,6 +1166,9 @@ mod tests {
     fn koalabear_poseidon2_round_counts_match_plonky3_reference() {
         let (rounds_f, rounds_p) = poseidon2_round_numbers_128::<KoalaBear>(16, 3);
         assert_eq!(rounds_f, 8, "external (full) round count drifted from the Plonky3 reference");
-        assert_eq!(rounds_p, 20, "internal (partial) round count drifted from the Plonky3 reference");
+        assert_eq!(
+            rounds_p, 20,
+            "internal (partial) round count drifted from the Plonky3 reference"
+        );
     }
 }
