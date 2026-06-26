@@ -230,3 +230,114 @@ impl BooleanCircuitGarbleChip {
         rows
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::syscall::precompiles::boolean_circuit_garble::columns::BooleanCircuitGarbleCols;
+    use p3_koala_bear::KoalaBear;
+    use std::borrow::BorrowMut;
+    use zkm_core_executor::events::{
+        BooleanCircuitGarbleEvent, MemoryReadRecord, MemoryWriteRecord,
+    };
+
+    fn gate_info_words(gate_type: u32, delta: [u32; 4]) -> [u32; GATE_INFO_BYTES] {
+        let h0 = [11, 12, 13, 14];
+        let h1 = [21, 22, 23, 24];
+        let label_b = [31, 32, 33, 34];
+        let mut expected = [0u32; 4];
+        for i in 0..4 {
+            expected[i] = h0[i] ^ h1[i] ^ label_b[i];
+            if gate_type == OR_GATE_ID {
+                expected[i] ^= delta[i];
+            }
+        }
+
+        let mut words = [0u32; GATE_INFO_BYTES];
+        words[0] = gate_type;
+        words[1..5].copy_from_slice(&h0);
+        words[5..9].copy_from_slice(&h1);
+        words[9..13].copy_from_slice(&label_b);
+        words[13..17].copy_from_slice(&expected);
+        words
+    }
+
+    fn make_event(gate_types: &[u32]) -> BooleanCircuitGarbleEvent {
+        let shard = 1;
+        let clk = 5;
+        let input_addr = 0x1000;
+        let output_addr = 0x2000;
+        let delta = [101, 102, 103, 104];
+        let mut gates_info = Vec::new();
+        for &gate_type in gate_types {
+            gates_info.extend_from_slice(&gate_info_words(gate_type, delta));
+        }
+
+        let mut timestamp = 1u32;
+        let num_gates_read_record =
+            MemoryReadRecord::new(gate_types.len() as u32, shard, timestamp, 0, 0);
+        timestamp += 1;
+
+        let delta_read_records = core::array::from_fn(|i| {
+            let record = MemoryReadRecord::new(delta[i], shard, timestamp, 0, 0);
+            timestamp += 1;
+            record
+        });
+
+        let gates_read_records = gates_info
+            .iter()
+            .map(|&value| {
+                let record = MemoryReadRecord::new(value, shard, timestamp, 0, 0);
+                timestamp += 1;
+                record
+            })
+            .collect();
+
+        let output_write_record = MemoryWriteRecord::new(1, shard, timestamp, 0, 0, 0);
+
+        BooleanCircuitGarbleEvent {
+            shard,
+            clk,
+            input_addr,
+            output_addr,
+            num_gates: gate_types.len() as u32,
+            delta,
+            gates_info,
+            output: 1,
+            num_gates_read_record,
+            delta_read_records,
+            gates_read_records,
+            output_write_record,
+            local_mem_access: vec![],
+        }
+    }
+
+    fn assert_gate_row_encoding(row: &mut [KoalaBear], expected_gate_type: u32) {
+        let cols: &mut BooleanCircuitGarbleCols<KoalaBear> = row.borrow_mut();
+        assert_eq!(cols.gate_type[0], KoalaBear::from_bool(expected_gate_type == 0));
+        assert_eq!(cols.gate_type[1], KoalaBear::from_bool(expected_gate_type == OR_GATE_ID));
+
+        let encoded_gate_type = cols.gate_type[1] * KoalaBear::from_canonical_u32(OR_GATE_ID);
+        let gate_type_word = cols.gates_input_mem[0].access.value[0];
+        assert_eq!(encoded_gate_type, gate_type_word);
+    }
+
+    #[test]
+    fn test_and_gate_type_encoding_matches_gate_word() {
+        let event = make_event(&[0]);
+        let chip = BooleanCircuitGarbleChip::default();
+        let mut rows = chip.event_to_rows::<KoalaBear>(&event, &mut Vec::new());
+        assert_eq!(rows.len(), 2);
+        assert_gate_row_encoding(&mut rows[1], 0);
+    }
+
+    #[test]
+    fn test_mixed_gate_type_encoding_matches_gate_words() {
+        let event = make_event(&[0, OR_GATE_ID]);
+        let chip = BooleanCircuitGarbleChip::default();
+        let mut rows = chip.event_to_rows::<KoalaBear>(&event, &mut Vec::new());
+        assert_eq!(rows.len(), 3);
+        assert_gate_row_encoding(&mut rows[1], 0);
+        assert_gate_row_encoding(&mut rows[2], OR_GATE_ID);
+    }
+}
