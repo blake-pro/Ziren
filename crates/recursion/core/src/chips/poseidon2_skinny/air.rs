@@ -10,7 +10,8 @@ use crate::{builder::ZKMRecursionAirBuilder, chips::poseidon2_skinny::columns::P
 
 use super::{
     columns::{preprocessed::Poseidon2PreprocessedCols, NUM_POSEIDON2_COLS},
-    external_linear_layer, internal_linear_layer, Poseidon2SkinnyChip, NUM_INTERNAL_ROUNDS, WIDTH,
+    external_linear_layer, internal_linear_layer, Poseidon2SkinnyChip, NUM_INTERNAL_ROUNDS,
+    NUM_ROUND_CONSTANTS, WIDTH,
 };
 
 impl<F, const DEGREE: usize> BaseAir<F> for Poseidon2SkinnyChip<DEGREE> {
@@ -128,7 +129,7 @@ impl<const DEGREE: usize> Poseidon2SkinnyChip<DEGREE> {
         builder: &mut AB,
         local_row: &Poseidon2<AB::Var>,
         next_row: &Poseidon2<AB::Var>,
-        round_constants: [AB::Var; WIDTH],
+        round_constants: [AB::Var; NUM_ROUND_CONSTANTS],
         is_internal_row: AB::Var,
     ) {
         let local_state = local_row.state_var;

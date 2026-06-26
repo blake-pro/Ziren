@@ -24,6 +24,8 @@ use crate::chips::poseidon2_skinny::internal_linear_layer;
 #[cfg(not(feature = "sys"))]
 use crate::chips::poseidon2_skinny::NUM_INTERNAL_ROUNDS;
 #[cfg(not(feature = "sys"))]
+use crate::chips::poseidon2_skinny::NUM_ROUND_CONSTANTS;
+#[cfg(not(feature = "sys"))]
 use crate::chips::poseidon2_skinny::WIDTH;
 use crate::{
     chips::poseidon2_skinny::{
@@ -239,8 +241,13 @@ impl<F: PrimeField32, const DEGREE: usize> MachineAir<F> for Poseidon2SkinnyChip
                     cols.round_counters_preprocessed.is_internal_round =
                         F::from_bool(i == INTERNAL_ROUND_IDX);
 
-                    (0..WIDTH).for_each(|j| {
-                        cols.round_counters_preprocessed.round_constants[j] = if is_external_round {
+                    // The shared `round_constants` column holds `WIDTH` per-lane constants on
+                    // external rows and `NUM_INTERNAL_ROUNDS` constants on the single internal row,
+                    // so iterate over the full column width and fill each kind in its own range.
+                    (0..NUM_ROUND_CONSTANTS).for_each(|j| {
+                        cols.round_counters_preprocessed.round_constants[j] = if is_external_round
+                            && j < WIDTH
+                        {
                             let r = i - 1;
                             let round = if i < INTERNAL_ROUND_IDX {
                                 r
@@ -249,7 +256,7 @@ impl<F: PrimeField32, const DEGREE: usize> MachineAir<F> for Poseidon2SkinnyChip
                             };
 
                             F::from_wrapped_u32(RC_16_30_U32[round][j])
-                        } else if i == INTERNAL_ROUND_IDX {
+                        } else if i == INTERNAL_ROUND_IDX && j < NUM_INTERNAL_ROUNDS {
                             F::from_wrapped_u32(RC_16_30_U32[NUM_EXTERNAL_ROUNDS / 2 + j][0])
                         } else {
                             F::ZERO

@@ -235,6 +235,7 @@ impl BooleanCircuitGarbleChip {
 mod tests {
     use super::*;
     use crate::syscall::precompiles::boolean_circuit_garble::columns::BooleanCircuitGarbleCols;
+    use p3_field::FieldAlgebra;
     use p3_koala_bear::KoalaBear;
     use std::borrow::BorrowMut;
     use zkm_core_executor::events::{
