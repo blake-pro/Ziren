@@ -20,7 +20,7 @@
   "AddSub": 47,
   "Jump": 82,
   "Bn254FpOpAssign": 832,
-  "Poseidon2Permute": 1387,
+  "Poseidon2Permute": 1373,
   "Mul": 118,
   "ShaExtend": 17856,
   "Bls12381AddAssign": 6429,
