@@ -12,7 +12,7 @@
   "Bn254AddAssign": 4269,
   "Bitwise": 42,
   "ShiftLeft": 68,
-  "MemoryLocal": 356,
+  "MemoryLocal": 204,
   "Program": 31,
   "Global": 115,
   "Secp256k1AddAssign": 4269,
