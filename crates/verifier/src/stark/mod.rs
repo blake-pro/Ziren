@@ -128,7 +128,12 @@ impl StarkVerifier {
             .collect_vec();
 
         // Make sure the committed value digest matches the public values hash.
-        for (a, b) in committed_value_digest_bytes.iter().zip_eq(public_inputs.hash()) {
+        let public_values_hash = if zkm_recursion_core::stark::zkm_imm_wrap_vk_mode() {
+            public_inputs.hash_blake3()
+        } else {
+            public_inputs.hash()
+        };
+        for (a, b) in committed_value_digest_bytes.iter().zip_eq(public_values_hash) {
             if *a != b {
                 return Err(StarkError::InvalidPublicValues);
             }

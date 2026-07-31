@@ -51,6 +51,8 @@ pub fn execute_build_program(
 
 /// Internal helper function to build the program with or without arguments.
 pub(crate) fn build_program_internal(path: &str, args: Option<BuildArgs>) {
+    println!("cargo:rerun-if-env-changed=ZKM_IMM_WRAP_VK");
+
     // Get the root package name and metadata.
     let program_dir = std::path::Path::new(path);
     let metadata_file = program_dir.join("Cargo.toml");

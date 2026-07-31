@@ -2,6 +2,7 @@ cfg_if::cfg_if! {
     if #[cfg(target_os = "zkvm")] {
         use core::arch::asm;
         use crate::zkvm;
+        #[cfg(not(zkm_imm_wrap_vk))]
         use sha2::digest::Update;
         use zkm_primitives::consts::fd::FD_PUBLIC_VALUES;
     }

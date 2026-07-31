@@ -1,9 +1,12 @@
 use std::fs::File;
 use std::io::Read;
 use test_artifacts::HELLO_WORLD_ELF;
+use zkm_primitives::io::hash_public_values_blake3_bn254;
+#[cfg(feature = "ark")]
+use zkm_primitives::io::ZKMPublicValues;
 use zkm_prover::build::groth16_bn254_artifacts_dev_dir;
 use zkm_sdk::install::try_install_circuit_artifacts;
-use zkm_sdk::{HashableKey, ProverClient, ZKMStdin, ZKM_CIRCUIT_VERSION};
+use zkm_sdk::{HashableKey, ProverClient, ZKMProof, ZKMStdin, ZKM_CIRCUIT_VERSION};
 
 use crate::{Groth16Verifier, PART_STARK_VK_BYTES};
 
@@ -41,9 +44,7 @@ fn test_verify_groth16() {
 
 #[test]
 #[ignore]
-// ZKM_IMM_WRAP_VK=1 cargo test -r --features ark -- --ignored test_verify_groth16_imm_wrap_vk
-// or
-// cargo test -r --features imm-wrap-vk --features ark -- --ignored test_verify_groth16_imm_wrap_vk
+// ZKM_IMM_WRAP_VK=1 cargo test -r -p zkm-verifier --features ark -- --ignored test_verify_groth16_imm_wrap_vk
 fn test_verify_groth16_imm_wrap_vk() {
     // Set up the pk and vk.
     let client = ProverClient::cpu();
@@ -55,6 +56,16 @@ fn test_verify_groth16_imm_wrap_vk() {
     // Extract the proof and public inputs.
     let proof = zkm_proof_with_public_values.bytes();
     let public_inputs = zkm_proof_with_public_values.public_values.to_vec();
+    let groth16_public_inputs = match &zkm_proof_with_public_values.proof {
+        ZKMProof::Groth16(proof) => &proof.public_inputs,
+        _ => panic!("expected a Groth16 proof"),
+    };
+    let blake3_hash =
+        num_bigint::BigUint::from_bytes_be(&hash_public_values_blake3_bn254(&public_inputs));
+    let sha256_hash =
+        num_bigint::BigUint::from_bytes_be(&crate::hash_public_inputs(&public_inputs));
+    assert_eq!(groth16_public_inputs[1], blake3_hash.to_string());
+    assert_ne!(groth16_public_inputs[1], sha256_hash.to_string());
 
     // Get the vkey hash.
     let vkey_hash = vk.bytes32();
@@ -67,6 +78,17 @@ fn test_verify_groth16_imm_wrap_vk() {
     )
     .expect("Groth16 proof is invalid");
 
+    let mut tampered_public_inputs = public_inputs.clone();
+    tampered_public_inputs.push(0);
+    assert!(crate::Groth16Verifier::verify_by_imm_groth16_vk(
+        &proof,
+        &tampered_public_inputs,
+        &vkey_hash,
+        &crate::IMM_GROTH16_VK_BYTES,
+        &crate::PART_STARK_VK_BYTES,
+    )
+    .is_err());
+
     #[cfg(feature = "ark")]
     {
         let valid = crate::Groth16Verifier::ark_verify_by_imm_groth16_vk(
@@ -77,6 +99,17 @@ fn test_verify_groth16_imm_wrap_vk() {
         )
         .expect("Groth16 proof is invalid");
         assert!(valid);
+
+        let mut tampered_proof = zkm_proof_with_public_values.clone();
+        tampered_proof.public_values = ZKMPublicValues::from(&tampered_public_inputs);
+        let valid = crate::Groth16Verifier::ark_verify_by_imm_groth16_vk(
+            &tampered_proof,
+            &vkey_hash,
+            &crate::IMM_GROTH16_VK_BYTES,
+            &crate::PART_STARK_VK_BYTES,
+        )
+        .expect("failed to check tampered Groth16 proof");
+        assert!(!valid);
     }
 }
 

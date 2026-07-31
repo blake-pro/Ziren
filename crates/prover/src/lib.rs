@@ -1096,23 +1096,36 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
     }
 
     /// Wrap the STARK proven over a SNARK-friendly field into a Groth16 proof.
+    ///
+    /// `public_values` ensures the guest and host use the same public-values hash mode.
     #[instrument(name = "wrap_groth16_bn254", level = "info", skip_all)]
     pub fn wrap_groth16_bn254(
         &self,
         proof: ZKMReduceProof<OuterSC>,
+        public_values: &ZKMPublicValues,
         build_dir: &Path,
-    ) -> Groth16Bn254Proof {
+    ) -> anyhow::Result<Groth16Bn254Proof> {
         let input = ZKMCompressWitnessValues {
             vks_and_proofs: vec![(proof.vk.clone(), proof.proof.clone())],
             is_complete: true,
         };
         let mut vkey_hash = zkm_vkey_digest_bn254(&proof);
+        let imm_wrap_vk = crate::build::zkm_imm_wrap_vk_mode();
 
-        if crate::build::zkm_imm_wrap_vk_mode() {
+        if imm_wrap_vk {
             vkey_hash = hash_vkey_with_part_vk(&proof.vk.part_vk(), vkey_hash);
         }
 
         let committed_values_digest = zkm_committed_values_digest_bn254(&proof);
+        let expected_committed_values_digest = if imm_wrap_vk {
+            public_values.hash_bn254_blake3()
+        } else {
+            public_values.hash_bn254()
+        };
+        anyhow::ensure!(
+            committed_values_digest.as_canonical_biguint() == expected_committed_values_digest,
+            "Groth16 public-values hash does not match ZKM_IMM_WRAP_VK; rebuild the guest and host with the same setting"
+        );
 
         let mut witness = Witness::default();
         input.write(&mut witness);
@@ -1132,7 +1145,7 @@ impl<C: ZKMProverComponents> ZKMProver<C> {
             )
             .unwrap();
 
-        proof
+        Ok(proof)
     }
 
     /// Wrap the STARK proven over a SNARK-friendly field into a DV-SNARK proof.
@@ -1444,7 +1457,8 @@ pub mod tests {
             &wrapped_bn254_proof.vk,
             &wrapped_bn254_proof.proof,
         );
-        let groth16_bn254_proof = prover.wrap_groth16_bn254(wrapped_bn254_proof, &artifacts_dir);
+        let groth16_bn254_proof =
+            prover.wrap_groth16_bn254(wrapped_bn254_proof, &public_values, &artifacts_dir)?;
         println!("{groth16_bn254_proof:?}");
 
         if verify {

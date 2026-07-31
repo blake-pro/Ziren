@@ -57,6 +57,11 @@ impl Prover<DefaultProverComponents> for MockProver {
         kind: ZKMProofKind,
         _elf_id: Option<String>,
     ) -> Result<(ZKMProofWithPublicValues, u64)> {
+        super::ensure_imm_wrap_proof_kind(&kind)?;
+        if zkm_prover::build::zkm_imm_wrap_vk_mode() && kind == ZKMProofKind::Groth16 {
+            anyhow::bail!("MockProver does not support immutable Groth16 proofs");
+        }
+
         match kind {
             ZKMProofKind::Core => {
                 let (public_values, _) = self.prover.execute(&pk.elf, &stdin, context)?;

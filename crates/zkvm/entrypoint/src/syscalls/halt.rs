@@ -1,6 +1,7 @@
 cfg_if::cfg_if! {
     if #[cfg(target_os = "zkvm")] {
         use core::arch::asm;
+        #[cfg(not(zkm_imm_wrap_vk))]
         use sha2::Digest;
         use crate::zkvm;
         use crate::{PV_DIGEST_NUM_WORDS, POSEIDON_NUM_WORDS};
@@ -23,10 +24,12 @@ pub extern "C" fn syscall_halt(exit_code: u8) -> ! {
     unsafe {
         // When we halt, we retrieve the public values finalized digest.  This is the hash of all
         // the bytes written to the public values fd.
-        let pv_digest_bytes =
-            core::mem::take(&mut *core::ptr::addr_of_mut!(zkvm::PUBLIC_VALUES_HASHER))
-                .unwrap()
-                .finalize();
+        let public_values_hasher =
+            core::mem::take(&mut *core::ptr::addr_of_mut!(zkvm::PUBLIC_VALUES_HASHER)).unwrap();
+        #[cfg(zkm_imm_wrap_vk)]
+        let pv_digest_bytes = *public_values_hasher.finalize().as_bytes();
+        #[cfg(not(zkm_imm_wrap_vk))]
+        let pv_digest_bytes: [u8; 32] = public_values_hasher.finalize().into();
 
         // For each digest word, call COMMIT ecall.  In the runtime, this will store the digest
         // words into the runtime's execution record's public values digest.  In the AIR, it

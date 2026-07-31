@@ -10,6 +10,7 @@ use substrate_bn::Fr;
 
 use alloc::vec::Vec;
 use sha2::{Digest, Sha256};
+use zkm_primitives::io::hash_public_values_blake3_bn254;
 use zkm_recursion_core::stark::KoalaBearPoseidon2Outer;
 use zkm_stark::PartStarkVerifyingKey;
 
@@ -153,7 +154,7 @@ impl Groth16Verifier {
 
         Self::verify_gnark_proof(
             &proof[4..],
-            &[zkm_vkey_hash, hash_public_inputs(zkm_public_inputs)],
+            &[zkm_vkey_hash, hash_public_values_blake3_bn254(zkm_public_inputs)],
             imm_groth16_vk,
         )
     }

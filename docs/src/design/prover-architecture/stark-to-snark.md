@@ -39,7 +39,7 @@ After adapting the proof to the BN254 field, Ziren applies a final **SNARK wrapp
 - **How**: Generates a custom constraint system and witness for the chosen SNARK, reflecting the final state and commitments from the STARK pipeline.
 - **Key function**:
     - `ZKMProver::wrap_plonk_bn254(proof, build_dir)`
-    - `ZKMProver::wrap_groth16_bn254(proof, build_dir)`
+    - `ZKMProver::wrap_groth16_bn254(proof, public_values, build_dir)`
         - These invoke circuit synthesis, key generation, and proof construction for the chosen SNARK system.
 
 ### b. **Proof Packaging**

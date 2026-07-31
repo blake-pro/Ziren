@@ -7,6 +7,7 @@ use ark_groth16::{PreparedVerifyingKey, Proof, VerifyingKey};
 use ark_serialize::{CanonicalDeserialize, Compress, Validate};
 use thiserror::Error;
 
+use zkm_primitives::io::hash_public_values_blake3_bn254;
 use zkm_sdk::ZKMProofWithPublicValues;
 
 use crate::error::Error;
@@ -99,8 +100,10 @@ pub fn convert_ark_imm_wrap_vk(
     // Convert gnark proof to arkworks proof
     let ark_proof = load_ark_proof_from_bytes(&proof[4..])?;
     let ark_groth16_vk = load_ark_groth16_verifying_key_from_bytes(imm_groth16_vk)?;
-    let ark_public_inputs =
-        load_ark_public_inputs_from_bytes(&vk_hash, &hash_public_inputs(&public_inputs));
+    let ark_public_inputs = load_ark_public_inputs_from_bytes(
+        &vk_hash,
+        &hash_public_values_blake3_bn254(&public_inputs),
+    );
 
     Ok(ArkProof {
         groth16_vk: ark_groth16_vk.into(),

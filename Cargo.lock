@@ -879,6 +879,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake3"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1230237285e3e10cde447185e8975408ae24deaa67205ce684805c25bc0c7937"
+dependencies = [
+ "arrayref",
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq 0.3.1",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1273,6 +1286,12 @@ name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "constant_time_eq"
@@ -7958,6 +7977,7 @@ name = "zkm-primitives"
 version = "1.2.7"
 dependencies = [
  "bincode",
+ "blake3",
  "hex",
  "lazy_static",
  "num-bigint 0.4.6",
@@ -8274,6 +8294,7 @@ name = "zkm-zkvm"
 version = "1.2.7"
 dependencies = [
  "bincode",
+ "blake3",
  "cfg-if",
  "critical-section",
  "embedded-alloc",

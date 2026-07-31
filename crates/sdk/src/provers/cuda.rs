@@ -41,6 +41,8 @@ impl CudaProver {
         stdin: &ZKMStdin,
         kind: ZKMProofKind,
     ) -> Result<(ZKMProofWithPublicValues, u64)> {
+        super::ensure_imm_wrap_proof_kind(&kind)?;
+
         if kind == ZKMProofKind::CompressToGroth16 {
             return Ok((self.compress_to_groth16(stdin.clone())?, 0));
         }
@@ -103,7 +105,11 @@ impl CudaProver {
                 try_install_circuit_artifacts("groth16", ZKM_CIRCUIT_VERSION)
             };
 
-            let proof = self.cpu_prover.wrap_groth16_bn254(outer_proof, &groth16_bn254_artifacts);
+            let proof = self.cpu_prover.wrap_groth16_bn254(
+                outer_proof,
+                &public_values,
+                &groth16_bn254_artifacts,
+            )?;
             let proof_with_pv = ZKMProofWithPublicValues {
                 proof: ZKMProof::Groth16(proof),
                 public_values,
@@ -160,7 +166,11 @@ impl CudaProver {
             try_install_circuit_artifacts("groth16", ZKM_CIRCUIT_VERSION)
         };
 
-        let proof = self.cpu_prover.wrap_groth16_bn254(outer_proof, &groth16_bn254_artifacts);
+        let proof = self.cpu_prover.wrap_groth16_bn254(
+            outer_proof,
+            &public_values,
+            &groth16_bn254_artifacts,
+        )?;
         Ok(ZKMProofWithPublicValues {
             proof: ZKMProof::Groth16(proof),
             public_values,

@@ -46,6 +46,27 @@ pub struct ProofOpts {
     pub timeout: Option<Duration>,
 }
 
+/// Rejects `kind` when it cannot use immutable wrap mode.
+pub(crate) fn ensure_imm_wrap_proof_kind(kind: &ZKMProofKind) -> Result<()> {
+    if zkm_prover::build::zkm_imm_wrap_vk_mode()
+        && (kind == &ZKMProofKind::Plonk || kind == &ZKMProofKind::DvSnark)
+    {
+        anyhow::bail!(
+            "ZKM_IMM_WRAP_VK only supports Core, Compressed, Groth16, and CompressToGroth16 proofs"
+        );
+    }
+    Ok(())
+}
+
+/// Hashes public values with the algorithm selected by immutable wrap mode.
+fn hash_public_values(public_values: &ZKMPublicValues) -> Vec<u8> {
+    if zkm_prover::build::zkm_imm_wrap_vk_mode() {
+        public_values.hash_blake3()
+    } else {
+        public_values.hash()
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ZKMVerificationError {
     #[error("Invalid public values")]
@@ -148,8 +169,9 @@ pub trait Prover<C: ZKMProverComponents>: Send + Sync {
                     .collect_vec();
 
                 // Make sure the committed value digest matches the public values hash.
-                for (a, b) in
-                    committed_value_digest_bytes.iter().zip_eq(bundle.public_values.hash())
+                for (a, b) in committed_value_digest_bytes
+                    .iter()
+                    .zip_eq(hash_public_values(&bundle.public_values))
                 {
                     if *a != b {
                         return Err(ZKMVerificationError::InvalidPublicValues);
@@ -173,8 +195,9 @@ pub trait Prover<C: ZKMProverComponents>: Send + Sync {
                     .collect_vec();
 
                 // Make sure the committed value digest matches the public values hash.
-                for (a, b) in
-                    committed_value_digest_bytes.iter().zip_eq(bundle.public_values.hash())
+                for (a, b) in committed_value_digest_bytes
+                    .iter()
+                    .zip_eq(hash_public_values(&bundle.public_values))
                 {
                     if *a != b {
                         return Err(ZKMVerificationError::InvalidPublicValues);

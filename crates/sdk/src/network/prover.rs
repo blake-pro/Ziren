@@ -34,7 +34,7 @@ pub mod stage_service {
 }
 
 use crate::network::prover::stage_service::{Status, Step};
-use crate::provers::{ProofOpts, ProverType};
+use crate::provers::{ensure_imm_wrap_proof_kind, ProofOpts, ProverType};
 
 const DEFAULT_POLL_INTERVAL: u64 = 3000; // 3s
 const MIN_POLL_INTERVAL: u64 = 100; // 100ms
@@ -256,6 +256,8 @@ impl NetworkProver {
         elf_id: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<(ZKMProofWithPublicValues, u64)> {
+        ensure_imm_wrap_proof_kind(&kind)?;
+
         let private_input = stdin.buffer.clone();
         let mut pri_buf = Vec::new();
         bincode::serialize_into(&mut pri_buf, &private_input)?;
@@ -282,6 +284,18 @@ impl NetworkProver {
         if kind == ZKMProofKind::CompressToGroth16 {
             assert_eq!(private_input.len(), 1);
             public_values = bincode::deserialize(private_input.last().unwrap())?;
+        }
+
+        if let ZKMProof::Groth16(groth16_proof) = &proof {
+            let expected_public_values = if zkm_prover::build::zkm_imm_wrap_vk_mode() {
+                public_values.hash_bn254_blake3()
+            } else {
+                public_values.hash_bn254()
+            };
+            anyhow::ensure!(
+                groth16_proof.public_inputs[1] == expected_public_values.to_string(),
+                "proof network returned a Groth16 proof for a different ZKM_IMM_WRAP_VK setting"
+            );
         }
 
         Ok((

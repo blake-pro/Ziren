@@ -27,6 +27,8 @@ pub fn zkm_dev_mode() -> bool {
 /// that is, to verify `vk_commitment` and `pc_start` in the circuit, but to place them in public
 /// inputs for verification.
 ///
+/// Guest binaries must also be built with `ZKM_IMM_WRAP_VK=1` so they commit BLAKE3 public values.
+///
 /// By default, the variable is disabled.
 pub fn zkm_imm_wrap_vk_mode() -> bool {
     let value = std::env::var("ZKM_IMM_WRAP_VK").unwrap_or_else(|_| "false".to_string());

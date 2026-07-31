@@ -149,7 +149,11 @@ mod zkvm {
 
     use cfg_if::cfg_if;
     use getrandom::{register_custom_getrandom, Error};
-    use sha2::{Digest, Sha256};
+
+    #[cfg(zkm_imm_wrap_vk)]
+    use blake3::Hasher as PublicValuesHasher;
+    #[cfg(not(zkm_imm_wrap_vk))]
+    use sha2::Sha256 as PublicValuesHasher;
 
     cfg_if! {
         if #[cfg(feature = "verify")] {
@@ -160,7 +164,7 @@ mod zkvm {
         }
     }
 
-    pub static mut PUBLIC_VALUES_HASHER: Option<Sha256> = None;
+    pub static mut PUBLIC_VALUES_HASHER: Option<PublicValuesHasher> = None;
 
     #[no_mangle]
     fn _main() {
@@ -168,7 +172,7 @@ mod zkvm {
         crate::allocators::init();
 
         unsafe {
-            PUBLIC_VALUES_HASHER = Some(Sha256::new());
+            PUBLIC_VALUES_HASHER = Some(PublicValuesHasher::default());
             #[cfg(feature = "verify")]
             {
                 DEFERRED_PROOFS_DIGEST = Some([KoalaBear::ZERO; 8]);

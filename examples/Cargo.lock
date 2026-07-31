@@ -845,6 +845,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake3"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1230237285e3e10cde447185e8975408ae24deaa67205ce684805c25bc0c7937"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.6",
+ "cc",
+ "cfg-if",
+ "constant_time_eq 0.3.1",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1284,6 +1297,12 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "constant_time_eq"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
+
+[[package]]
+name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
@@ -1463,7 +1482,7 @@ dependencies = [
  "rustc_version 0.4.1",
  "subtle",
  "zeroize",
- "zkm-lib 1.2.4",
+ "zkm-lib 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
 ]
 
 [[package]]
@@ -3745,7 +3764,7 @@ dependencies = [
  "once_cell",
  "sha2 0.10.8",
  "signature",
- "zkm-lib 1.2.4",
+ "zkm-lib 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
 ]
 
 [[package]]
@@ -4453,7 +4472,7 @@ dependencies = [
  "hex",
  "primeorder",
  "sha2 0.10.8",
- "zkm-lib 1.2.4",
+ "zkm-lib 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
 ]
 
 [[package]]
@@ -5861,7 +5880,7 @@ dependencies = [
  "spki 0.7.3",
  "subtle",
  "zeroize",
- "zkm-lib 1.2.4",
+ "zkm-lib 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
 ]
 
 [[package]]
@@ -6760,7 +6779,7 @@ dependencies = [
  "num-bigint 0.4.6",
  "rand 0.8.5",
  "rustc-hex",
- "zkm-lib 1.2.4",
+ "zkm-lib 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
 ]
 
 [[package]]
@@ -8730,19 +8749,6 @@ dependencies = [
 
 [[package]]
 name = "zkm-lib"
-version = "1.2.4"
-source = "git+https://github.com/ProjectZKM/Ziren#1d43121312d4b93c0989984bf0c7ab77d9a0ce04"
-dependencies = [
- "bincode",
- "cfg-if",
- "elliptic-curve",
- "serde",
- "sha2 0.10.8",
- "zkm-primitives 1.2.4",
-]
-
-[[package]]
-name = "zkm-lib"
 version = "1.2.7"
 dependencies = [
  "bincode",
@@ -8754,11 +8760,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "zkm-primitives"
-version = "1.2.4"
-source = "git+https://github.com/ProjectZKM/Ziren#1d43121312d4b93c0989984bf0c7ab77d9a0ce04"
+name = "zkm-lib"
+version = "1.2.7"
+source = "git+https://github.com/ProjectZKM/Ziren#e6945a76b084e87570b7be55e4479ce98603f43a"
 dependencies = [
  "bincode",
+ "cfg-if",
+ "elliptic-curve",
+ "serde",
+ "sha2 0.10.8",
+ "zkm-primitives 1.2.7 (git+https://github.com/ProjectZKM/Ziren)",
+]
+
+[[package]]
+name = "zkm-primitives"
+version = "1.2.7"
+dependencies = [
+ "bincode",
+ "blake3",
  "hex",
  "lazy_static",
  "num-bigint 0.4.6",
@@ -8774,6 +8793,7 @@ dependencies = [
 [[package]]
 name = "zkm-primitives"
 version = "1.2.7"
+source = "git+https://github.com/ProjectZKM/Ziren#e6945a76b084e87570b7be55e4479ce98603f43a"
 dependencies = [
  "bincode",
  "hex",
@@ -9064,6 +9084,7 @@ name = "zkm-zkvm"
 version = "1.2.7"
 dependencies = [
  "bincode",
+ "blake3",
  "cfg-if",
  "critical-section",
  "embedded-alloc",

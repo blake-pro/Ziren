@@ -3,6 +3,13 @@ use num_bigint::BigUint;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+/// Hashes public values with BLAKE3 and maps the digest into BN254's 253-bit range.
+pub fn hash_public_values_blake3_bn254(public_values: &[u8]) -> [u8; 32] {
+    let mut hash = *blake3::hash(public_values).as_bytes();
+    hash[0] &= 0b00011111;
+    hash
+}
+
 /// Public values for the prover.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ZKMPublicValues {
@@ -59,6 +66,11 @@ impl ZKMPublicValues {
         hasher.finalize().to_vec()
     }
 
+    /// Hash the public values with BLAKE3.
+    pub fn hash_blake3(&self) -> Vec<u8> {
+        blake3::hash(self.buffer.data.as_slice()).as_bytes().to_vec()
+    }
+
     /// Hash the public values, mask the top 3 bits and return a BigUint. Matches the implementation
     /// of `hashPublicValues` in the Solidity verifier.
     ///
@@ -77,6 +89,11 @@ impl ZKMPublicValues {
 
         // Return the masked hash as a BigUint.
         BigUint::from_bytes_be(&hash)
+    }
+
+    /// Hash the public values with BLAKE3 and map the digest into BN254's 253-bit range.
+    pub fn hash_bn254_blake3(&self) -> BigUint {
+        BigUint::from_bytes_be(&hash_public_values_blake3_bn254(self.as_slice()))
     }
 }
 
@@ -103,5 +120,19 @@ mod tests {
         let expected_hash_biguint = BigUint::from_bytes_be(&hex::decode(expected_hash).unwrap());
 
         assert_eq!(hash, expected_hash_biguint);
+    }
+
+    #[test]
+    fn test_hash_public_values_blake3() {
+        let public_values = ZKMPublicValues::from(b"abc");
+        let digest =
+            hex::decode("6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85")
+                .unwrap();
+        let expected =
+            hex::decode("0437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85")
+                .unwrap();
+
+        assert_eq!(public_values.hash_blake3(), digest);
+        assert_eq!(public_values.hash_bn254_blake3(), BigUint::from_bytes_be(&expected));
     }
 }

@@ -481,12 +481,14 @@ pub fn verify_groth16_bn254_public_inputs(
     let expected_vk_hash = BigUint::from_str(&groth16_bn254_public_inputs[0])?;
     let expected_public_values_hash = BigUint::from_str(&groth16_bn254_public_inputs[1])?;
 
-    let vk_hash = groth16_vk_hash(vk)?;
+    let imm_wrap_vk = zkm_imm_wrap_vk_mode();
+    let vk_hash = groth16_vk_hash(vk, imm_wrap_vk)?;
     if vk_hash != expected_vk_hash {
         return Err(Groth16VerificationError::InvalidVerificationKey.into());
     }
 
-    let public_values_hash = public_values.hash_bn254();
+    let public_values_hash =
+        if imm_wrap_vk { public_values.hash_bn254_blake3() } else { public_values.hash_bn254() };
     if public_values_hash != expected_public_values_hash {
         return Err(Groth16VerificationError::InvalidPublicValues.into());
     }
@@ -495,12 +497,12 @@ pub fn verify_groth16_bn254_public_inputs(
 }
 
 /// Compute the verification key hash committed into Groth16 public inputs.
-fn groth16_vk_hash(vk: &ZKMVerifyingKey) -> Result<BigUint> {
+fn groth16_vk_hash(vk: &ZKMVerifyingKey, imm_wrap_vk: bool) -> Result<BigUint> {
     const PART_STARK_VK_BYTES: &[u8] = include_bytes!("../../verifier/bn254-vk/part_stark_vk.bin");
 
     let vk_hash = vk.hash_bn254();
 
-    if zkm_imm_wrap_vk_mode() {
+    if imm_wrap_vk {
         let part_stark_vk: PartStarkVerifyingKey<KoalaBearPoseidon2Outer> =
             bincode::deserialize(PART_STARK_VK_BYTES)?;
         Ok(hash_vkey_with_part_vk(&part_stark_vk, vk_hash).as_canonical_biguint())
