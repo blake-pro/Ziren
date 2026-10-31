@@ -91,7 +91,7 @@ fn rpc_call(url: &str, method: &str, params: &[Value]) -> Result<Value> {
         "method": method,
         "params": params,
     });
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::blocking::Client::builder().use_rustls_tls().build()?;
     let resp: Value = client
         .post(url)
         .json(&body)

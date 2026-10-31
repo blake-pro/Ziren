@@ -48,6 +48,11 @@ debug-assertions = true
 
 
 [workspace.dependencies]
+# TLS floors also protect downstream builds that do not use this workspace's lockfile.
+reqwest = { version = "0.12.28", default-features = false, features = ["rustls-tls", "http2", "system-proxy"] }
+rustls = { version = "0.23.45", default-features = false, features = ["ring", "std", "tls12"] }
+webpki = { package = "rustls-webpki", version = "0.103.16", default-features = false }
+webpki-roots = "1.0.10"
 rustc-hash = "2.1.0"
 # Pinned to a rev, not a branch. These crates supply the field, the challenger and
 # the Merkle tree -- the transcript -- so a branch pin lets `cargo update` change

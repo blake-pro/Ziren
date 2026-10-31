@@ -175,7 +175,7 @@ fn remote_artifact_id(client: &Client, url: &str) -> Option<String> {
 /// Compare what `build_dir` was installed from against what `url` serves now.
 #[cfg(feature = "network")]
 fn cached_artifacts_are_current(build_dir: &std::path::Path, url: &str) -> CacheState {
-    let client = match Client::builder().build() {
+    let client = match Client::builder().use_rustls_tls().build() {
         Ok(client) => client,
         Err(e) => return CacheState::Unknown(e.to_string()),
     };
@@ -210,7 +210,8 @@ pub fn install_circuit_artifacts(
     std::fs::create_dir_all(&parent).expect("failed to create build directory parent");
     let mut artifacts_tar_gz_file = tempfile::NamedTempFile::new_in(&parent)
         .expect("failed to create tempfile beside the artifact directory");
-    let client = Client::builder().build().expect("failed to create reqwest client");
+    let client =
+        Client::builder().use_rustls_tls().build().expect("failed to create reqwest client");
     block_on(download_file(&client, &download_url, &mut artifacts_tar_gz_file))
         .expect("failed to download file");
 

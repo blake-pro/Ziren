@@ -32,6 +32,24 @@ use crate::provers::{ProofOpts, ProverType};
 const DEFAULT_POLL_INTERVAL: u64 = 3000; // 3s
 const MIN_POLL_INTERVAL: u64 = 100; // 100ms
 
+fn client_tls_config(server_name: String, ca: Option<Certificate>) -> Result<ClientTlsConfig> {
+    // Tonic builds its rustls config from the process-default provider, which rustls cannot
+    // pick by itself once a dependent also enables aws-lc-rs. A provider set earlier wins.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    let native = rustls_native_certs::load_native_certs();
+    if let Some(error) = native.errors.first() {
+        bail!("could not load system root certificates: {error}");
+    }
+    let mut roots = rustls::RootCertStore::empty();
+    roots.add_parsable_certificates(native.certs);
+    // Tonic's native-root loader rejects an empty store before adding a custom CA.
+    let mut config = ClientTlsConfig::new().trust_anchors(roots.roots).domain_name(server_name);
+    if let Some(ca) = ca {
+        config = config.ca_certificate(ca);
+    }
+    Ok(config)
+}
+
 pub struct NetworkProver {
     pub endpoint: Endpoint,
     pub local_prover: CpuProver,
@@ -78,7 +96,7 @@ impl NetworkProver {
             None => env::var("ENDPOINT")
                 .map_err(|_| anyhow::anyhow!("ENDPOINT must be set for remote proving"))?,
         };
-        // Server-authenticated TLS: the CA from CA_CERT_PATH, else the system roots; the
+        // Server-authenticated TLS: system roots plus any CA from CA_CERT_PATH; the
         // server name from DOMAIN_NAME, else the endpoint's host.
         let endpoint = if endpoint.starts_with("https://") {
             let host = endpoint.parse::<tonic::codegen::http::Uri>()?.host().map(str::to_owned);
@@ -86,12 +104,14 @@ impl NetworkProver {
                 .ok()
                 .or(host)
                 .ok_or_else(|| anyhow::anyhow!("the endpoint {endpoint} has no host"))?;
-            let mut tls_config = ClientTlsConfig::new().domain_name(server_name);
-            if let Ok(ca) = env::var("CA_CERT_PATH") {
+            let ca = if let Ok(ca) = env::var("CA_CERT_PATH") {
                 let pem =
                     fs::read(&ca).map_err(|e| anyhow::anyhow!("reading CA_CERT_PATH {ca}: {e}"))?;
-                tls_config = tls_config.ca_certificate(Certificate::from_pem(pem));
-            }
+                Some(Certificate::from_pem(pem))
+            } else {
+                None
+            };
+            let tls_config = client_tls_config(server_name, ca)?;
             Endpoint::new(endpoint)?.tls_config(tls_config)?
         } else {
             Endpoint::new(endpoint)?
@@ -111,7 +131,7 @@ impl NetworkProver {
     }
 
     pub async fn download_file(url: &str) -> Result<Vec<u8>> {
-        let response = reqwest::get(url).await?;
+        let response = reqwest::Client::builder().use_rustls_tls().build()?.get(url).send().await?;
         let response = response
             .error_for_status()
             .map_err(|e| anyhow::anyhow!("downloading {url} failed: {e}"))?;
@@ -332,6 +352,9 @@ impl Prover<DefaultProverComponents> for NetworkProver {
         block_on(self.prove_with_cycles(&pk.elf, stdin, kind, elf_id, opts.timeout))
     }
 }
+
+#[cfg(test)]
+mod tls_tests;
 
 #[cfg(test)]
 mod tests {

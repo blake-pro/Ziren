@@ -17,6 +17,10 @@ serde = { workspace = true, features = ["derive"] }
 tokio = { version = "^1.44.2", features = ["full"] }
 tracing = { workspace = true }
 twirp = { package = "twirp-rs", version = "0.13.0-succinct" }
+reqwest = { workspace = true }
+rustls = { workspace = true }
+webpki = { workspace = true }
+webpki-roots = { workspace = true }
 ctrlc = "3.4.4"
 
 [build-dependencies]

@@ -220,7 +220,8 @@ impl ZKMCudaProver {
             ZKMGpuServer::External { endpoint } => {
                 let url = Url::parse(&endpoint)
                     .map_err(|e| format!("CUDA_ENDPOINT `{endpoint}` is not a URL: {e}"))?;
-                let client = Client::new(url, reqwest::Client::new(), reqwest_middlewares)
+                let http_client = reqwest::Client::builder().use_rustls_tls().build()?;
+                let client = Client::new(url, http_client, reqwest_middlewares)
                     .map_err(|e| format!("could not create the CUDA RPC client: {e}"))?;
 
                 ZKMCudaProver {
@@ -359,7 +360,8 @@ impl ZKMCudaProver {
 
         let endpoint = format!("http://localhost:{port}/twirp/");
         let url = Url::parse(&endpoint).map_err(|e| format!("`{endpoint}` is not a URL: {e}"))?;
-        let client = Client::new(url, reqwest::Client::new(), reqwest_middlewares)
+        let http_client = reqwest::Client::builder().use_rustls_tls().build()?;
+        let client = Client::new(url, http_client, reqwest_middlewares)
             .map_err(|e| format!("could not create the CUDA RPC client: {e}"))?;
 
         Ok(ZKMCudaProver {
@@ -581,7 +583,7 @@ impl ZKMCudaProver {
     fn connect_without_waiting(endpoint: &str) -> std::result::Result<Self, Box<dyn StdError>> {
         let client = Client::new(
             Url::parse(endpoint)?,
-            reqwest::Client::new(),
+            reqwest::Client::builder().use_rustls_tls().build()?,
             vec![Box::new(LoggingMiddleware) as Box<dyn Middleware>],
         )?;
         Ok(ZKMCudaProver { client, managed_container: None, server_prove_ms: AtomicU64::new(0) })
